@@ -82,6 +82,7 @@ class StepExecutor:
 
     def run(self):
         self._print_header()
+        self._check_clean_worktree()
         self._check_blockers()
         self._checkout_branch()
         guardrails = self._load_guardrails()
@@ -132,6 +133,25 @@ class StepExecutor:
             sys.exit(1)
 
         print(f"  Branch: {branch}")
+
+    def _check_clean_worktree(self):
+        r = self._run_git("status", "--porcelain")
+        if r.returncode != 0:
+            print(f"  ERROR: git status 확인 실패.")
+            print(f"  {r.stderr.strip()}")
+            sys.exit(1)
+
+        dirty = [line for line in r.stdout.splitlines() if line.strip()]
+        if not dirty:
+            return
+
+        print("  ERROR: 작업트리가 깨끗하지 않아 phase 실행을 중단합니다.")
+        print("  자동 커밋에 기존 변경사항이 섞이지 않도록 먼저 commit/stash 하세요.")
+        for line in dirty[:10]:
+            print(f"    {line}")
+        if len(dirty) > 10:
+            print(f"    ... and {len(dirty) - 10} more")
+        sys.exit(1)
 
     def _commit_step(self, step_num: int, step_name: str):
         output_rel = f"phases/{self._phase_dir_name}/step{step_num}-output.json"

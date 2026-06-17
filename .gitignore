@@ -4,6 +4,26 @@ out/
 next-env.d.ts
 tsconfig.tsbuildinfo
 
+# Android / Gradle
+.gradle/
+build/
+**/build/
+local.properties
+*.iml
+.idea/
+
+# Android release artifacts
+*.apk
+*.aab
+*.ap_
+
+# Kotlin / Java
+*.class
+
+# Python
+__pycache__/
+*.py[cod]
+
 # phase execution outputs
 phases/**/phase*-output.json
 phases/**/step*-output.json

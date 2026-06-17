@@ -379,6 +379,49 @@ class TestCheckoutBranch:
 
 
 # ---------------------------------------------------------------------------
+# _check_clean_worktree
+# ---------------------------------------------------------------------------
+
+class TestCleanWorktree:
+    def test_clean_worktree_allows_execution(self, executor):
+        calls = []
+
+        def fake_git(*args):
+            calls.append(args)
+            return MagicMock(returncode=0, stdout="", stderr="")
+
+        executor._run_git = fake_git
+
+        executor._check_clean_worktree()
+
+        assert calls == [("status", "--porcelain")]
+
+    def test_dirty_worktree_exits_1(self, executor):
+        executor._run_git = lambda *args: MagicMock(
+            returncode=0,
+            stdout=" M docs/PRD.md\n?? plan.md\n",
+            stderr="",
+        )
+
+        with pytest.raises(SystemExit) as exc_info:
+            executor._check_clean_worktree()
+
+        assert exc_info.value.code == 1
+
+    def test_git_status_failure_exits_1(self, executor):
+        executor._run_git = lambda *args: MagicMock(
+            returncode=1,
+            stdout="",
+            stderr="not a git repo",
+        )
+
+        with pytest.raises(SystemExit) as exc_info:
+            executor._check_clean_worktree()
+
+        assert exc_info.value.code == 1
+
+
+# ---------------------------------------------------------------------------
 # _commit_step (mocked)
 # ---------------------------------------------------------------------------
 

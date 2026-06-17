@@ -1,105 +1,140 @@
 #!/bin/bash
 # TDD Guard Hook — PreToolUse[Edit|Write]
-# 구현 코드를 작성하려 할 때, 해당 모듈의 테스트 파일이 먼저 존재하는지 체크.
-# 테스트 없이 구현 코드를 작성하려 하면 차단.
+# Android/Kotlin 구현 코드를 작성하려 할 때 대응 테스트가 먼저 있는지 확인한다.
 
 INPUT=$(cat)
-FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // empty')
+FILE_PATH=$(echo "$INPUT" | jq -r '.tool_input.file_path // .tool_input.path // empty')
 
-# 파일 경로가 없으면 통과
 if [ -z "$FILE_PATH" ]; then
   exit 0
 fi
 
-# 프로젝트가 아직 스캐폴딩되지 않았으면(package.json 없음) TDD 가드를 건너뛴다.
-# 테스트 프레임워크가 깔리기 전(MVP 부트스트랩)에는 강제할 대상이 없기 때문.
-# package.json이 생기면 이후 모든 lib/소스 편집에 TDD가 적용된다.
-# (Claude .claude/settings.json 과 codex .codex/hooks.json 양쪽에서 공유하는 스크립트)
 ROOT=$(git rev-parse --show-toplevel 2>/dev/null || pwd)
-if [ ! -f "$ROOT/package.json" ]; then
+ABS_PATH="$FILE_PATH"
+case "$ABS_PATH" in
+  /*) ;;
+  *) ABS_PATH="$ROOT/$FILE_PATH" ;;
+esac
+
+has_gradle=false
+if [ -f "$ROOT/settings.gradle.kts" ] || [ -f "$ROOT/build.gradle.kts" ] || [ -f "$ROOT/gradle/libs.versions.toml" ]; then
+  has_gradle=true
+fi
+
+has_node=false
+if [ -f "$ROOT/package.json" ]; then
+  has_node=true
+fi
+
+if [ "$has_gradle" = false ] && [ "$has_node" = false ]; then
   exit 0
 fi
 
-# 테스트 파일 자체를 수정하는 건 허용
+# 테스트 파일 자체, 문서, 설정, 리소스는 테스트 선행 대상이 아니다.
 case "$FILE_PATH" in
-  *test*|*spec*|*.test.*|*.spec.*|*__tests__*)
+  */src/test/*|*/src/androidTest/*|*Test.kt|*Spec.kt|*test*|*spec*|*.test.*|*.spec.*|*__tests__*)
+    exit 0
+    ;;
+  *.json|*.xml|*.md|*.yml|*.yaml|*.properties|*.toml|*.gradle|*.gradle.kts|*.env*|*.config.*)
+    exit 0
+    ;;
+  */res/*|*/assets/*|*/buildSrc/*)
     exit 0
     ;;
 esac
 
-# 설정/타입/스타일 파일은 테스트 불필요 — 허용
-case "$FILE_PATH" in
-  *.json|*.css|*.scss|*.md|*.yml|*.yaml|*.env*|*.config.*|*tailwind*|*postcss*|*next.config*|*tsconfig*)
-    exit 0
-    ;;
-esac
-
-# types/ 폴더는 테스트 불필요 — 허용
-case "$FILE_PATH" in
-  */types/*|*/types.ts|*/types.d.ts)
-    exit 0
-    ;;
-esac
-
-# Next.js 프레임워크 파일은 허용 (layout, page, loading, error, not-found, global styles)
-case "$FILE_PATH" in
-  */layout.tsx|*/layout.ts|*/page.tsx|*/page.ts|*/loading.tsx|*/error.tsx|*/not-found.tsx|*/globals.css)
-    exit 0
-    ;;
-esac
-
-# lib/ 또는 소스 파일이면 테스트 파일 존재 여부 확인
-case "$FILE_PATH" in
-  *.ts|*.tsx|*.js|*.jsx)
-    # 파일명 추출
-    DIR=$(dirname "$FILE_PATH")
-    BASENAME=$(basename "$FILE_PATH" | sed -E 's/\.(ts|tsx|js|jsx)$//')
-
-    # 테스트 파일 후보 경로들
-    TEST_FOUND=false
-
-    # 같은 폴더에 .test 파일
-    for EXT in ts tsx js jsx; do
-      if [ -f "${DIR}/${BASENAME}.test.${EXT}" ] || [ -f "${DIR}/${BASENAME}.spec.${EXT}" ]; then
-        TEST_FOUND=true
-        break
-      fi
-    done
-
-    # __tests__ 폴더
-    if [ "$TEST_FOUND" = false ]; then
-      PARENT=$(dirname "$DIR")
-      for EXT in ts tsx js jsx; do
-        if [ -f "${PARENT}/__tests__/${BASENAME}.test.${EXT}" ] || [ -f "${DIR}/__tests__/${BASENAME}.test.${EXT}" ]; then
-          TEST_FOUND=true
-          break
-        fi
-      done
-    fi
-
-    # src/__tests__/ 루트 테스트 폴더
-    if [ "$TEST_FOUND" = false ]; then
-      PROJECT_ROOT=$(git rev-parse --show-toplevel 2>/dev/null || echo ".")
-      for EXT in ts tsx js jsx; do
-        if [ -f "${PROJECT_ROOT}/src/__tests__/${BASENAME}.test.${EXT}" ]; then
-          TEST_FOUND=true
-          break
-        fi
-      done
-    fi
-
-    if [ "$TEST_FOUND" = false ]; then
-      cat << EOF
+deny() {
+  local base_name="$1"
+  local example="$2"
+  cat << EOF
 {
   "hookSpecificOutput": {
     "hookEventName": "PreToolUse",
     "permissionDecision": "deny",
-    "permissionDecisionReason": "TDD GUARD: '${BASENAME}'에 대한 테스트 파일이 존재하지 않습니다. 구현 코드를 작성하기 전에 테스트를 먼저 작성하세요. (테스트 파일 예: ${BASENAME}.test.ts)"
+    "permissionDecisionReason": "TDD GUARD: '${base_name}'에 대한 테스트 파일이 존재하지 않습니다. 구현 코드를 작성하기 전에 테스트를 먼저 작성하세요. (예: ${example})"
   }
 }
 EOF
-    fi
-    ;;
-esac
+}
+
+if [ "$has_gradle" = true ]; then
+  case "$FILE_PATH" in
+    *.kt)
+      source_root=""
+      module_root=""
+      rel_path=""
+
+      if [[ "$ABS_PATH" == *"/src/main/java/"* ]]; then
+        source_root="/src/main/java/"
+      elif [[ "$ABS_PATH" == *"/src/main/kotlin/"* ]]; then
+        source_root="/src/main/kotlin/"
+      else
+        exit 0
+      fi
+
+      module_root="${ABS_PATH%%$source_root*}"
+      rel_path="${ABS_PATH#*$source_root}"
+      dir_rel=$(dirname "$rel_path")
+      base_name=$(basename "$rel_path" .kt)
+
+      candidates=(
+        "$module_root/src/test/java/$dir_rel/${base_name}Test.kt"
+        "$module_root/src/test/java/$dir_rel/${base_name}Spec.kt"
+        "$module_root/src/test/kotlin/$dir_rel/${base_name}Test.kt"
+        "$module_root/src/test/kotlin/$dir_rel/${base_name}Spec.kt"
+        "$module_root/src/androidTest/java/$dir_rel/${base_name}Test.kt"
+        "$module_root/src/androidTest/kotlin/$dir_rel/${base_name}Test.kt"
+      )
+
+      for candidate in "${candidates[@]}"; do
+        if [ -f "$candidate" ]; then
+          exit 0
+        fi
+      done
+
+      deny "$base_name" "app/src/test/java/.../${base_name}Test.kt"
+      ;;
+  esac
+fi
+
+if [ "$has_node" = true ]; then
+  case "$FILE_PATH" in
+    *.ts|*.tsx|*.js|*.jsx)
+      dir=$(dirname "$FILE_PATH")
+      base_name=$(basename "$FILE_PATH" | sed -E 's/\.(ts|tsx|js|jsx)$//')
+      test_found=false
+
+      for ext in ts tsx js jsx; do
+        if [ -f "${dir}/${base_name}.test.${ext}" ] || [ -f "${dir}/${base_name}.spec.${ext}" ]; then
+          test_found=true
+          break
+        fi
+      done
+
+      if [ "$test_found" = false ]; then
+        parent=$(dirname "$dir")
+        for ext in ts tsx js jsx; do
+          if [ -f "${parent}/__tests__/${base_name}.test.${ext}" ] || [ -f "${dir}/__tests__/${base_name}.test.${ext}" ]; then
+            test_found=true
+            break
+          fi
+        done
+      fi
+
+      if [ "$test_found" = false ]; then
+        for ext in ts tsx js jsx; do
+          if [ -f "${ROOT}/src/__tests__/${base_name}.test.${ext}" ]; then
+            test_found=true
+            break
+          fi
+        done
+      fi
+
+      if [ "$test_found" = false ]; then
+        deny "$base_name" "${base_name}.test.ts"
+      fi
+      ;;
+  esac
+fi
 
 exit 0
