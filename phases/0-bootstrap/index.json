@@ -1,0 +1,10 @@
+{
+  "project": "CafeMinsu",
+  "phase": "bootstrap",
+  "steps": [
+    { "step": 0, "name": "gradle-scaffold", "status": "pending" },
+    { "step": 1, "name": "core-result", "status": "pending" },
+    { "step": 2, "name": "design-theme", "status": "pending" },
+    { "step": 3, "name": "navigation-scaffold", "status": "pending" }
+  ]
+}

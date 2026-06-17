@@ -1,0 +1,11 @@
+{
+  "project": "CafeMinsu",
+  "phases": [
+    {
+      "dir": "0-bootstrap",
+      "name": "bootstrap",
+      "status": "pending",
+      "summary": "Android/Compose/Hilt 프로젝트 스캐폴드 + 디자인 토큰 + 코어 결과 타입 + 네비게이션 골격"
+    }
+  ]
+}
