@@ -7,7 +7,8 @@
       "name": "domain-contracts",
       "status": "completed",
       "started_at": "2026-06-17T20:58:49+0900",
-      "summary": "DATA_MODEL.md 기반 도메인 모델, Repository 인터페이스, DataUiState 계약을 추가"
+      "summary": "DATA_MODEL.md 기반 도메인 모델, Repository 인터페이스, DataUiState 계약을 추가",
+      "completed_at": "2026-06-17T21:03:37+0900"
     },
     {
       "step": 1,
