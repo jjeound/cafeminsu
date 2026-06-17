@@ -3,7 +3,7 @@ package com.cafeminsu
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
-import androidx.compose.material3.Text
+import com.cafeminsu.ui.navigation.AppNavHost
 import com.cafeminsu.ui.theme.CafeTheme
 import dagger.hilt.android.AndroidEntryPoint
 
@@ -13,7 +13,7 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         setContent {
             CafeTheme {
-                Text("민수")
+                AppNavHost()
             }
         }
     }
