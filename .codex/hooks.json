@@ -1,0 +1,17 @@
+{
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "apply_patch|Edit|Write",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "\"$(git rev-parse --show-toplevel)/scripts/hooks/tdd-guard-codex.sh\"",
+            "timeout": 15,
+            "statusMessage": "TDD 가드: 테스트 선행 확인"
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -260,9 +260,13 @@ class StepExecutor:
             sys.exit(1)
 
         prompt = preamble + step_file.read_text()
+        # --dangerously-bypass-hook-trust: 자동화가 검증한 훅(.codex/hooks.json)을 신뢰 프롬프트
+        # 없이 실행하도록 한다. 단 Codex 0.140.0 기준 PreToolUse 훅은 대화형 TUI에서만 발화되고
+        # `codex exec`(헤드리스)에서는 발화되지 않으므로, 현재 하네스에서 TDD 가드는 동작하지 않는다.
+        # (가드는 대화형 Codex 세션용. 플래그는 exec 훅 지원 시를 대비한 forward-compat.)
         result = subprocess.run(
             ["codex", "exec", "--dangerously-bypass-approvals-and-sandbox",
-             "--skip-git-repo-check", "--json", prompt],
+             "--dangerously-bypass-hook-trust", "--skip-git-repo-check", "--json", prompt],
             cwd=self._root, capture_output=True, text=True, timeout=1800,
         )
 
