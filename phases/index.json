@@ -4,8 +4,9 @@
     {
       "dir": "0-bootstrap",
       "name": "bootstrap",
-      "status": "pending",
-      "summary": "Android/Compose/Hilt 프로젝트 스캐폴드 + 디자인 토큰 + 코어 결과 타입 + 네비게이션 골격"
+      "status": "completed",
+      "summary": "Android/Compose/Hilt 프로젝트 스캐폴드 + 디자인 토큰 + 코어 결과 타입 + 네비게이션 골격",
+      "completed_at": "2026-06-17T20:43:02+0900"
     }
   ]
 }
