@@ -7,7 +7,8 @@
       "name": "gradle-scaffold",
       "status": "completed",
       "started_at": "2026-06-17T20:17:53+0900",
-      "summary": "Gradle 8.14 wrapper와 최소 Compose/Hilt Android 앱 스캐폴드를 추가하고 assembleDebug를 통과했다."
+      "summary": "Gradle 8.14 wrapper와 최소 Compose/Hilt Android 앱 스캐폴드를 추가하고 assembleDebug를 통과했다.",
+      "completed_at": "2026-06-17T20:24:30+0900"
     },
     {
       "step": 1,
