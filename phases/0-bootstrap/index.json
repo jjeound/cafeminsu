@@ -2,9 +2,28 @@
   "project": "CafeMinsu",
   "phase": "bootstrap",
   "steps": [
-    { "step": 0, "name": "gradle-scaffold", "status": "pending" },
-    { "step": 1, "name": "core-result", "status": "pending" },
-    { "step": 2, "name": "design-theme", "status": "pending" },
-    { "step": 3, "name": "navigation-scaffold", "status": "pending" }
-  ]
+    {
+      "step": 0,
+      "name": "gradle-scaffold",
+      "status": "completed",
+      "started_at": "2026-06-17T20:17:53+0900",
+      "summary": "Gradle 8.14 wrapper와 최소 Compose/Hilt Android 앱 스캐폴드를 추가하고 assembleDebug를 통과했다."
+    },
+    {
+      "step": 1,
+      "name": "core-result",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "design-theme",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "name": "navigation-scaffold",
+      "status": "pending"
+    }
+  ],
+  "created_at": "2026-06-17T20:17:53+0900"
 }
