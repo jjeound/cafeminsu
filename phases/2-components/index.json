@@ -1,0 +1,8 @@
+{
+  "project": "CafeMinsu",
+  "phase": "components",
+  "steps": [
+    { "step": 0, "name": "core-components", "status": "pending" },
+    { "step": 1, "name": "state-components", "status": "pending" }
+  ]
+}
