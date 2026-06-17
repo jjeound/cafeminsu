@@ -18,8 +18,9 @@
     {
       "dir": "2-components",
       "name": "components",
-      "status": "pending",
-      "summary": "디자인 시스템 재사용 컴포넌트(Button/Card/Chip/TopBar + 상태 뷰)"
+      "status": "completed",
+      "summary": "디자인 시스템 재사용 컴포넌트(Button/Card/Chip/TopBar + 상태 뷰)",
+      "completed_at": "2026-06-17T21:40:28+0900"
     }
   ]
 }
