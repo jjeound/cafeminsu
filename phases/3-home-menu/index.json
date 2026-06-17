@@ -1,0 +1,9 @@
+{
+  "project": "CafeMinsu",
+  "phase": "home-menu",
+  "steps": [
+    { "step": 0, "name": "home-m01", "status": "pending" },
+    { "step": 1, "name": "menu-list-m02", "status": "pending" },
+    { "step": 2, "name": "menu-detail-m03", "status": "pending" }
+  ]
+}

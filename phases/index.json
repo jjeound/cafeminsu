@@ -21,6 +21,12 @@
       "status": "completed",
       "summary": "디자인 시스템 재사용 컴포넌트(Button/Card/Chip/TopBar + 상태 뷰)",
       "completed_at": "2026-06-17T21:40:28+0900"
+    },
+    {
+      "dir": "3-home-menu",
+      "name": "home-menu",
+      "status": "pending",
+      "summary": "M-01 홈 · M-02 메뉴목록 · M-03 메뉴상세(담기) — MVVM + TDD"
     }
   ]
 }
