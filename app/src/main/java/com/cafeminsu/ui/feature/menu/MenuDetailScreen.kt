@@ -9,8 +9,12 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import com.cafeminsu.ui.theme.CafeTheme
 
+@Suppress("UNUSED_PARAMETER")
 @Composable
-fun MenuDetailScreen(modifier: Modifier = Modifier) {
+fun MenuDetailScreen(
+    menuItemId: String? = null,
+    modifier: Modifier = Modifier,
+) {
     Box(
         modifier = modifier
             .fillMaxSize()

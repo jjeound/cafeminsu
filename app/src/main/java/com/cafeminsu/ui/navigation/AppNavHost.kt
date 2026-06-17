@@ -21,15 +21,17 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
+import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
+import androidx.navigation.navArgument
 import com.cafeminsu.ui.feature.cart.CartScreen
 import com.cafeminsu.ui.feature.gifticon.GifticonScreen
 import com.cafeminsu.ui.feature.home.HomeRoute
 import com.cafeminsu.ui.feature.menu.MenuDetailScreen
-import com.cafeminsu.ui.feature.menu.MenuScreen
+import com.cafeminsu.ui.feature.menu.MenuRoute
 import com.cafeminsu.ui.feature.my.MyScreen
 import com.cafeminsu.ui.feature.order.OrderStatusScreen
 import com.cafeminsu.ui.feature.payment.PaymentScreen
@@ -74,12 +76,31 @@ fun AppNavHost(
         ) {
             composable(Routes.HOME) {
                 HomeRoute(
-                    onMenuClick = { navController.navigate(Routes.MENU_DETAIL) },
+                    onMenuClick = { menuItemId ->
+                        navController.navigate(Routes.menuDetail(menuItemId))
+                    },
                     onBrowseMenuClick = { navController.navigate(Routes.MENU) },
                 )
             }
-            composable(Routes.MENU) { MenuScreen() }
-            composable(Routes.MENU_DETAIL) { MenuDetailScreen() }
+            composable(Routes.MENU) {
+                MenuRoute(
+                    onMenuClick = { menuItemId ->
+                        navController.navigate(Routes.menuDetail(menuItemId))
+                    },
+                )
+            }
+            composable(
+                route = Routes.MENU_DETAIL_PATTERN,
+                arguments = listOf(
+                    navArgument(Routes.MENU_DETAIL_MENU_ID) {
+                        type = NavType.StringType
+                    },
+                ),
+            ) { backStackEntry ->
+                MenuDetailScreen(
+                    menuItemId = backStackEntry.arguments?.getString(Routes.MENU_DETAIL_MENU_ID),
+                )
+            }
             composable(Routes.VOICE) { VoiceScreen() }
             composable(Routes.CART) { CartScreen() }
             composable(Routes.PAYMENT) { PaymentScreen() }

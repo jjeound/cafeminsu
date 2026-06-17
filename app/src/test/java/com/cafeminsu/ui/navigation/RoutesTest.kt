@@ -9,6 +9,7 @@ class RoutesTest {
         assertEquals("m01", Routes.HOME)
         assertEquals("m02", Routes.MENU)
         assertEquals("m03", Routes.MENU_DETAIL)
+        assertEquals("m03/{menuItemId}", Routes.MENU_DETAIL_PATTERN)
         assertEquals("m04", Routes.VOICE)
         assertEquals("m05", Routes.CART)
         assertEquals("m06", Routes.PAYMENT)
@@ -16,5 +17,10 @@ class RoutesTest {
         assertEquals("m08", Routes.STAMP)
         assertEquals("m09", Routes.GIFTICON)
         assertEquals("m10", Routes.MY)
+    }
+
+    @Test
+    fun menuDetailRouteCarriesMenuItemId() {
+        assertEquals("m03/americano", Routes.menuDetail("americano"))
     }
 }
