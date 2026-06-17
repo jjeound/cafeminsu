@@ -2,7 +2,18 @@
   "project": "CafeMinsu",
   "phase": "components",
   "steps": [
-    { "step": 0, "name": "core-components", "status": "pending" },
-    { "step": 1, "name": "state-components", "status": "pending" }
-  ]
+    {
+      "step": 0,
+      "name": "core-components",
+      "started_at": "2026-06-17T21:28:24+0900",
+      "summary": "CafeButton, CafeCard, CafeChip, CafeTopBar core design-system components and smoke tests added.",
+      "status": "completed"
+    },
+    {
+      "step": 1,
+      "name": "state-components",
+      "status": "pending"
+    }
+  ],
+  "created_at": "2026-06-17T21:28:24+0900"
 }
