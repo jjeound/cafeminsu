@@ -1,0 +1,9 @@
+{
+  "project": "CafeMinsu",
+  "phase": "data",
+  "steps": [
+    { "step": 0, "name": "domain-contracts", "status": "pending" },
+    { "step": 1, "name": "mock-repositories", "status": "pending" },
+    { "step": 2, "name": "hilt-di", "status": "pending" }
+  ]
+}
