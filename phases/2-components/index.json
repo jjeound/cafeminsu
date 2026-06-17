@@ -7,7 +7,8 @@
       "name": "core-components",
       "started_at": "2026-06-17T21:28:24+0900",
       "summary": "CafeButton, CafeCard, CafeChip, CafeTopBar core design-system components and smoke tests added.",
-      "status": "completed"
+      "status": "completed",
+      "completed_at": "2026-06-17T21:35:00+0900"
     },
     {
       "step": 1,
