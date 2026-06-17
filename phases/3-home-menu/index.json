@@ -2,8 +2,23 @@
   "project": "CafeMinsu",
   "phase": "home-menu",
   "steps": [
-    { "step": 0, "name": "home-m01", "status": "pending" },
-    { "step": 1, "name": "menu-list-m02", "status": "pending" },
-    { "step": 2, "name": "menu-detail-m03", "status": "pending" }
-  ]
+    {
+      "step": 0,
+      "name": "home-m01",
+      "status": "completed",
+      "started_at": "2026-06-17T21:42:39+0900",
+      "summary": "M-01 홈 화면을 MVVM/UDF로 구현하고 HomeViewModel 상태 매핑 테스트를 추가했다."
+    },
+    {
+      "step": 1,
+      "name": "menu-list-m02",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "menu-detail-m03",
+      "status": "pending"
+    }
+  ],
+  "created_at": "2026-06-17T21:42:39+0900"
 }

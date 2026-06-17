@@ -27,7 +27,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.cafeminsu.ui.feature.cart.CartScreen
 import com.cafeminsu.ui.feature.gifticon.GifticonScreen
-import com.cafeminsu.ui.feature.home.HomeScreen
+import com.cafeminsu.ui.feature.home.HomeRoute
 import com.cafeminsu.ui.feature.menu.MenuDetailScreen
 import com.cafeminsu.ui.feature.menu.MenuScreen
 import com.cafeminsu.ui.feature.my.MyScreen
@@ -72,7 +72,12 @@ fun AppNavHost(
                 .padding(innerPadding)
                 .fillMaxSize(),
         ) {
-            composable(Routes.HOME) { HomeScreen() }
+            composable(Routes.HOME) {
+                HomeRoute(
+                    onMenuClick = { navController.navigate(Routes.MENU_DETAIL) },
+                    onBrowseMenuClick = { navController.navigate(Routes.MENU) },
+                )
+            }
             composable(Routes.MENU) { MenuScreen() }
             composable(Routes.MENU_DETAIL) { MenuDetailScreen() }
             composable(Routes.VOICE) { VoiceScreen() }
