@@ -6,10 +6,16 @@ import com.cafeminsu.domain.model.PaymentRequest
 import com.cafeminsu.domain.model.PaymentResult
 import com.cafeminsu.domain.model.PaymentStatus
 import com.cafeminsu.domain.repository.PaymentRepository
+import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class MockPaymentRepository(
-    private val nowMillis: () -> Long = { System.currentTimeMillis() },
+    private val nowMillis: () -> Long,
 ) : PaymentRepository {
+    @Inject
+    constructor() : this(nowMillis = { System.currentTimeMillis() })
+
     private val paymentsByIdempotencyKey = mutableMapOf<String, PaymentResult>()
 
     override suspend fun pay(request: PaymentRequest): AppResult<PaymentResult> {

@@ -12,11 +12,20 @@ import com.cafeminsu.domain.model.SelectedOption
 import com.cafeminsu.domain.repository.CartRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class MockCartRepository(
-    private val menuItems: List<MenuItem> = MockData.menuItems,
-    private val minimumOrderAmount: Int = MockData.minimumOrderAmount,
+    private val menuItems: List<MenuItem>,
+    private val minimumOrderAmount: Int,
 ) : CartRepository {
+    @Inject
+    constructor() : this(
+        menuItems = MockData.menuItems,
+        minimumOrderAmount = MockData.minimumOrderAmount,
+    )
+
     private val cartState = MutableStateFlow(AppResult.Success(emptyCart()))
     private var nextCartItemNumber = 1
 

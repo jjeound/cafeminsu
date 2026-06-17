@@ -7,10 +7,15 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.hilt.navigation.compose.hiltViewModel
 import com.cafeminsu.ui.theme.CafeTheme
 
 @Composable
-fun HomeScreen(modifier: Modifier = Modifier) {
+@Suppress("UNUSED_PARAMETER")
+fun HomeScreen(
+    modifier: Modifier = Modifier,
+    viewModel: HomeViewModel = hiltViewModel(),
+) {
     Box(
         modifier = modifier
             .fillMaxSize()

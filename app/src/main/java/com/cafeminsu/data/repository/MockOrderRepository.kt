@@ -10,10 +10,16 @@ import com.cafeminsu.domain.repository.OrderRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class MockOrderRepository(
-    private val nowMillis: () -> Long = { System.currentTimeMillis() },
+    private val nowMillis: () -> Long,
 ) : OrderRepository {
+    @Inject
+    constructor() : this(nowMillis = { System.currentTimeMillis() })
+
     private val orders = MutableStateFlow<List<Order>>(emptyList())
     private var nextOrderNumber = 1
 

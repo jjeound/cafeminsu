@@ -11,10 +11,16 @@ import com.cafeminsu.domain.repository.RewardRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class MockRewardRepository(
-    private val nowMillis: () -> Long = { System.currentTimeMillis() },
+    private val nowMillis: () -> Long,
 ) : RewardRepository {
+    @Inject
+    constructor() : this(nowMillis = { System.currentTimeMillis() })
+
     private val stampCard = MutableStateFlow(MockData.initialStampCard)
     private val gifticons = MutableStateFlow(MockData.initialGifticons)
 

@@ -9,11 +9,20 @@ import com.cafeminsu.domain.repository.MenuRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
+import javax.inject.Inject
+import javax.inject.Singleton
 
+@Singleton
 class MockMenuRepository(
-    categories: List<MenuCategory> = MockData.menuCategories,
-    menuItems: List<MenuItem> = MockData.menuItems,
+    categories: List<MenuCategory>,
+    menuItems: List<MenuItem>,
 ) : MenuRepository {
+    @Inject
+    constructor() : this(
+        categories = MockData.menuCategories,
+        menuItems = MockData.menuItems,
+    )
+
     private val categoryState = MutableStateFlow(categories.sortedBy { it.sortOrder })
     private val menuState = MutableStateFlow(menuItems)
 
