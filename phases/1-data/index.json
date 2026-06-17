@@ -13,7 +13,10 @@
     {
       "step": 1,
       "name": "mock-repositories",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-06-17T21:03:37+0900",
+      "summary": "인메모리 Mock Repository 6종과 시드 데이터, 동작 검증 단위 테스트를 추가",
+      "completed_at": "2026-06-17T21:13:47+0900"
     },
     {
       "step": 2,
