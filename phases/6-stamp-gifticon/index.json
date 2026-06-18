@@ -2,7 +2,18 @@
   "project": "CafeMinsu",
   "phase": "stamp-gifticon",
   "steps": [
-    { "step": 0, "name": "stamp-m08", "status": "pending" },
-    { "step": 1, "name": "gifticon-m09", "status": "pending" }
-  ]
+    {
+      "step": 0,
+      "name": "stamp-m08",
+      "status": "completed",
+      "started_at": "2026-06-18T21:05:48+0900",
+      "summary": "M-08 스탬프 보호 화면, ViewModel 상태 매핑, 진행도/적립 내역 UI와 테스트를 구현"
+    },
+    {
+      "step": 1,
+      "name": "gifticon-m09",
+      "status": "pending"
+    }
+  ],
+  "created_at": "2026-06-18T21:05:48+0900"
 }

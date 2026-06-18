@@ -10,20 +10,34 @@ import org.junit.Test
 
 class MockSessionRepositoryTest {
     @Test
-    fun observeAuthStateStartsAsGuest() = runBlocking {
+    fun observeAuthStateStartsAsDemoAuthenticatedUser() = runBlocking {
         val repository = MockSessionRepository()
 
         repository.observeAuthState().test {
-            assertEquals(AuthState.Guest, awaitItem())
+            val authState = awaitItem()
+            assertTrue(authState is AuthState.Authenticated)
+            val authenticated = authState as AuthState.Authenticated
+            assertEquals("demo-user", authenticated.user.id)
+            assertEquals("민수", authenticated.user.displayName)
             cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    fun refreshOnceAndClearSessionReturnGuestWithoutTokens() = runBlocking {
+    fun refreshOnceReturnsDemoAuthenticatedUserWithoutTokens() = runBlocking {
         val repository = MockSessionRepository()
 
-        assertEquals(AuthState.Guest, repository.refreshOnce().successData())
+        val authState = repository.refreshOnce().successData()
+        assertTrue(authState is AuthState.Authenticated)
+        val authenticated = authState as AuthState.Authenticated
+        assertEquals("demo-user", authenticated.user.id)
+        assertEquals("민수", authenticated.user.displayName)
+    }
+
+    @Test
+    fun clearSessionReturnsGuestWithoutTokens() = runBlocking {
+        val repository = MockSessionRepository()
+
         assertTrue(repository.clearSession() is AppResult.Success<*>)
 
         repository.observeAuthState().test {

@@ -35,7 +35,7 @@ import com.cafeminsu.ui.feature.menu.MenuRoute
 import com.cafeminsu.ui.feature.my.MyScreen
 import com.cafeminsu.ui.feature.order.OrderStatusRoute
 import com.cafeminsu.ui.feature.payment.PaymentRoute
-import com.cafeminsu.ui.feature.stamp.StampScreen
+import com.cafeminsu.ui.feature.stamp.StampRoute
 import com.cafeminsu.ui.feature.voice.VoiceScreen
 import com.cafeminsu.ui.theme.CafeTheme
 
@@ -139,7 +139,12 @@ fun AppNavHost(
             ) {
                 OrderStatusRoute()
             }
-            composable(Routes.STAMP) { StampScreen() }
+            composable(Routes.STAMP) {
+                StampRoute(
+                    onBrowseMenuClick = { navController.navigate(Routes.MENU) },
+                    onLoginClick = {},
+                )
+            }
             composable(Routes.GIFTICON) { GifticonScreen() }
             composable(Routes.MY) { MyScreen() }
         }
