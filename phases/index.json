@@ -49,6 +49,12 @@
       "status": "completed",
       "summary": "M-08 스탬프 적립 · M-09 기프티콘(보호 화면, 민감값 보안) — MVVM + TDD",
       "completed_at": "2026-06-18T21:22:51+0900"
+    },
+    {
+      "dir": "7-my",
+      "name": "my",
+      "status": "pending",
+      "summary": "M-10 마이페이지(프로필·주문내역·로그아웃) — MVVM + TDD"
     }
   ]
 }

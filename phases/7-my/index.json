@@ -1,0 +1,7 @@
+{
+  "project": "CafeMinsu",
+  "phase": "my",
+  "steps": [
+    { "step": 0, "name": "my-m10", "status": "pending" }
+  ]
+}
