@@ -25,8 +25,9 @@
     {
       "dir": "3-home-menu",
       "name": "home-menu",
-      "status": "pending",
-      "summary": "M-01 홈 · M-02 메뉴목록 · M-03 메뉴상세(담기) — MVVM + TDD"
+      "status": "completed",
+      "summary": "M-01 홈 · M-02 메뉴목록 · M-03 메뉴상세(담기) — MVVM + TDD",
+      "completed_at": "2026-06-18T20:25:51+0900"
     }
   ]
 }
