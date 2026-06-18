@@ -30,7 +30,7 @@ import androidx.navigation.navArgument
 import com.cafeminsu.ui.feature.cart.CartScreen
 import com.cafeminsu.ui.feature.gifticon.GifticonScreen
 import com.cafeminsu.ui.feature.home.HomeRoute
-import com.cafeminsu.ui.feature.menu.MenuDetailScreen
+import com.cafeminsu.ui.feature.menu.MenuDetailRoute
 import com.cafeminsu.ui.feature.menu.MenuRoute
 import com.cafeminsu.ui.feature.my.MyScreen
 import com.cafeminsu.ui.feature.order.OrderStatusScreen
@@ -90,15 +90,15 @@ fun AppNavHost(
                 )
             }
             composable(
-                route = Routes.MENU_DETAIL_PATTERN,
+                route = Routes.MENU_DETAIL,
                 arguments = listOf(
                     navArgument(Routes.MENU_DETAIL_MENU_ID) {
                         type = NavType.StringType
                     },
                 ),
-            ) { backStackEntry ->
-                MenuDetailScreen(
-                    menuItemId = backStackEntry.arguments?.getString(Routes.MENU_DETAIL_MENU_ID),
+            ) {
+                MenuDetailRoute(
+                    onAddedToCart = { navController.navigate(Routes.CART) },
                 )
             }
             composable(Routes.VOICE) { VoiceScreen() }

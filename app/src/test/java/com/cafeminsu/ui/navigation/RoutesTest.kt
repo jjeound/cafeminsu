@@ -8,8 +8,7 @@ class RoutesTest {
     fun routesMatchMCodeContract() {
         assertEquals("m01", Routes.HOME)
         assertEquals("m02", Routes.MENU)
-        assertEquals("m03", Routes.MENU_DETAIL)
-        assertEquals("m03/{menuItemId}", Routes.MENU_DETAIL_PATTERN)
+        assertEquals("m03/{menuItemId}", Routes.MENU_DETAIL)
         assertEquals("m04", Routes.VOICE)
         assertEquals("m05", Routes.CART)
         assertEquals("m06", Routes.PAYMENT)
