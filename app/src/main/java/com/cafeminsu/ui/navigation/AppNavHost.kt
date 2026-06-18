@@ -28,7 +28,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.cafeminsu.ui.feature.cart.CartRoute
-import com.cafeminsu.ui.feature.gifticon.GifticonScreen
+import com.cafeminsu.ui.feature.gifticon.GifticonDetailRoute
+import com.cafeminsu.ui.feature.gifticon.GifticonRoute
 import com.cafeminsu.ui.feature.home.HomeRoute
 import com.cafeminsu.ui.feature.menu.MenuDetailRoute
 import com.cafeminsu.ui.feature.menu.MenuRoute
@@ -145,7 +146,27 @@ fun AppNavHost(
                     onLoginClick = {},
                 )
             }
-            composable(Routes.GIFTICON) { GifticonScreen() }
+            composable(Routes.GIFTICON) {
+                GifticonRoute(
+                    onGifticonClick = { gifticonId ->
+                        navController.navigate(Routes.gifticonDetail(gifticonId))
+                    },
+                    onStampClick = { navController.navigate(Routes.STAMP) },
+                    onLoginClick = {},
+                )
+            }
+            composable(
+                route = Routes.GIFTICON_DETAIL,
+                arguments = listOf(
+                    navArgument(Routes.GIFTICON_ID) {
+                        type = NavType.StringType
+                    },
+                ),
+            ) {
+                GifticonDetailRoute(
+                    onLoginClick = {},
+                )
+            }
             composable(Routes.MY) { MyScreen() }
         }
     }

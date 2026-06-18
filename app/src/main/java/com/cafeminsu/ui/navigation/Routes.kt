@@ -16,9 +16,13 @@ object Routes {
     const val ORDER_STATUS = "$ORDER_STATUS_BASE/{$ORDER_STATUS_ORDER_ID}"
     const val STAMP = "m08"
     const val GIFTICON = "m09"
+    const val GIFTICON_ID = "gifticonId"
+    private const val GIFTICON_DETAIL_BASE = "m09"
+    const val GIFTICON_DETAIL = "$GIFTICON_DETAIL_BASE/{$GIFTICON_ID}"
     const val MY = "m10"
 
     fun menuDetail(menuItemId: String): String = "$MENU_DETAIL_BASE/$menuItemId"
     fun payment(orderId: String): String = "$PAYMENT_BASE/$orderId"
     fun orderStatus(orderId: String): String = "$ORDER_STATUS_BASE/$orderId"
+    fun gifticonDetail(gifticonId: String): String = "$GIFTICON_DETAIL_BASE/$gifticonId"
 }

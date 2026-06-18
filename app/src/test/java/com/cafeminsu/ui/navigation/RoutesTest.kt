@@ -15,6 +15,7 @@ class RoutesTest {
         assertEquals("m07/{orderId}", Routes.ORDER_STATUS)
         assertEquals("m08", Routes.STAMP)
         assertEquals("m09", Routes.GIFTICON)
+        assertEquals("m09/{gifticonId}", Routes.GIFTICON_DETAIL)
         assertEquals("m10", Routes.MY)
     }
 
@@ -31,5 +32,10 @@ class RoutesTest {
     @Test
     fun paymentRouteCarriesOrderId() {
         assertEquals("m06/order-42", Routes.payment("order-42"))
+    }
+
+    @Test
+    fun gifticonDetailRouteCarriesGifticonId() {
+        assertEquals("m09/gifticon-1", Routes.gifticonDetail("gifticon-1"))
     }
 }
