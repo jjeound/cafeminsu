@@ -16,7 +16,7 @@
       "status": "completed",
       "summary": "VoiceRecognizer 추상화, Android SpeechRecognizer 래퍼, RECORD_AUDIO 권한, Hilt 바인딩을 추가",
       "started_at": "2026-06-19T01:33:42+0900",
-      "completed_at": "2026-06-19T01:37:11+0900"
+      "completed_at": "2026-06-19T01:38:10+0900"
     },
     {
       "step": 2,
