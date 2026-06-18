@@ -39,8 +39,9 @@
     {
       "dir": "5-payment",
       "name": "payment",
-      "status": "pending",
-      "summary": "M-06 결제(Mock PG, 멱등키·낙관금지) + 장바구니→결제→주문상태 플로우 + 스탬프 적립"
+      "status": "completed",
+      "summary": "M-06 결제(Mock PG, 멱등키·낙관금지) + 장바구니→결제→주문상태 플로우 + 스탬프 적립",
+      "completed_at": "2026-06-18T21:03:34+0900"
     }
   ]
 }
