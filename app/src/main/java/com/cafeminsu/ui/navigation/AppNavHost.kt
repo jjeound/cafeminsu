@@ -34,7 +34,7 @@ import com.cafeminsu.ui.feature.menu.MenuDetailRoute
 import com.cafeminsu.ui.feature.menu.MenuRoute
 import com.cafeminsu.ui.feature.my.MyScreen
 import com.cafeminsu.ui.feature.order.OrderStatusRoute
-import com.cafeminsu.ui.feature.payment.PaymentScreen
+import com.cafeminsu.ui.feature.payment.PaymentRoute
 import com.cafeminsu.ui.feature.stamp.StampScreen
 import com.cafeminsu.ui.feature.voice.VoiceScreen
 import com.cafeminsu.ui.theme.CafeTheme
@@ -110,7 +110,20 @@ fun AppNavHost(
                     onBrowseMenuClick = { navController.navigate(Routes.MENU) },
                 )
             }
-            composable(Routes.PAYMENT) { PaymentScreen() }
+            composable(
+                route = Routes.PAYMENT,
+                arguments = listOf(
+                    navArgument(Routes.PAYMENT_ORDER_ID) {
+                        type = NavType.StringType
+                    },
+                ),
+            ) {
+                PaymentRoute(
+                    onPaymentApproved = {
+                        // Payment -> order-status navigation is wired in payment step 1.
+                    },
+                )
+            }
             composable(
                 route = Routes.ORDER_STATUS,
                 arguments = listOf(
