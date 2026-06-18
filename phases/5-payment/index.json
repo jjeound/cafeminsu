@@ -8,7 +8,7 @@
       "status": "completed",
       "started_at": "2026-06-18T20:49:04+0900",
       "summary": "M-06 결제 화면과 PaymentViewModel을 Mock PG·멱등키·비낙관 승인 처리로 TDD 구현",
-      "completed_at": "2026-06-18T20:57:00+0900"
+      "completed_at": "2026-06-18T20:58:42+0900"
     },
     {
       "step": 1,
