@@ -53,8 +53,9 @@
     {
       "dir": "7-my",
       "name": "my",
-      "status": "pending",
-      "summary": "M-10 마이페이지(프로필·주문내역·로그아웃) — MVVM + TDD"
+      "status": "completed",
+      "summary": "M-10 마이페이지(프로필·주문내역·로그아웃) — MVVM + TDD",
+      "completed_at": "2026-06-19T01:24:58+0900"
     }
   ]
 }
