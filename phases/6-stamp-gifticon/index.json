@@ -7,7 +7,8 @@
       "name": "stamp-m08",
       "status": "completed",
       "started_at": "2026-06-18T21:05:48+0900",
-      "summary": "M-08 스탬프 보호 화면, ViewModel 상태 매핑, 진행도/적립 내역 UI와 테스트를 구현"
+      "summary": "M-08 스탬프 보호 화면, ViewModel 상태 매핑, 진행도/적립 내역 UI와 테스트를 구현",
+      "completed_at": "2026-06-18T21:12:53+0900"
     },
     {
       "step": 1,
