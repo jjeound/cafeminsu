@@ -104,8 +104,8 @@ fun AppNavHost(
             composable(Routes.VOICE) { VoiceScreen() }
             composable(Routes.CART) {
                 CartRoute(
-                    onOrderCreated = { orderId ->
-                        navController.navigate(Routes.orderStatus(orderId))
+                    onPaymentRequested = { orderId ->
+                        navController.navigate(Routes.payment(orderId))
                     },
                     onBrowseMenuClick = { navController.navigate(Routes.MENU) },
                 )
@@ -119,8 +119,13 @@ fun AppNavHost(
                 ),
             ) {
                 PaymentRoute(
-                    onPaymentApproved = {
-                        // Payment -> order-status navigation is wired in payment step 1.
+                    onPaymentApproved = { orderId ->
+                        navController.navigate(Routes.orderStatus(orderId)) {
+                            popUpTo(navController.graph.findStartDestination().id) {
+                                saveState = false
+                            }
+                            launchSingleTop = true
+                        }
                     },
                 )
             }

@@ -31,5 +31,5 @@ sealed interface CartUiState {
 }
 
 sealed interface CartEvent {
-    data class NavigateToOrderStatus(val orderId: String) : CartEvent
+    data class NavigateToPayment(val orderId: String) : CartEvent
 }

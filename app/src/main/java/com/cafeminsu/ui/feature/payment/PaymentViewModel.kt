@@ -11,6 +11,7 @@ import com.cafeminsu.domain.model.PaymentResult
 import com.cafeminsu.domain.model.PaymentStatus
 import com.cafeminsu.domain.repository.OrderRepository
 import com.cafeminsu.domain.repository.PaymentRepository
+import com.cafeminsu.domain.repository.RewardRepository
 import com.cafeminsu.ui.navigation.Routes
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.util.UUID
@@ -31,6 +32,7 @@ class PaymentViewModel @Inject constructor(
     savedStateHandle: SavedStateHandle,
     private val paymentRepository: PaymentRepository,
     private val orderRepository: OrderRepository,
+    private val rewardRepository: RewardRepository,
 ) : ViewModel() {
     private val orderId = savedStateHandle.get<String>(Routes.PAYMENT_ORDER_ID).orEmpty()
     private val _uiState = MutableStateFlow<PaymentUiState>(PaymentUiState.Loading)
@@ -205,7 +207,18 @@ class PaymentViewModel @Inject constructor(
 
     private suspend fun approvePayment(approvedOrderId: String) {
         finishPayment(PaymentProgress.Approved)
+        grantStampForApprovedOrder(approvedOrderId)
         _events.emit(PaymentEvent.PaymentApproved(approvedOrderId))
+    }
+
+    private suspend fun grantStampForApprovedOrder(orderId: String) {
+        try {
+            rewardRepository.grantStampsForPaidOrder(orderId)
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Throwable) {
+            // Non-fatal: payment success remains authoritative; stamp reconciliation can retry later.
+        }
     }
 
     private fun finishPayment(progress: PaymentProgress) {

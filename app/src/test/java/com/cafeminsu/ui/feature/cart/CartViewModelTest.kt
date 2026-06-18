@@ -201,7 +201,7 @@ class CartViewModelTest {
                 viewModel.onCheckout()
 
                 val event = awaitItem()
-                assertEquals(CartEvent.NavigateToOrderStatus("order-42"), event)
+                assertEquals(CartEvent.NavigateToPayment("order-42"), event)
                 assertEquals(1, orderRepository.createOrderCalls)
                 assertEquals(10_000, orderRepository.createdCarts.single().subtotal)
 

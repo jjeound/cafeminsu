@@ -7,13 +7,17 @@ import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.Cart
 import com.cafeminsu.domain.model.CartItem
+import com.cafeminsu.domain.model.Gifticon
 import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.OrderStatus
 import com.cafeminsu.domain.model.PaymentRequest
 import com.cafeminsu.domain.model.PaymentResult
 import com.cafeminsu.domain.model.PaymentStatus
+import com.cafeminsu.domain.model.StampCard
+import com.cafeminsu.domain.model.StampEvent
 import com.cafeminsu.domain.repository.OrderRepository
 import com.cafeminsu.domain.repository.PaymentRepository
+import com.cafeminsu.domain.repository.RewardRepository
 import com.cafeminsu.ui.navigation.Routes
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
@@ -58,6 +62,71 @@ class PaymentViewModelTest {
                 assertEquals(1, paymentRepository.payRequests.size)
                 assertEquals("order-1", paymentRepository.payRequests.single().orderId)
                 assertEquals(12_000, paymentRepository.payRequests.single().amount)
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun approvedPaymentGrantsStampBeforeSuccessEvent() = runTest {
+        val rewardGate = CompletableDeferred<Unit>()
+        val rewardRepository = FakePaymentRewardRepository(grantGate = rewardGate)
+        val paymentRepository = FakePaymentRepository(
+            payResults = mutableListOf(
+                AppResult.Success(paymentResult(status = PaymentStatus.Approved)),
+            ),
+        )
+        val viewModel = viewModel(
+            paymentRepository = paymentRepository,
+            rewardRepository = rewardRepository,
+        )
+
+        viewModel.uiState.test {
+            awaitContent()
+
+            viewModel.events.test {
+                viewModel.onPay()
+
+                assertEquals(listOf("order-1"), rewardRepository.grantOrderIds)
+                expectNoEvents()
+
+                rewardGate.complete(Unit)
+
+                assertEquals(PaymentEvent.PaymentApproved("order-1"), awaitItem())
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun stampGrantFailureDoesNotBlockApprovedPaymentEvent() = runTest {
+        val rewardRepository = FakePaymentRewardRepository(
+            grantResult = AppResult.Failure(DomainError.Unknown),
+        )
+        val paymentRepository = FakePaymentRepository(
+            payResults = mutableListOf(
+                AppResult.Success(paymentResult(status = PaymentStatus.Approved)),
+            ),
+        )
+        val viewModel = viewModel(
+            paymentRepository = paymentRepository,
+            rewardRepository = rewardRepository,
+        )
+
+        viewModel.uiState.test {
+            awaitContent()
+
+            viewModel.events.test {
+                viewModel.onPay()
+
+                assertEquals(PaymentEvent.PaymentApproved("order-1"), awaitItem())
+                assertEquals(listOf("order-1"), rewardRepository.grantOrderIds)
 
                 cancelAndIgnoreRemainingEvents()
             }
@@ -223,11 +292,13 @@ class PaymentViewModelTest {
             initialResult = AppResult.Success(sampleOrder(id = orderId)),
         ),
         paymentRepository: FakePaymentRepository = FakePaymentRepository(),
+        rewardRepository: FakePaymentRewardRepository = FakePaymentRewardRepository(),
     ): PaymentViewModel =
         PaymentViewModel(
             savedStateHandle = SavedStateHandle(mapOf(Routes.PAYMENT_ORDER_ID to orderId)),
             paymentRepository = paymentRepository,
             orderRepository = orderRepository,
+            rewardRepository = rewardRepository,
         )
 
     private suspend fun ReceiveTurbine<PaymentUiState>.awaitContent(): PaymentUiState.Content {
@@ -300,6 +371,31 @@ private data class StatusRequest(
     val idempotencyKey: String,
 )
 
+private class FakePaymentRewardRepository(
+    private val grantResult: AppResult<StampCard> = AppResult.Success(sampleStampCard()),
+    private val grantGate: CompletableDeferred<Unit>? = null,
+) : RewardRepository {
+    val grantOrderIds = mutableListOf<String>()
+
+    override fun observeStampCard(): Flow<AppResult<StampCard>> =
+        MutableStateFlow(AppResult.Success(sampleStampCard()))
+
+    override suspend fun grantStampsForPaidOrder(orderId: String): AppResult<StampCard> {
+        grantOrderIds += orderId
+        grantGate?.await()
+        return grantResult
+    }
+
+    override fun observeGifticons(): Flow<AppResult<List<Gifticon>>> =
+        MutableStateFlow(AppResult.Success(emptyList()))
+
+    override suspend fun getGifticon(id: String): AppResult<Gifticon> =
+        AppResult.Failure(DomainError.NotFound)
+
+    override suspend fun markGifticonUsed(id: String): AppResult<Gifticon> =
+        AppResult.Failure(DomainError.NotFound)
+}
+
 private fun paymentResult(
     orderId: String = "order-1",
     status: PaymentStatus,
@@ -330,6 +426,21 @@ private fun sampleOrder(
         totalAmount = 12_000,
         status = OrderStatus.PendingPayment,
         createdAtMillis = 1_800_000_000_000L,
+    )
+
+private fun sampleStampCard(): StampCard =
+    StampCard(
+        userId = "user-1",
+        currentCount = 2,
+        goalCount = 10,
+        history = listOf(
+            StampEvent(
+                id = "stamp-1",
+                orderId = "order-old",
+                count = 1,
+                createdAtMillis = 1_800_000_000_000L,
+            ),
+        ),
     )
 
 @OptIn(ExperimentalCoroutinesApi::class)

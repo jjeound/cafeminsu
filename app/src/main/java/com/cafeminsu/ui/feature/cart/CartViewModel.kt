@@ -126,7 +126,7 @@ class CartViewModel @Inject constructor(
                 latestCart?.let { currentCart ->
                     _uiState.value = currentCart.toCartUiState(checkoutInProgress = false)
                 }
-                _events.emit(CartEvent.NavigateToOrderStatus(result.data.id))
+                _events.emit(CartEvent.NavigateToPayment(result.data.id))
             }
 
             is AppResult.Failure -> failCheckout(result.error)

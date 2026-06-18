@@ -41,7 +41,7 @@ import java.util.Locale
 
 @Composable
 fun CartRoute(
-    onOrderCreated: (String) -> Unit,
+    onPaymentRequested: (String) -> Unit,
     onBrowseMenuClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: CartViewModel = hiltViewModel(),
@@ -51,7 +51,7 @@ fun CartRoute(
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {
-                is CartEvent.NavigateToOrderStatus -> onOrderCreated(event.orderId)
+                is CartEvent.NavigateToPayment -> onPaymentRequested(event.orderId)
             }
         }
     }
