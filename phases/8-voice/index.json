@@ -7,7 +7,8 @@
       "name": "order-parser",
       "status": "completed",
       "summary": "규칙기반 음성 주문 파서와 ParsedOrder 도메인 모델을 TDD로 추가",
-      "started_at": "2026-06-19T01:27:09+0900"
+      "started_at": "2026-06-19T01:27:09+0900",
+      "completed_at": "2026-06-19T01:33:42+0900"
     },
     {
       "step": 1,
