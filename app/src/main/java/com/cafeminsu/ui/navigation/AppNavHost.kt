@@ -33,7 +33,7 @@ import com.cafeminsu.ui.feature.gifticon.GifticonRoute
 import com.cafeminsu.ui.feature.home.HomeRoute
 import com.cafeminsu.ui.feature.menu.MenuDetailRoute
 import com.cafeminsu.ui.feature.menu.MenuRoute
-import com.cafeminsu.ui.feature.my.MyScreen
+import com.cafeminsu.ui.feature.my.MyRoute
 import com.cafeminsu.ui.feature.order.OrderStatusRoute
 import com.cafeminsu.ui.feature.payment.PaymentRoute
 import com.cafeminsu.ui.feature.stamp.StampRoute
@@ -167,7 +167,15 @@ fun AppNavHost(
                     onLoginClick = {},
                 )
             }
-            composable(Routes.MY) { MyScreen() }
+            composable(Routes.MY) {
+                MyRoute(
+                    onOrderClick = { orderId ->
+                        navController.navigate(Routes.orderStatus(orderId))
+                    },
+                    onBrowseMenuClick = { navController.navigate(Routes.MENU) },
+                    onLoginClick = {},
+                )
+            }
         }
     }
 }
