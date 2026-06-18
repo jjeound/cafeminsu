@@ -1,0 +1,8 @@
+{
+  "project": "CafeMinsu",
+  "phase": "stamp-gifticon",
+  "steps": [
+    { "step": 0, "name": "stamp-m08", "status": "pending" },
+    { "step": 1, "name": "gifticon-m09", "status": "pending" }
+  ]
+}
