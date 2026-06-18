@@ -1,0 +1,8 @@
+{
+  "project": "CafeMinsu",
+  "phase": "cart-order",
+  "steps": [
+    { "step": 0, "name": "cart-m05", "status": "pending" },
+    { "step": 1, "name": "order-status-m07", "status": "pending" }
+  ]
+}

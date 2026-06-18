@@ -28,6 +28,12 @@
       "status": "completed",
       "summary": "M-01 홈 · M-02 메뉴목록 · M-03 메뉴상세(담기) — MVVM + TDD",
       "completed_at": "2026-06-18T20:25:51+0900"
+    },
+    {
+      "dir": "4-cart-order",
+      "name": "cart-order",
+      "status": "pending",
+      "summary": "M-05 장바구니(주문 생성) · M-07 주문 상태 — MVVM + TDD"
     }
   ]
 }
