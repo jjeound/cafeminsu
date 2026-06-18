@@ -56,6 +56,12 @@
       "status": "completed",
       "summary": "M-10 마이페이지(프로필·주문내역·로그아웃) — MVVM + TDD",
       "completed_at": "2026-06-19T01:24:58+0900"
+    },
+    {
+      "dir": "8-voice",
+      "name": "voice",
+      "status": "pending",
+      "summary": "M-04 음성 AI 주문 — 규칙기반 파서 + 온디바이스 STT + 화면(MVVM, TDD)"
     }
   ]
 }

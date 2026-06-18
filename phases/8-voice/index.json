@@ -1,0 +1,9 @@
+{
+  "project": "CafeMinsu",
+  "phase": "voice",
+  "steps": [
+    { "step": 0, "name": "order-parser", "status": "pending" },
+    { "step": 1, "name": "stt-permission", "status": "pending" },
+    { "step": 2, "name": "voice-screen-m04", "status": "pending" }
+  ]
+}
