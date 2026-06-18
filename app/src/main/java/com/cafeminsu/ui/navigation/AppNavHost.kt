@@ -33,7 +33,7 @@ import com.cafeminsu.ui.feature.home.HomeRoute
 import com.cafeminsu.ui.feature.menu.MenuDetailRoute
 import com.cafeminsu.ui.feature.menu.MenuRoute
 import com.cafeminsu.ui.feature.my.MyScreen
-import com.cafeminsu.ui.feature.order.OrderStatusScreen
+import com.cafeminsu.ui.feature.order.OrderStatusRoute
 import com.cafeminsu.ui.feature.payment.PaymentScreen
 import com.cafeminsu.ui.feature.stamp.StampScreen
 import com.cafeminsu.ui.feature.voice.VoiceScreen
@@ -104,14 +104,23 @@ fun AppNavHost(
             composable(Routes.VOICE) { VoiceScreen() }
             composable(Routes.CART) {
                 CartRoute(
-                    onOrderCreated = {
-                        navController.navigate(Routes.ORDER_STATUS)
+                    onOrderCreated = { orderId ->
+                        navController.navigate(Routes.orderStatus(orderId))
                     },
                     onBrowseMenuClick = { navController.navigate(Routes.MENU) },
                 )
             }
             composable(Routes.PAYMENT) { PaymentScreen() }
-            composable(Routes.ORDER_STATUS) { OrderStatusScreen() }
+            composable(
+                route = Routes.ORDER_STATUS,
+                arguments = listOf(
+                    navArgument(Routes.ORDER_STATUS_ORDER_ID) {
+                        type = NavType.StringType
+                    },
+                ),
+            ) {
+                OrderStatusRoute()
+            }
             composable(Routes.STAMP) { StampScreen() }
             composable(Routes.GIFTICON) { GifticonScreen() }
             composable(Routes.MY) { MyScreen() }

@@ -9,10 +9,13 @@ object Routes {
     const val VOICE = "m04"
     const val CART = "m05"
     const val PAYMENT = "m06"
-    const val ORDER_STATUS = "m07"
+    const val ORDER_STATUS_ORDER_ID = "orderId"
+    private const val ORDER_STATUS_BASE = "m07"
+    const val ORDER_STATUS = "$ORDER_STATUS_BASE/{$ORDER_STATUS_ORDER_ID}"
     const val STAMP = "m08"
     const val GIFTICON = "m09"
     const val MY = "m10"
 
     fun menuDetail(menuItemId: String): String = "$MENU_DETAIL_BASE/$menuItemId"
+    fun orderStatus(orderId: String): String = "$ORDER_STATUS_BASE/$orderId"
 }

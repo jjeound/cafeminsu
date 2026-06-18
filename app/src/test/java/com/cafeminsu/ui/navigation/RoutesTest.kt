@@ -12,7 +12,7 @@ class RoutesTest {
         assertEquals("m04", Routes.VOICE)
         assertEquals("m05", Routes.CART)
         assertEquals("m06", Routes.PAYMENT)
-        assertEquals("m07", Routes.ORDER_STATUS)
+        assertEquals("m07/{orderId}", Routes.ORDER_STATUS)
         assertEquals("m08", Routes.STAMP)
         assertEquals("m09", Routes.GIFTICON)
         assertEquals("m10", Routes.MY)
@@ -21,5 +21,10 @@ class RoutesTest {
     @Test
     fun menuDetailRouteCarriesMenuItemId() {
         assertEquals("m03/americano", Routes.menuDetail("americano"))
+    }
+
+    @Test
+    fun orderStatusRouteCarriesOrderId() {
+        assertEquals("m07/order-42", Routes.orderStatus("order-42"))
     }
 }
