@@ -37,7 +37,7 @@ import com.cafeminsu.ui.feature.my.MyRoute
 import com.cafeminsu.ui.feature.order.OrderStatusRoute
 import com.cafeminsu.ui.feature.payment.PaymentRoute
 import com.cafeminsu.ui.feature.stamp.StampRoute
-import com.cafeminsu.ui.feature.voice.VoiceScreen
+import com.cafeminsu.ui.feature.voice.VoiceRoute
 import com.cafeminsu.ui.theme.CafeTheme
 
 @Composable
@@ -81,6 +81,7 @@ fun AppNavHost(
                         navController.navigate(Routes.menuDetail(menuItemId))
                     },
                     onBrowseMenuClick = { navController.navigate(Routes.MENU) },
+                    onVoiceOrderClick = { navController.navigate(Routes.VOICE) },
                 )
             }
             composable(Routes.MENU) {
@@ -102,7 +103,12 @@ fun AppNavHost(
                     onAddedToCart = { navController.navigate(Routes.CART) },
                 )
             }
-            composable(Routes.VOICE) { VoiceScreen() }
+            composable(Routes.VOICE) {
+                VoiceRoute(
+                    onNavigateToCart = { navController.navigate(Routes.CART) },
+                    onNavigateToMenu = { navController.navigate(Routes.MENU) },
+                )
+            }
             composable(Routes.CART) {
                 CartRoute(
                     onPaymentRequested = { orderId ->

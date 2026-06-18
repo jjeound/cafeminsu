@@ -34,12 +34,14 @@ class HomeScreenTest {
                     ),
                     onMenuClick = {},
                     onBrowseMenuClick = {},
+                    onVoiceOrderClick = {},
                     onRetry = {},
                 )
             }
         }
 
         composeRule.onNodeWithText("어서 오세요, 카페민수입니다").assertIsDisplayed()
+        composeRule.onNodeWithText("음성으로 주문하기").assertIsDisplayed()
         composeRule.onNodeWithText("추천 메뉴").assertIsDisplayed()
         composeRule.onNodeWithText("민수 라떼").assertIsDisplayed()
     }

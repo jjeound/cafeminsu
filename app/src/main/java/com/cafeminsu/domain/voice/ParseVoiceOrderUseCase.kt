@@ -4,8 +4,9 @@ import com.cafeminsu.domain.model.MenuItem
 import com.cafeminsu.domain.model.MenuOption
 import com.cafeminsu.domain.model.MenuOptionGroup
 import com.cafeminsu.domain.model.SelectedOption
+import javax.inject.Inject
 
-class ParseVoiceOrderUseCase {
+class ParseVoiceOrderUseCase @Inject constructor() {
     operator fun invoke(transcript: String, menu: List<MenuItem>): ParsedOrder {
         val fragments = splitTranscript(transcript)
         if (fragments.isEmpty()) {

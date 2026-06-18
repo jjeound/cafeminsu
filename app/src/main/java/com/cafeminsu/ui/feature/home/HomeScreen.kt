@@ -19,6 +19,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cafeminsu.ui.components.CafeButton
 import com.cafeminsu.ui.components.CafeCard
 import com.cafeminsu.ui.components.CafeCardType
 import com.cafeminsu.ui.components.EmptyView
@@ -30,6 +31,7 @@ import com.cafeminsu.ui.theme.CafeTheme
 fun HomeRoute(
     onMenuClick: (String) -> Unit,
     onBrowseMenuClick: () -> Unit,
+    onVoiceOrderClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
@@ -39,6 +41,7 @@ fun HomeRoute(
         state = state,
         onMenuClick = onMenuClick,
         onBrowseMenuClick = onBrowseMenuClick,
+        onVoiceOrderClick = onVoiceOrderClick,
         onRetry = viewModel::retry,
         modifier = modifier,
     )
@@ -49,6 +52,7 @@ fun HomeScreen(
     state: HomeUiState,
     onMenuClick: (String) -> Unit,
     onBrowseMenuClick: () -> Unit,
+    onVoiceOrderClick: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -74,11 +78,13 @@ fun HomeScreen(
                 is HomeUiState.Content -> HomeContent(
                     content = state,
                     onMenuClick = onMenuClick,
+                    onVoiceOrderClick = onVoiceOrderClick,
                 )
 
                 is HomeUiState.Empty -> HomeEmpty(
                     state = state,
                     onBrowseMenuClick = onBrowseMenuClick,
+                    onVoiceOrderClick = onVoiceOrderClick,
                 )
 
                 is HomeUiState.Error -> ErrorView(
@@ -95,8 +101,10 @@ fun HomeScreen(
 private fun HomeContent(
     content: HomeUiState.Content,
     onMenuClick: (String) -> Unit,
+    onVoiceOrderClick: () -> Unit,
 ) {
     Greeting(text = content.greeting)
+    VoiceOrderButton(onClick = onVoiceOrderClick)
 
     content.ongoingOrder?.let { ongoingOrder ->
         OngoingOrderCard(ongoingOrder)
@@ -114,8 +122,10 @@ private fun HomeContent(
 private fun HomeEmpty(
     state: HomeUiState.Empty,
     onBrowseMenuClick: () -> Unit,
+    onVoiceOrderClick: () -> Unit,
 ) {
     Greeting(text = state.greeting)
+    VoiceOrderButton(onClick = onVoiceOrderClick)
     EmptyView(
         message = state.message,
         actionLabel = "메뉴 보러가기",
@@ -129,6 +139,15 @@ private fun Greeting(text: String) {
         text = text,
         style = CafeTheme.typography.display,
         color = CafeTheme.colors.ink,
+    )
+}
+
+@Composable
+private fun VoiceOrderButton(onClick: () -> Unit) {
+    CafeButton(
+        text = "음성으로 주문하기",
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
     )
 }
 

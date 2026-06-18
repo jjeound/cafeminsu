@@ -12,13 +12,22 @@ class VoiceScreenTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun showsVoicePlaceholderTitle() {
+    fun showsIdleVoiceOrderScreen() {
         composeRule.setContent {
             CafeTheme {
-                VoiceScreen()
+                VoiceScreen(
+                    state = VoiceUiState.Idle,
+                    onRequestPermission = {},
+                    onConfirm = {},
+                    onRetry = {},
+                    onNavigateToMenu = {},
+                    onOpenSettings = {},
+                )
             }
         }
 
-        composeRule.onNodeWithText("음성 주문 (M-04)").assertIsDisplayed()
+        composeRule.onNodeWithText("음성 주문").assertIsDisplayed()
+        composeRule.onNodeWithText("음성 주문 시작").assertIsDisplayed()
+        composeRule.onNodeWithText("들은 내용").assertIsDisplayed()
     }
 }
