@@ -35,6 +35,12 @@
       "status": "completed",
       "summary": "M-05 장바구니(주문 생성) · M-07 주문 상태 — MVVM + TDD",
       "completed_at": "2026-06-18T20:47:03+0900"
+    },
+    {
+      "dir": "5-payment",
+      "name": "payment",
+      "status": "pending",
+      "summary": "M-06 결제(Mock PG, 멱등키·낙관금지) + 장바구니→결제→주문상태 플로우 + 스탬프 적립"
     }
   ]
 }

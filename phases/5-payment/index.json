@@ -1,0 +1,8 @@
+{
+  "project": "CafeMinsu",
+  "phase": "payment",
+  "steps": [
+    { "step": 0, "name": "payment-m06", "status": "pending" },
+    { "step": 1, "name": "checkout-flow", "status": "pending" }
+  ]
+}
