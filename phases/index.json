@@ -32,8 +32,9 @@
     {
       "dir": "4-cart-order",
       "name": "cart-order",
-      "status": "pending",
-      "summary": "M-05 장바구니(주문 생성) · M-07 주문 상태 — MVVM + TDD"
+      "status": "completed",
+      "summary": "M-05 장바구니(주문 생성) · M-07 주문 상태 — MVVM + TDD",
+      "completed_at": "2026-06-18T20:47:03+0900"
     }
   ]
 }
