@@ -27,7 +27,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
-import com.cafeminsu.ui.feature.cart.CartScreen
+import com.cafeminsu.ui.feature.cart.CartRoute
 import com.cafeminsu.ui.feature.gifticon.GifticonScreen
 import com.cafeminsu.ui.feature.home.HomeRoute
 import com.cafeminsu.ui.feature.menu.MenuDetailRoute
@@ -102,7 +102,14 @@ fun AppNavHost(
                 )
             }
             composable(Routes.VOICE) { VoiceScreen() }
-            composable(Routes.CART) { CartScreen() }
+            composable(Routes.CART) {
+                CartRoute(
+                    onOrderCreated = {
+                        navController.navigate(Routes.ORDER_STATUS)
+                    },
+                    onBrowseMenuClick = { navController.navigate(Routes.MENU) },
+                )
+            }
             composable(Routes.PAYMENT) { PaymentScreen() }
             composable(Routes.ORDER_STATUS) { OrderStatusScreen() }
             composable(Routes.STAMP) { StampScreen() }
