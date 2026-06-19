@@ -36,25 +36,24 @@ class MenuDetailViewModelTest {
 
         viewModel.uiState.test {
             val initial = awaitContent()
-            assertEquals(5_000, initial.unitPrice)
-            assertEquals(5_000, initial.totalPrice)
-
-            viewModel.onOptionToggle(groupId = "size", optionId = "size-large")
-            assertEquals(5_700, awaitContent().unitPrice)
+            assertEquals(5_500, initial.unitPrice)
+            assertEquals(5_500, initial.totalPrice)
 
             viewModel.onOptionToggle(groupId = "temperature", optionId = "temperature-ice")
-            assertEquals(5_700, awaitContent().unitPrice)
+            assertEquals(5_500, awaitContent().unitPrice)
+            viewModel.onOptionToggle(groupId = "size", optionId = "size-large")
+            assertEquals(6_000, awaitContent().unitPrice)
 
-            viewModel.onOptionToggle(groupId = "shot", optionId = "shot-extra")
+            viewModel.onOptionToggle(groupId = "shot", optionId = "shot-one")
             val selected = awaitContent()
-            assertEquals(6_200, selected.unitPrice)
-            assertEquals(6_200, selected.totalPrice)
+            assertEquals(6_500, selected.unitPrice)
+            assertEquals(6_500, selected.totalPrice)
 
             viewModel.onQuantityChange(2)
             val quantityChanged = awaitContent()
             assertEquals(2, quantityChanged.quantity)
-            assertEquals(6_200, quantityChanged.unitPrice)
-            assertEquals(12_400, quantityChanged.totalPrice)
+            assertEquals(6_500, quantityChanged.unitPrice)
+            assertEquals(13_000, quantityChanged.totalPrice)
 
             cancelAndIgnoreRemainingEvents()
         }
@@ -78,6 +77,27 @@ class MenuDetailViewModelTest {
     }
 
     @Test
+    fun quantityStepperIsBoundedToSafeRange() = runTest {
+        val viewModel = viewModel(menu = sampleMenu())
+
+        viewModel.uiState.test {
+            awaitContent()
+
+            viewModel.onQuantityChange(21)
+            val maximum = awaitContent()
+            assertEquals(20, maximum.quantity)
+            assertEquals(110_000, maximum.totalPrice)
+
+            viewModel.onQuantityChange(0)
+            val minimum = awaitContent()
+            assertEquals(1, minimum.quantity)
+            assertEquals(5_500, minimum.totalPrice)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun addToCartCallsRepositoryWithSelectedOptionsAndReportsSuccess() = runTest {
         val cartRepository = FakeCartRepository()
         val viewModel = viewModel(
@@ -88,11 +108,11 @@ class MenuDetailViewModelTest {
         viewModel.uiState.test {
             awaitContent()
 
-            viewModel.onOptionToggle(groupId = "size", optionId = "size-large")
-            awaitContent()
             viewModel.onOptionToggle(groupId = "temperature", optionId = "temperature-ice")
             awaitContent()
-            viewModel.onOptionToggle(groupId = "shot", optionId = "shot-extra")
+            viewModel.onOptionToggle(groupId = "size", optionId = "size-large")
+            awaitContent()
+            viewModel.onOptionToggle(groupId = "shot", optionId = "shot-two")
             awaitContent()
             viewModel.onQuantityChange(2)
             awaitContent()
@@ -104,7 +124,7 @@ class MenuDetailViewModelTest {
             assertEquals("latte", cartRepository.lastRequest?.menuItemId)
             assertEquals(2, cartRepository.lastRequest?.quantity)
             assertEquals(
-                listOf("size-large", "temperature-ice", "shot-extra"),
+                listOf("temperature-ice", "size-large", "shot-two"),
                 cartRepository.lastRequest?.options?.map { it.optionId },
             )
 
@@ -122,9 +142,9 @@ class MenuDetailViewModelTest {
         viewModel.uiState.test {
             awaitContent()
 
-            viewModel.onOptionToggle(groupId = "size", optionId = "size-large")
-            awaitContent()
             viewModel.onOptionToggle(groupId = "temperature", optionId = "temperature-ice")
+            awaitContent()
+            viewModel.onOptionToggle(groupId = "size", optionId = "size-large")
             awaitContent()
             viewModel.onAddToCart()
 
@@ -276,23 +296,12 @@ private fun sampleMenu(
     MenuItem(
         id = id,
         categoryId = "coffee",
-        name = "민수 아메리카노",
-        description = "고소한 블렌드의 깔끔한 기본 커피",
-        basePrice = 5_000,
+        name = "바닐라라떼",
+        description = "달콤한 바닐라 시럽이 어우러진 부드러운 라떼",
+        basePrice = 5_500,
         imageUrl = null,
         isSoldOut = isSoldOut,
         options = listOf(
-            MenuOptionGroup(
-                id = "size",
-                name = "사이즈",
-                required = true,
-                minSelect = 1,
-                maxSelect = 1,
-                options = listOf(
-                    MenuOption(id = "size-regular", name = "레귤러", extraPrice = 0, isAvailable = true),
-                    MenuOption(id = "size-large", name = "라지", extraPrice = 700, isAvailable = true),
-                ),
-            ),
             MenuOptionGroup(
                 id = "temperature",
                 name = "온도",
@@ -300,19 +309,31 @@ private fun sampleMenu(
                 minSelect = 1,
                 maxSelect = 1,
                 options = listOf(
-                    MenuOption(id = "temperature-hot", name = "따뜻하게", extraPrice = 0, isAvailable = true),
-                    MenuOption(id = "temperature-ice", name = "차갑게", extraPrice = 0, isAvailable = true),
+                    MenuOption(id = "temperature-hot", name = "HOT", extraPrice = 0, isAvailable = true),
+                    MenuOption(id = "temperature-ice", name = "ICE", extraPrice = 0, isAvailable = true),
+                ),
+            ),
+            MenuOptionGroup(
+                id = "size",
+                name = "사이즈",
+                required = true,
+                minSelect = 1,
+                maxSelect = 1,
+                options = listOf(
+                    MenuOption(id = "size-regular", name = "Regular", extraPrice = 0, isAvailable = true),
+                    MenuOption(id = "size-large", name = "Large", extraPrice = 500, isAvailable = true),
                 ),
             ),
             MenuOptionGroup(
                 id = "shot",
-                name = "샷",
+                name = "샷 추가",
                 required = false,
                 minSelect = 0,
-                maxSelect = 2,
+                maxSelect = 1,
                 options = listOf(
-                    MenuOption(id = "shot-extra", name = "샷 추가", extraPrice = 500, isAvailable = true),
-                    MenuOption(id = "shot-decaf", name = "디카페인", extraPrice = 500, isAvailable = true),
+                    MenuOption(id = "shot-none", name = "없음", extraPrice = 0, isAvailable = true),
+                    MenuOption(id = "shot-one", name = "+1샷", extraPrice = 500, isAvailable = true),
+                    MenuOption(id = "shot-two", name = "+2샷", extraPrice = 1_000, isAvailable = true),
                 ),
             ),
         ),

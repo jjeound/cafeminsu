@@ -226,6 +226,7 @@ fun AppNavHost(
             ) {
                 MenuDetailRoute(
                     onAddedToCart = { navController.navigate(Routes.CART) },
+                    onBackClick = { navController.popBackStack() },
                 )
             }
             composable(Routes.VOICE) {

@@ -28,10 +28,13 @@
     {
       "step": 2,
       "name": "menu-detail-redesign",
-      "status": "pending",
+      "status": "completed",
       "images": [
         "docs/screens/주문 - 04 (메뉴 상세).png"
-      ]
+      ],
+      "started_at": "2026-06-19T23:51:57+0900",
+      "summary": "MENU_DETAIL 메뉴 상세 화면을 디자인 구조에 맞춰 재설계하고 옵션·수량·합계 TDD 검증을 보강",
+      "completed_at": "2026-06-20T00:02:25+0900"
     }
   ],
   "created_at": "2026-06-19T23:26:17+0900"

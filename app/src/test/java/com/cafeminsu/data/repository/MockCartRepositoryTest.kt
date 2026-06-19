@@ -20,7 +20,8 @@ class MockCartRepositoryTest {
     fun addItemCalculatesSubtotalWithSelectedOptions() = runBlocking {
         val repository = MockCartRepository()
         val menu = availableMenuWithPricedOption()
-        val selectedOption = selectedOption(menu.options.first(), menu.options.first().options.first { it.extraPrice > 0 })
+        val pricedGroup = menu.options.first { group -> group.options.any { it.extraPrice > 0 } }
+        val selectedOption = selectedOption(pricedGroup, pricedGroup.options.first { it.extraPrice > 0 })
 
         repository.observeCart().test {
             skipItems(1)

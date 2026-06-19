@@ -31,8 +31,8 @@ object MockData {
         minSelect = 1,
         maxSelect = 1,
         options = listOf(
-            MenuOption(id = "size-regular", name = "레귤러", extraPrice = 0, isAvailable = true),
-            MenuOption(id = "size-large", name = "라지", extraPrice = 700, isAvailable = true),
+            MenuOption(id = "size-regular", name = "Regular", extraPrice = 0, isAvailable = true),
+            MenuOption(id = "size-large", name = "Large", extraPrice = 500, isAvailable = true),
         ),
     )
 
@@ -43,20 +43,21 @@ object MockData {
         minSelect = 1,
         maxSelect = 1,
         options = listOf(
-            MenuOption(id = "temperature-hot", name = "따뜻하게", extraPrice = 0, isAvailable = true),
-            MenuOption(id = "temperature-ice", name = "차갑게", extraPrice = 0, isAvailable = true),
+            MenuOption(id = "temperature-hot", name = "HOT", extraPrice = 0, isAvailable = true),
+            MenuOption(id = "temperature-ice", name = "ICE", extraPrice = 0, isAvailable = true),
         ),
     )
 
     private val shotOptions = MenuOptionGroup(
         id = "shot",
-        name = "샷",
+        name = "샷 추가",
         required = false,
         minSelect = 0,
-        maxSelect = 2,
+        maxSelect = 1,
         options = listOf(
-            MenuOption(id = "shot-extra", name = "샷 추가", extraPrice = 500, isAvailable = true),
-            MenuOption(id = "shot-decaf", name = "디카페인", extraPrice = 500, isAvailable = true),
+            MenuOption(id = "shot-none", name = "없음", extraPrice = 0, isAvailable = true),
+            MenuOption(id = "shot-one", name = "+1샷", extraPrice = 500, isAvailable = true),
+            MenuOption(id = "shot-two", name = "+2샷", extraPrice = 1_000, isAvailable = true),
         ),
     )
 
@@ -81,17 +82,17 @@ object MockData {
             basePrice = 4_500,
             imageUrl = null,
             isSoldOut = false,
-            options = listOf(sizeOptions, temperatureOptions, shotOptions),
+            options = listOf(temperatureOptions, sizeOptions, shotOptions),
         ),
         MenuItem(
             id = "latte",
             categoryId = "coffee",
-            name = "크림 라떼",
-            description = "부드러운 우유와 진한 에스프레소",
-            basePrice = 5_300,
+            name = "바닐라라떼",
+            description = "달콤한 바닐라 시럽이 어우러진 부드러운 라떼",
+            basePrice = 5_500,
             imageUrl = null,
             isSoldOut = false,
-            options = listOf(sizeOptions, temperatureOptions, shotOptions),
+            options = listOf(temperatureOptions, sizeOptions, shotOptions),
         ),
         MenuItem(
             id = "einspanner",
@@ -101,7 +102,7 @@ object MockData {
             basePrice = 6_000,
             imageUrl = null,
             isSoldOut = true,
-            options = listOf(sizeOptions, temperatureOptions),
+            options = listOf(temperatureOptions, sizeOptions),
         ),
         MenuItem(
             id = "yuja-tea",

@@ -85,7 +85,7 @@ class MenuDetailViewModel @Inject constructor(
     fun onQuantityChange(quantity: Int) {
         val content = _uiState.value as? MenuDetailUiState.Content ?: return
         _uiState.value = content.recalculate(
-            quantity = quantity.coerceAtLeast(MinQuantity),
+            quantity = quantity.coerceIn(MinQuantity, MaxQuantity),
             addStatus = MenuDetailAddStatus.Idle,
         )
     }
@@ -355,6 +355,7 @@ class MenuDetailViewModel @Inject constructor(
     private companion object {
         const val EventBufferCapacity = 1
         const val MinQuantity = 1
+        const val MaxQuantity = 20
         const val SingleSelectMax = 1
         const val OptionalMinimumSelection = 0
         const val RequiredMinimumSelection = 1
