@@ -10,7 +10,8 @@
         "docs/screens/점주 - 00 (로그인).png"
       ],
       "started_at": "2026-06-19T17:19:51+0900",
-      "summary": "점주 역할 모델, Mock 점주 인증, OWNER_LOGIN 화면, 역할 분기 네비와 점주 4탭 셸을 추가했다."
+      "summary": "점주 역할 모델, Mock 점주 인증, OWNER_LOGIN 화면, 역할 분기 네비와 점주 4탭 셸을 추가했다.",
+      "completed_at": "2026-06-19T17:30:52+0900"
     },
     {
       "step": 1,
