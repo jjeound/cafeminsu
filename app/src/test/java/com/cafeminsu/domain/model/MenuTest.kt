@@ -43,6 +43,7 @@ class MenuTest {
         assertEquals(4500, item.basePrice)
         assertNull(item.imageUrl)
         assertFalse(item.isSoldOut)
+        assertTrue(item.isVisible)
         assertTrue(item.options.single().options.single().isAvailable)
     }
 }

@@ -15,6 +15,7 @@ data class MenuItem(
     val imageUrl: String?,
     val isSoldOut: Boolean,
     val options: List<MenuOptionGroup>,
+    val isVisible: Boolean = true,
 )
 
 data class MenuOptionGroup(

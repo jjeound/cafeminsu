@@ -4,6 +4,7 @@ import com.cafeminsu.data.repository.MockCartRepository
 import com.cafeminsu.data.repository.MockMenuRepository
 import com.cafeminsu.data.repository.MockNotificationRepository
 import com.cafeminsu.data.repository.MockOrderRepository
+import com.cafeminsu.data.repository.MockOwnerMenuRepository
 import com.cafeminsu.data.repository.MockOwnerOrderRepository
 import com.cafeminsu.data.repository.MockPaymentRepository
 import com.cafeminsu.data.repository.MockRewardRepository
@@ -12,6 +13,7 @@ import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.MenuRepository
 import com.cafeminsu.domain.repository.NotificationRepository
 import com.cafeminsu.domain.repository.OrderRepository
+import com.cafeminsu.domain.repository.OwnerMenuRepository
 import com.cafeminsu.domain.repository.OwnerOrderRepository
 import com.cafeminsu.domain.repository.PaymentRepository
 import com.cafeminsu.domain.repository.RewardRepository
@@ -31,6 +33,11 @@ class RepositoryModuleTest {
             "bindOwnerOrderRepository",
             OwnerOrderRepository::class.java,
             MockOwnerOrderRepository::class.java,
+        )
+        assertBinding(
+            "bindOwnerMenuRepository",
+            OwnerMenuRepository::class.java,
+            MockOwnerMenuRepository::class.java,
         )
         assertBinding("bindPaymentRepository", PaymentRepository::class.java, MockPaymentRepository::class.java)
         assertBinding("bindRewardRepository", RewardRepository::class.java, MockRewardRepository::class.java)
