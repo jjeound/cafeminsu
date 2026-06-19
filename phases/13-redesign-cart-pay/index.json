@@ -1,0 +1,31 @@
+{
+  "project": "CafeMinsu",
+  "phase": "redesign-cart-pay",
+  "steps": [
+    {
+      "step": 0,
+      "name": "cart-redesign",
+      "status": "pending",
+      "images": [
+        "docs/screens/주문 - 06 (장바구니).png"
+      ]
+    },
+    {
+      "step": 1,
+      "name": "pay-redesign",
+      "status": "pending",
+      "images": [
+        "docs/screens/주문 - 07(결제).png"
+      ]
+    },
+    {
+      "step": 2,
+      "name": "order-result-redesign",
+      "status": "pending",
+      "images": [
+        "docs/screens/주문 - 08 (주문 성공).png",
+        "docs/screens/주문 - 09 (주문 실패).png"
+      ]
+    }
+  ]
+}

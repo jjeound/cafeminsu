@@ -1,0 +1,31 @@
+{
+  "project": "CafeMinsu",
+  "phase": "redesign-store-menu",
+  "steps": [
+    {
+      "step": 0,
+      "name": "store-select",
+      "status": "pending",
+      "images": [
+        "docs/screens/주문 - 01.png",
+        "docs/screens/주문 - 02 (매장 선택).png"
+      ]
+    },
+    {
+      "step": 1,
+      "name": "menu-list-redesign",
+      "status": "pending",
+      "images": [
+        "docs/screens/주문 - 03 (메뉴 선택).png"
+      ]
+    },
+    {
+      "step": 2,
+      "name": "menu-detail-redesign",
+      "status": "pending",
+      "images": [
+        "docs/screens/주문 - 04 (메뉴 상세).png"
+      ]
+    }
+  ]
+}

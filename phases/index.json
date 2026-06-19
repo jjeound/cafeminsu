@@ -83,6 +83,30 @@
       "name": "owner-ops",
       "status": "pending",
       "summary": "점주 운영 — 메뉴 관리(OWNER_MENU, 품절 토글) + 매출·정산(OWNER_SALES)"
+    },
+    {
+      "dir": "12-redesign-store-menu",
+      "name": "redesign-store-menu",
+      "status": "pending",
+      "summary": "고객 화면 재설계 — 매장 선택/상세(STORE/STORE_DETAIL) + 메뉴 선택(MENU) + 메뉴 상세(MENU_DETAIL)"
+    },
+    {
+      "dir": "13-redesign-cart-pay",
+      "name": "redesign-cart-pay",
+      "status": "pending",
+      "summary": "고객 화면 재설계 — 장바구니(CART) + 결제(PAY) + 주문 성공/실패(ORDER_OK/ORDER_FAIL)"
+    },
+    {
+      "dir": "14-redesign-my",
+      "name": "redesign-my",
+      "status": "pending",
+      "summary": "고객 화면 재설계 — 마이(MY) + 쿠폰/선물(COUPON/GIFT) + 주문내역(HISTORY)"
+    },
+    {
+      "dir": "15-redesign-voice-states",
+      "name": "redesign-voice-states",
+      "status": "pending",
+      "summary": "고객 화면 재설계 — 음성 주문(VOICE) + 공통 상태화면(Loading/Error/Logout) 디자인 정렬"
     }
   ]
 }

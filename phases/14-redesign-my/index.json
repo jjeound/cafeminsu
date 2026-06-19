@@ -1,0 +1,32 @@
+{
+  "project": "CafeMinsu",
+  "phase": "redesign-my",
+  "steps": [
+    {
+      "step": 0,
+      "name": "my-redesign",
+      "status": "pending",
+      "images": [
+        "docs/screens/MY - 01.png"
+      ]
+    },
+    {
+      "step": 1,
+      "name": "coupon-gift-redesign",
+      "status": "pending",
+      "images": [
+        "docs/screens/MY - 02 (쿠폰).png",
+        "docs/screens/MY - 03 (선물하기).png"
+      ]
+    },
+    {
+      "step": 2,
+      "name": "history-redesign",
+      "status": "pending",
+      "images": [
+        "docs/screens/MY - 04 (주문내역).png",
+        "docs/screens/MY - 05 (주문내역 empty).png"
+      ]
+    }
+  ]
+}

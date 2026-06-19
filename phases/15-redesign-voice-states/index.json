@@ -1,0 +1,24 @@
+{
+  "project": "CafeMinsu",
+  "phase": "redesign-voice-states",
+  "steps": [
+    {
+      "step": 0,
+      "name": "voice-redesign",
+      "status": "pending",
+      "images": [
+        "docs/screens/주문 - 05 (음성 AI 주문).png"
+      ]
+    },
+    {
+      "step": 1,
+      "name": "state-screens-align",
+      "status": "pending",
+      "images": [
+        "docs/screens/Loading.png",
+        "docs/screens/Network Error.png",
+        "docs/screens/logout confrim dialog.png"
+      ]
+    }
+  ]
+}
