@@ -5,9 +5,13 @@ import androidx.lifecycle.viewModelScope
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.AuthState
+import com.cafeminsu.domain.model.Gifticon
+import com.cafeminsu.domain.model.GifticonStatus
 import com.cafeminsu.domain.model.MenuItem
+import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.StampCard
 import com.cafeminsu.domain.repository.MenuRepository
+import com.cafeminsu.domain.repository.OrderRepository
 import com.cafeminsu.domain.repository.RewardRepository
 import com.cafeminsu.domain.repository.SessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -22,17 +26,22 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class HomeViewModel @Inject constructor(
     private val menuRepository: MenuRepository,
+    private val orderRepository: OrderRepository,
     private val rewardRepository: RewardRepository,
     private val sessionRepository: SessionRepository,
 ) : ViewModel() {
     val uiState: StateFlow<HomeUiState> = combine(
         menuRepository.observeMenus(),
+        orderRepository.observeOrderHistory(),
         rewardRepository.observeStampCard(),
+        rewardRepository.observeGifticons(),
         sessionRepository.observeAuthState(),
-    ) { menuResult, stampResult, authState ->
+    ) { menuResult, orderResult, stampResult, gifticonResult, authState ->
         mapHomeState(
             menuResult = menuResult,
+            orderResult = orderResult,
             stampResult = stampResult,
+            gifticonResult = gifticonResult,
             authState = authState,
         )
     }.catch {
@@ -59,7 +68,9 @@ class HomeViewModel @Inject constructor(
 
     private fun mapHomeState(
         menuResult: AppResult<List<MenuItem>>,
+        orderResult: AppResult<List<Order>>,
         stampResult: AppResult<StampCard>,
+        gifticonResult: AppResult<List<Gifticon>>,
         authState: AuthState,
     ): HomeUiState {
         val greeting = greetingFor(authState)
@@ -68,18 +79,23 @@ class HomeViewModel @Inject constructor(
             is AppResult.Success -> menuResult.data
             is AppResult.Failure -> return menuResult.error.toHomeError()
         }
-        val stampCard = when (stampResult) {
-            is AppResult.Success -> stampResult.data
+        val orders = when (orderResult) {
+            is AppResult.Success -> orderResult.data
+            is AppResult.Failure -> return orderResult.error.toHomeError()
+        }
+        when (stampResult) {
+            is AppResult.Success -> Unit
             is AppResult.Failure -> return stampResult.error.toHomeError()
         }
-        val recommendedMenus = menus
-            .asSequence()
-            .filterNot { it.isSoldOut }
-            .take(RecommendedMenuLimit)
-            .map { it.toHomeMenuSummary() }
-            .toList()
+        val gifticons = when (gifticonResult) {
+            is AppResult.Success -> gifticonResult.data
+            is AppResult.Failure -> return gifticonResult.error.toHomeError()
+        }
+        val recommendedMenu = menus
+            .firstOrNull { !it.isSoldOut }
+            ?.toHomeRecommendedMenu()
 
-        return if (recommendedMenus.isEmpty()) {
+        return if (recommendedMenu == null) {
             HomeUiState.Empty(
                 greeting = greeting,
                 message = "추천할 메뉴가 아직 없어요",
@@ -87,35 +103,61 @@ class HomeViewModel @Inject constructor(
         } else {
             HomeUiState.Content(
                 greeting = greeting,
-                recommendedMenus = recommendedMenus,
-                stampSummary = stampCard.toHomeStampSummary(),
-                ongoingOrder = null,
+                recommendedMenu = recommendedMenu,
+                availableCouponCount = gifticons.count { it.status == GifticonStatus.Available },
+                recentOrders = orders
+                    .sortedByDescending { it.createdAtMillis }
+                    .mapNotNull { it.toHomeRecentOrderSummary() }
+                    .take(RecentOrderLimit),
             )
         }
     }
 
     private fun greetingFor(authState: AuthState): String =
-        when (authState) {
-            is AuthState.Authenticated -> "${authState.user.displayName}님, 오늘도 카페민수와 함께해요"
-            AuthState.Expired -> "다시 로그인해 주세요"
+        "안녕하세요, ${authState.displayNameOrDefault()}님"
+
+    private fun AuthState.displayNameOrDefault(): String =
+        when (this) {
+            is AuthState.Authenticated -> user.displayName.ifBlank { DefaultUserName }
+            AuthState.Expired,
             AuthState.Guest,
             AuthState.Unknown,
-            -> "어서 오세요, 카페민수입니다"
+            -> DefaultUserName
         }
 
-    private fun MenuItem.toHomeMenuSummary(): HomeMenuSummary =
-        HomeMenuSummary(
+    private fun MenuItem.toHomeRecommendedMenu(): HomeRecommendedMenu =
+        HomeRecommendedMenu(
             id = id,
             name = name,
             description = description,
             price = basePrice,
+            originalPrice = basePrice + RecommendedOriginalPriceDelta,
         )
 
-    private fun StampCard.toHomeStampSummary(): HomeStampSummary =
-        HomeStampSummary(
-            currentCount = currentCount,
-            goalCount = goalCount,
+    private fun Order.toHomeRecentOrderSummary(): HomeRecentOrderSummary? {
+        val firstItem = items.firstOrNull() ?: return null
+        val optionSummary = firstItem.selectedOptions
+            .joinToString(separator = " · ") { it.name }
+            .ifBlank { "기본 옵션" }
+
+        return HomeRecentOrderSummary(
+            orderId = id,
+            menuItemId = firstItem.menuItemId,
+            menuName = firstItem.name,
+            optionSummary = optionSummary,
+            orderedAtLabel = toRelativeDayLabel(createdAtMillis),
+            totalPrice = totalAmount,
         )
+    }
+
+    private fun toRelativeDayLabel(createdAtMillis: Long): String {
+        val elapsedDays = (System.currentTimeMillis() - createdAtMillis).coerceAtLeast(0L) / DayMillis
+        return when (elapsedDays) {
+            0L -> "오늘"
+            1L -> "어제"
+            else -> "${elapsedDays}일 전"
+        }
+    }
 
     private fun DomainError.toHomeError(): HomeUiState.Error =
         HomeUiState.Error(
@@ -149,7 +191,10 @@ class HomeViewModel @Inject constructor(
         }
 
     private companion object {
-        const val RecommendedMenuLimit = 3
         const val StateStopTimeoutMillis = 5_000L
+        const val RecommendedOriginalPriceDelta = 500
+        const val RecentOrderLimit = 2
+        const val DayMillis = 24L * 60L * 60L * 1000L
+        const val DefaultUserName = "민수"
     }
 }

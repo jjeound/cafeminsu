@@ -123,11 +123,16 @@ fun AppNavHost(
             }
             composable(Routes.HOME) {
                 HomeRoute(
-                    onMenuClick = { menuItemId ->
+                    onRecommendedOrderClick = { menuItemId ->
+                        navController.navigate(Routes.menuDetail(menuItemId))
+                    },
+                    onCouponClick = { navController.navigate(Routes.COUPON) },
+                    onNotificationClick = { navController.navigate(Routes.NOTI) },
+                    onRecentOrdersClick = { navController.navigate(Routes.HISTORY) },
+                    onReorderClick = { menuItemId ->
                         navController.navigate(Routes.menuDetail(menuItemId))
                     },
                     onBrowseMenuClick = { navController.navigate(Routes.STORE) },
-                    onVoiceOrderClick = { navController.navigate(Routes.VOICE) },
                 )
             }
             composable(Routes.NOTI) {

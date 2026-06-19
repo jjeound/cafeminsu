@@ -5,9 +5,9 @@ sealed interface HomeUiState {
 
     data class Content(
         val greeting: String,
-        val recommendedMenus: List<HomeMenuSummary>,
-        val stampSummary: HomeStampSummary,
-        val ongoingOrder: HomeOngoingOrderSummary?,
+        val recommendedMenu: HomeRecommendedMenu,
+        val availableCouponCount: Int,
+        val recentOrders: List<HomeRecentOrderSummary>,
     ) : HomeUiState
 
     data class Empty(
@@ -21,31 +21,19 @@ sealed interface HomeUiState {
     ) : HomeUiState
 }
 
-data class HomeMenuSummary(
+data class HomeRecommendedMenu(
     val id: String,
     val name: String,
     val description: String,
     val price: Int,
+    val originalPrice: Int,
 )
 
-data class HomeStampSummary(
-    val currentCount: Int,
-    val goalCount: Int,
-) {
-    val progress: Float =
-        if (goalCount <= 0) {
-            EmptyProgress
-        } else {
-            currentCount.coerceIn(0, goalCount).toFloat() / goalCount.toFloat()
-        }
-
-    val remainingCount: Int = (goalCount - currentCount).coerceAtLeast(0)
-}
-
-data class HomeOngoingOrderSummary(
-    val orderNumber: String,
-    val title: String,
-    val status: String,
+data class HomeRecentOrderSummary(
+    val orderId: String,
+    val menuItemId: String,
+    val menuName: String,
+    val optionSummary: String,
+    val orderedAtLabel: String,
+    val totalPrice: Int,
 )
-
-private const val EmptyProgress = 0f

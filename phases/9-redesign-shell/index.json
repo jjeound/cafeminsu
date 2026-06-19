@@ -28,10 +28,13 @@
     {
       "step": 2,
       "name": "home-redesign",
-      "status": "pending",
+      "status": "completed",
       "images": [
         "docs/screens/홈.png"
-      ]
+      ],
+      "started_at": "2026-06-19T16:48:52+0900",
+      "summary": "홈 화면을 그리팅·추천 다크 카드·쿠폰 카드·다시 주문 2열 카드 구조로 재작업하고 리포지토리 Flow 결합을 갱신했다.",
+      "completed_at": "2026-06-19T16:58:54+0900"
     },
     {
       "step": 3,
