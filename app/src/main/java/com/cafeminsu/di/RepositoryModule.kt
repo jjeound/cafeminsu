@@ -4,6 +4,7 @@ import com.cafeminsu.data.repository.MockCartRepository
 import com.cafeminsu.data.repository.MockMenuRepository
 import com.cafeminsu.data.repository.MockNotificationRepository
 import com.cafeminsu.data.repository.MockOrderRepository
+import com.cafeminsu.data.repository.MockOwnerOrderRepository
 import com.cafeminsu.data.repository.MockPaymentRepository
 import com.cafeminsu.data.repository.MockRewardRepository
 import com.cafeminsu.data.repository.MockSessionRepository
@@ -11,6 +12,7 @@ import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.MenuRepository
 import com.cafeminsu.domain.repository.NotificationRepository
 import com.cafeminsu.domain.repository.OrderRepository
+import com.cafeminsu.domain.repository.OwnerOrderRepository
 import com.cafeminsu.domain.repository.PaymentRepository
 import com.cafeminsu.domain.repository.RewardRepository
 import com.cafeminsu.domain.repository.SessionRepository
@@ -34,6 +36,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindOrderRepository(repository: MockOrderRepository): OrderRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindOwnerOrderRepository(repository: MockOwnerOrderRepository): OwnerOrderRepository
 
     @Binds
     @Singleton

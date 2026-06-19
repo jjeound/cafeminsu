@@ -48,6 +48,7 @@ import com.cafeminsu.ui.feature.menu.MenuRoute
 import com.cafeminsu.ui.feature.my.MyRoute
 import com.cafeminsu.ui.feature.notification.NotiRoute
 import com.cafeminsu.ui.feature.order.OrderStatusRoute
+import com.cafeminsu.ui.feature.owner.home.OwnerHomeRoute
 import com.cafeminsu.ui.feature.owner.login.OwnerLoginRoute
 import com.cafeminsu.ui.feature.payment.PaymentRoute
 import com.cafeminsu.ui.feature.splash.SplashScreen
@@ -163,7 +164,9 @@ fun AppNavHost(
                 )
             }
             composable(Routes.OWNER_HOME) {
-                PlaceholderScreen(title = "대시보드")
+                OwnerHomeRoute(
+                    onViewAllOrders = { navController.navigate(Routes.OWNER_ORDERS) },
+                )
             }
             composable(Routes.OWNER_ORDERS) {
                 PlaceholderScreen(title = "주문")
