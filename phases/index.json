@@ -63,6 +63,12 @@
       "status": "completed",
       "summary": "M-04 음성 AI 주문 — 규칙기반 파서 + 온디바이스 STT + 화면(MVVM, TDD)",
       "completed_at": "2026-06-19T01:48:04+0900"
+    },
+    {
+      "dir": "9-redesign-shell",
+      "name": "redesign-shell",
+      "status": "pending",
+      "summary": "3탭 네비(홈/주문/MY) + 스플래시 + 카카오 로그인 게이트 + 홈 재작업 + 알림 (디자인 정렬)"
     }
   ]
 }

@@ -1,0 +1,10 @@
+{
+  "project": "CafeMinsu",
+  "phase": "redesign-shell",
+  "steps": [
+    { "step": 0, "name": "nav-splash-gate", "status": "pending", "images": ["docs/screens/Splash.png", "docs/screens/홈.png"] },
+    { "step": 1, "name": "kakao-login", "status": "pending", "images": ["docs/screens/회원가입.png"] },
+    { "step": 2, "name": "home-redesign", "status": "pending", "images": ["docs/screens/홈.png"] },
+    { "step": 3, "name": "notifications", "status": "pending", "images": ["docs/screens/알림.png"] }
+  ]
+}
