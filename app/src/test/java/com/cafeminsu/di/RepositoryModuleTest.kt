@@ -9,6 +9,7 @@ import com.cafeminsu.data.repository.MockOwnerOrderRepository
 import com.cafeminsu.data.repository.MockPaymentRepository
 import com.cafeminsu.data.repository.MockRewardRepository
 import com.cafeminsu.data.repository.MockSessionRepository
+import com.cafeminsu.data.repository.MockStoreRepository
 import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.MenuRepository
 import com.cafeminsu.domain.repository.NotificationRepository
@@ -18,6 +19,7 @@ import com.cafeminsu.domain.repository.OwnerOrderRepository
 import com.cafeminsu.domain.repository.PaymentRepository
 import com.cafeminsu.domain.repository.RewardRepository
 import com.cafeminsu.domain.repository.SessionRepository
+import com.cafeminsu.domain.repository.StoreRepository
 import java.lang.reflect.Modifier
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -47,6 +49,7 @@ class RepositoryModuleTest {
             MockNotificationRepository::class.java,
         )
         assertBinding("bindSessionRepository", SessionRepository::class.java, MockSessionRepository::class.java)
+        assertBinding("bindStoreRepository", StoreRepository::class.java, MockStoreRepository::class.java)
     }
 
     private fun assertBinding(

@@ -56,6 +56,7 @@ import com.cafeminsu.ui.feature.owner.sales.OwnerSalesRoute
 import com.cafeminsu.ui.feature.payment.PaymentRoute
 import com.cafeminsu.ui.feature.splash.SplashScreen
 import com.cafeminsu.ui.feature.stamp.StampRoute
+import com.cafeminsu.ui.feature.store.StoreRoute
 import com.cafeminsu.ui.feature.voice.VoiceRoute
 import com.cafeminsu.ui.theme.CafeTheme
 import kotlinx.coroutines.delay
@@ -200,7 +201,9 @@ fun AppNavHost(
                 )
             }
             composable(Routes.STORE) {
-                PlaceholderScreen(title = "매장 선택")
+                StoreRoute(
+                    onNavigateToMenu = { navController.navigate(Routes.MENU) },
+                )
             }
             composable(Routes.STORE_DETAIL) {
                 PlaceholderScreen(title = "매장 상세")

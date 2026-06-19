@@ -5,11 +5,13 @@
     {
       "step": 0,
       "name": "store-select",
-      "status": "pending",
       "images": [
         "docs/screens/주문 - 01.png",
         "docs/screens/주문 - 02 (매장 선택).png"
-      ]
+      ],
+      "started_at": "2026-06-19T23:26:17+0900",
+      "summary": "STORE 매장 선택/상세 바텀시트 MVVM 구현 및 MockStoreRepository 연동",
+      "status": "completed"
     },
     {
       "step": 1,
@@ -27,5 +29,6 @@
         "docs/screens/주문 - 04 (메뉴 상세).png"
       ]
     }
-  ]
+  ],
+  "created_at": "2026-06-19T23:26:17+0900"
 }

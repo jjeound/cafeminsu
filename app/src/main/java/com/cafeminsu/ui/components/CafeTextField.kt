@@ -2,9 +2,12 @@ package com.cafeminsu.ui.components
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material3.Text
@@ -25,6 +28,7 @@ fun CafeTextField(
     singleLine: Boolean = true,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
+    leadingIcon: (@Composable () -> Unit)? = null,
 ) {
     val colors = CafeTheme.colors
     val spacing = CafeTheme.spacing
@@ -47,21 +51,33 @@ fun CafeTextField(
         visualTransformation = visualTransformation,
         keyboardOptions = keyboardOptions,
         decorationBox = { innerTextField ->
-            Box(
+            Row(
                 modifier = Modifier
                     .fillMaxWidth()
                     .padding(horizontal = spacing.space4, vertical = spacing.space3),
-                contentAlignment = Alignment.CenterStart,
+                verticalAlignment = Alignment.CenterVertically,
             ) {
-                if (value.isEmpty()) {
-                    Text(
-                        text = placeholder,
-                        style = CafeTheme.typography.bodyL,
-                        color = colors.muted,
-                    )
+                if (leadingIcon != null) {
+                    leadingIcon()
+                    Spacer(modifier = Modifier.width(spacing.space2))
                 }
-                innerTextField()
+
+                Box(
+                    modifier = Modifier.weight(TextFieldContentWeight),
+                    contentAlignment = Alignment.CenterStart,
+                ) {
+                    if (value.isEmpty()) {
+                        Text(
+                            text = placeholder,
+                            style = CafeTheme.typography.bodyL,
+                            color = colors.muted,
+                        )
+                    }
+                    innerTextField()
+                }
             }
         },
     )
 }
+
+private const val TextFieldContentWeight = 1f

@@ -9,6 +9,9 @@ import com.cafeminsu.domain.model.MenuOption
 import com.cafeminsu.domain.model.MenuOptionGroup
 import com.cafeminsu.domain.model.NotificationType
 import com.cafeminsu.domain.model.StampCard
+import com.cafeminsu.domain.model.Store
+import com.cafeminsu.domain.model.StoreAmenity
+import com.cafeminsu.domain.model.StoreStatus
 import java.time.Instant
 import java.time.ZoneId
 
@@ -129,6 +132,59 @@ object MockData {
             imageUrl = null,
             isSoldOut = false,
             options = emptyList(),
+        ),
+    )
+
+    val nearbyStores: List<Store> = listOf(
+        Store(
+            id = "gangnam",
+            name = "카페민수 강남점",
+            address = "서울 강남구 테헤란로 134",
+            phone = "02-3456-7890",
+            distanceMeters = 120,
+            latitude = 37.498,
+            longitude = 127.028,
+            status = StoreStatus.Open,
+            closingTimeLabel = "22:00 마감",
+            amenities = listOf(
+                StoreAmenity.Outlet,
+                StoreAmenity.Wifi,
+                StoreAmenity.DriveThru,
+                StoreAmenity.Terrace,
+                StoreAmenity.Parking,
+            ),
+        ),
+        Store(
+            id = "yeoksam",
+            name = "카페민수 역삼점",
+            address = "서울 강남구 역삼로 92",
+            phone = "02-3456-7810",
+            distanceMeters = 340,
+            latitude = 37.500,
+            longitude = 127.036,
+            status = StoreStatus.Open,
+            closingTimeLabel = "22:00 마감",
+            amenities = listOf(
+                StoreAmenity.Outlet,
+                StoreAmenity.Wifi,
+                StoreAmenity.Terrace,
+                StoreAmenity.Parking,
+            ),
+        ),
+        Store(
+            id = "seolleung",
+            name = "카페민수 선릉점",
+            address = "서울 강남구 선릉로 414",
+            phone = "02-3456-7820",
+            distanceMeters = 780,
+            latitude = 37.504,
+            longitude = 127.049,
+            status = StoreStatus.ClosingSoon,
+            closingTimeLabel = "20:00 마감",
+            amenities = listOf(
+                StoreAmenity.Outlet,
+                StoreAmenity.Wifi,
+            ),
         ),
     )
 
