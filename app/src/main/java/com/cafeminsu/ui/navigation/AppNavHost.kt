@@ -52,6 +52,7 @@ import com.cafeminsu.ui.feature.owner.home.OwnerHomeRoute
 import com.cafeminsu.ui.feature.owner.login.OwnerLoginRoute
 import com.cafeminsu.ui.feature.owner.menu.OwnerMenuRoute
 import com.cafeminsu.ui.feature.owner.orders.OwnerOrdersRoute
+import com.cafeminsu.ui.feature.owner.sales.OwnerSalesRoute
 import com.cafeminsu.ui.feature.payment.PaymentRoute
 import com.cafeminsu.ui.feature.splash.SplashScreen
 import com.cafeminsu.ui.feature.stamp.StampRoute
@@ -177,7 +178,7 @@ fun AppNavHost(
                 OwnerMenuRoute()
             }
             composable(Routes.OWNER_SALES) {
-                PlaceholderScreen(title = "매출")
+                OwnerSalesRoute()
             }
             composable(Routes.HOME) {
                 HomeRoute(

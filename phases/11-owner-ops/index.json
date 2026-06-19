@@ -16,10 +16,13 @@
     {
       "step": 1,
       "name": "owner-sales",
-      "status": "pending",
       "images": [
         "docs/screens/점주 - 04 (매출·정산).png"
-      ]
+      ],
+      "started_at": "2026-06-19T23:08:16+0900",
+      "summary": "OWNER_SALES MVVM 본구현, SalesRepository/MockSalesRepository, 기간별 매출·차트·인기 메뉴·정산 UI 및 테스트 추가",
+      "status": "completed",
+      "completed_at": "2026-06-19T23:20:21+0900"
     }
   ],
   "created_at": "2026-06-19T22:58:01+0900"

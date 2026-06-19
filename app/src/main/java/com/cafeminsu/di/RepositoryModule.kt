@@ -8,6 +8,7 @@ import com.cafeminsu.data.repository.MockOwnerMenuRepository
 import com.cafeminsu.data.repository.MockOwnerOrderRepository
 import com.cafeminsu.data.repository.MockPaymentRepository
 import com.cafeminsu.data.repository.MockRewardRepository
+import com.cafeminsu.data.repository.MockSalesRepository
 import com.cafeminsu.data.repository.MockSessionRepository
 import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.MenuRepository
@@ -17,6 +18,7 @@ import com.cafeminsu.domain.repository.OwnerMenuRepository
 import com.cafeminsu.domain.repository.OwnerOrderRepository
 import com.cafeminsu.domain.repository.PaymentRepository
 import com.cafeminsu.domain.repository.RewardRepository
+import com.cafeminsu.domain.repository.SalesRepository
 import com.cafeminsu.domain.repository.SessionRepository
 import dagger.Binds
 import dagger.Module
@@ -46,6 +48,10 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindOwnerMenuRepository(repository: MockOwnerMenuRepository): OwnerMenuRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindSalesRepository(repository: MockSalesRepository): SalesRepository
 
     @Binds
     @Singleton
