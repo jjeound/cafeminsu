@@ -5,13 +5,10 @@
     {
       "step": 0,
       "name": "owner-menu",
-      "status": "error",
+      "status": "pending",
       "images": [
         "docs/screens/점주 - 03 (메뉴 관리).png"
-      ],
-      "started_at": "2026-06-19T17:54:31+0900",
-      "error_message": "[3회 시도 후 실패] Step did not update status",
-      "failed_at": "2026-06-19T17:54:43+0900"
+      ]
     },
     {
       "step": 1,
