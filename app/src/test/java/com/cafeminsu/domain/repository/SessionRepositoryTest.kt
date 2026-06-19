@@ -23,6 +23,8 @@ class SessionRepositoryTest {
         }
 
         assertTrue(repository.refreshOnce() is AppResult.Success)
+        assertTrue(repository.login() is AppResult.Success)
+        assertTrue(repository.logout() is AppResult.Success)
         assertTrue(repository.clearSession() is AppResult.Success)
     }
 }

@@ -29,7 +29,7 @@ class AppNavHostTest {
 
         composeRule.waitForIdle()
 
-        composeRule.onNodeWithText("로그인").assertIsDisplayed()
+        composeRule.onNodeWithText("카카오 로그인").assertIsDisplayed()
     }
 
     @Test

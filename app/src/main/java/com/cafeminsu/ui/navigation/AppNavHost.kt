@@ -37,6 +37,7 @@ import com.cafeminsu.ui.feature.cart.CartRoute
 import com.cafeminsu.ui.feature.gifticon.GifticonDetailRoute
 import com.cafeminsu.ui.feature.gifticon.GifticonRoute
 import com.cafeminsu.ui.feature.home.HomeRoute
+import com.cafeminsu.ui.feature.login.LoginRoute
 import com.cafeminsu.ui.feature.menu.MenuDetailRoute
 import com.cafeminsu.ui.feature.menu.MenuRoute
 import com.cafeminsu.ui.feature.my.MyRoute
@@ -108,7 +109,17 @@ fun AppNavHost(
                 )
             }
             composable(Routes.LOGIN) {
-                PlaceholderScreen(title = "로그인")
+                LoginRoute(
+                    sessionRepository = sessionRepository,
+                    onLoginSuccess = {
+                        navController.navigate(Routes.HOME) {
+                            popUpTo(Routes.LOGIN) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
+                    },
+                )
             }
             composable(Routes.HOME) {
                 HomeRoute(

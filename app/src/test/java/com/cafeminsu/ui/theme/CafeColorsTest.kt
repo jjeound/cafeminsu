@@ -26,6 +26,7 @@ class CafeColorsTest {
         assertEquals(success, colors.success)
         assertEquals(warning, colors.warning)
         assertEquals(error, colors.error)
+        assertEquals(kakaoYellow, colors.kakaoYellow)
     }
 
     @Test

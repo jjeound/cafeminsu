@@ -17,10 +17,13 @@
     {
       "step": 1,
       "name": "kakao-login",
-      "status": "pending",
+      "status": "completed",
       "images": [
         "docs/screens/회원가입.png"
-      ]
+      ],
+      "started_at": "2026-06-19T16:37:40+0900",
+      "summary": "카카오 SDK 실연동 경로와 KAKAO_NATIVE_APP_KEY 미설정 시 Mock 로그인 폴백을 갖춘 로그인 화면·세션 연결을 구현했다.",
+      "completed_at": "2026-06-19T16:47:31+0900"
     },
     {
       "step": 2,

@@ -24,6 +24,7 @@ class ColorTest {
             success,
             warning,
             error,
+            kakaoYellow,
         )
 
         tokens.forEach { token ->

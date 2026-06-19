@@ -20,6 +20,7 @@ data class CafeColors(
     val success: Color,
     val warning: Color,
     val error: Color,
+    val kakaoYellow: Color,
 )
 
 val LocalCafeColors = staticCompositionLocalOf<CafeColors> {
@@ -43,4 +44,5 @@ fun cafeLightColors() = CafeColors(
     success = success,
     warning = warning,
     error = error,
+    kakaoYellow = kakaoYellow,
 )
