@@ -22,7 +22,7 @@
       ],
       "started_at": "2026-06-19T17:30:52+0900",
       "summary": "OwnerOrderRepository와 OWNER_HOME MVVM 대시보드를 추가하고 통계·주문 처리·영업 토글을 연결했다.",
-      "completed_at": "2026-06-19T17:42:40+0900"
+      "completed_at": "2026-06-19T17:43:36+0900"
     },
     {
       "step": 2,
