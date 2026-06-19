@@ -10,16 +10,19 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
-import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.NavHostController
 import androidx.navigation.NavType
 import androidx.navigation.compose.NavHost
@@ -27,6 +30,9 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.cafeminsu.core.AppResult
+import com.cafeminsu.domain.model.AuthState
+import com.cafeminsu.domain.repository.SessionRepository
 import com.cafeminsu.ui.feature.cart.CartRoute
 import com.cafeminsu.ui.feature.gifticon.GifticonDetailRoute
 import com.cafeminsu.ui.feature.gifticon.GifticonRoute
@@ -36,14 +42,18 @@ import com.cafeminsu.ui.feature.menu.MenuRoute
 import com.cafeminsu.ui.feature.my.MyRoute
 import com.cafeminsu.ui.feature.order.OrderStatusRoute
 import com.cafeminsu.ui.feature.payment.PaymentRoute
+import com.cafeminsu.ui.feature.splash.SplashScreen
 import com.cafeminsu.ui.feature.stamp.StampRoute
 import com.cafeminsu.ui.feature.voice.VoiceRoute
 import com.cafeminsu.ui.theme.CafeTheme
+import kotlinx.coroutines.delay
 
 @Composable
 fun AppNavHost(
+    sessionRepository: SessionRepository,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
+    splashDelayMillis: Long = SplashGateDelayMillis,
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -52,12 +62,12 @@ fun AppNavHost(
         modifier = modifier,
         containerColor = CafeTheme.colors.canvas,
         bottomBar = {
-            if (currentRoute != Routes.VOICE) {
+            if (shouldShowBottomBar(currentRoute)) {
                 CafeBottomBar(
                     currentRoute = currentRoute,
                     onTabSelected = { route ->
                         navController.navigate(route) {
-                            popUpTo(navController.graph.findStartDestination().id) {
+                            popUpTo(Routes.HOME) {
                                 saveState = true
                             }
                             launchSingleTop = true
@@ -70,19 +80,53 @@ fun AppNavHost(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Routes.HOME,
+            startDestination = Routes.SPLASH,
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize(),
         ) {
+            composable(Routes.SPLASH) {
+                SplashGate(
+                    sessionRepository = sessionRepository,
+                    splashDelayMillis = splashDelayMillis,
+                    onAuthenticated = {
+                        navController.navigate(Routes.HOME) {
+                            popUpTo(Routes.SPLASH) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
+                    },
+                    onUnauthenticated = {
+                        navController.navigate(Routes.LOGIN) {
+                            popUpTo(Routes.SPLASH) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
+            composable(Routes.LOGIN) {
+                PlaceholderScreen(title = "로그인")
+            }
             composable(Routes.HOME) {
                 HomeRoute(
                     onMenuClick = { menuItemId ->
                         navController.navigate(Routes.menuDetail(menuItemId))
                     },
-                    onBrowseMenuClick = { navController.navigate(Routes.MENU) },
+                    onBrowseMenuClick = { navController.navigate(Routes.STORE) },
                     onVoiceOrderClick = { navController.navigate(Routes.VOICE) },
                 )
+            }
+            composable(Routes.NOTI) {
+                PlaceholderScreen(title = "알림")
+            }
+            composable(Routes.STORE) {
+                PlaceholderScreen(title = "매장 선택")
+            }
+            composable(Routes.STORE_DETAIL) {
+                PlaceholderScreen(title = "매장 상세")
             }
             composable(Routes.MENU) {
                 MenuRoute(
@@ -112,53 +156,62 @@ fun AppNavHost(
             composable(Routes.CART) {
                 CartRoute(
                     onPaymentRequested = { orderId ->
-                        navController.navigate(Routes.payment(orderId))
+                        navController.navigate(Routes.pay(orderId))
                     },
-                    onBrowseMenuClick = { navController.navigate(Routes.MENU) },
+                    onBrowseMenuClick = { navController.navigate(Routes.STORE) },
                 )
             }
             composable(
-                route = Routes.PAYMENT,
+                route = Routes.PAY,
                 arguments = listOf(
-                    navArgument(Routes.PAYMENT_ORDER_ID) {
+                    navArgument(Routes.PAY_ORDER_ID) {
                         type = NavType.StringType
                     },
                 ),
             ) {
                 PaymentRoute(
                     onPaymentApproved = { orderId ->
-                        navController.navigate(Routes.orderStatus(orderId)) {
-                            popUpTo(navController.graph.findStartDestination().id) {
-                                saveState = false
-                            }
+                        navController.navigate(Routes.orderOk(orderId)) {
                             launchSingleTop = true
                         }
                     },
                 )
             }
             composable(
-                route = Routes.ORDER_STATUS,
+                route = Routes.ORDER_OK,
                 arguments = listOf(
-                    navArgument(Routes.ORDER_STATUS_ORDER_ID) {
+                    navArgument(Routes.ORDER_OK_ORDER_ID) {
                         type = NavType.StringType
                     },
                 ),
             ) {
-                OrderStatusRoute()
+                PlaceholderScreen(title = "주문 완료")
             }
-            composable(Routes.STAMP) {
-                StampRoute(
-                    onBrowseMenuClick = { navController.navigate(Routes.MENU) },
-                    onLoginClick = {},
+            composable(Routes.ORDER_FAIL) {
+                PlaceholderScreen(title = "주문 실패")
+            }
+            composable(Routes.MY) {
+                MyRoute(
+                    onOrderClick = { orderId ->
+                        navController.navigate(Routes.history(orderId))
+                    },
+                    onBrowseMenuClick = { navController.navigate(Routes.STORE) },
+                    onLoginClick = { navController.navigate(Routes.LOGIN) },
                 )
             }
-            composable(Routes.GIFTICON) {
+            composable(Routes.COUPON) {
+                StampRoute(
+                    onBrowseMenuClick = { navController.navigate(Routes.STORE) },
+                    onLoginClick = { navController.navigate(Routes.LOGIN) },
+                )
+            }
+            composable(Routes.GIFT) {
                 GifticonRoute(
                     onGifticonClick = { gifticonId ->
                         navController.navigate(Routes.gifticonDetail(gifticonId))
                     },
-                    onStampClick = { navController.navigate(Routes.STAMP) },
-                    onLoginClick = {},
+                    onStampClick = { navController.navigate(Routes.COUPON) },
+                    onLoginClick = { navController.navigate(Routes.LOGIN) },
                 )
             }
             composable(
@@ -170,18 +223,82 @@ fun AppNavHost(
                 ),
             ) {
                 GifticonDetailRoute(
-                    onLoginClick = {},
+                    onLoginClick = { navController.navigate(Routes.LOGIN) },
                 )
             }
-            composable(Routes.MY) {
-                MyRoute(
-                    onOrderClick = { orderId ->
-                        navController.navigate(Routes.orderStatus(orderId))
+            composable(Routes.HISTORY) {
+                PlaceholderScreen(title = "주문내역")
+            }
+            composable(
+                route = Routes.HISTORY_DETAIL,
+                arguments = listOf(
+                    navArgument(Routes.HISTORY_ORDER_ID) {
+                        type = NavType.StringType
                     },
-                    onBrowseMenuClick = { navController.navigate(Routes.MENU) },
-                    onLoginClick = {},
-                )
+                ),
+            ) {
+                OrderStatusRoute()
             }
+        }
+    }
+}
+
+@Composable
+private fun SplashGate(
+    sessionRepository: SessionRepository,
+    splashDelayMillis: Long,
+    onAuthenticated: () -> Unit,
+    onUnauthenticated: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val authStateFlow = remember(sessionRepository) { sessionRepository.observeAuthState() }
+    val authState by authStateFlow.collectAsState(initial = AuthState.Unknown)
+
+    LaunchedEffect(authState, sessionRepository, splashDelayMillis) {
+        delay(splashDelayMillis)
+        val resolvedState = if (authState == AuthState.Unknown) {
+            when (val result = sessionRepository.refreshOnce()) {
+                is AppResult.Success -> result.data
+                is AppResult.Failure -> AuthState.Guest
+            }
+        } else {
+            authState
+        }
+
+        when (resolvedState) {
+            is AuthState.Authenticated -> onAuthenticated()
+            AuthState.Guest,
+            AuthState.Expired,
+            -> onUnauthenticated()
+
+            AuthState.Unknown -> Unit
+        }
+    }
+
+    SplashScreen(modifier = modifier)
+}
+
+@Composable
+private fun PlaceholderScreen(
+    title: String,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        modifier = modifier.fillMaxSize(),
+        color = CafeTheme.colors.canvas,
+        contentColor = CafeTheme.colors.ink,
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .padding(CafeTheme.spacing.space5),
+            contentAlignment = Alignment.TopStart,
+        ) {
+            Text(
+                text = title,
+                style = CafeTheme.typography.h1,
+                color = CafeTheme.colors.ink,
+            )
         }
     }
 }
@@ -193,10 +310,25 @@ private data class BottomTab(
 
 private val bottomTabs = listOf(
     BottomTab(Routes.HOME, "홈"),
-    BottomTab(Routes.MENU, "메뉴"),
-    BottomTab(Routes.STAMP, "스탬프"),
-    BottomTab(Routes.MY, "마이"),
+    BottomTab(Routes.STORE, "주문"),
+    BottomTab(Routes.MY, "MY"),
 )
+
+private val orderTabRoutes = setOf(
+    Routes.STORE,
+    Routes.MENU,
+)
+
+private fun shouldShowBottomBar(currentRoute: String?): Boolean =
+    selectedTabRoute(currentRoute) != null
+
+private fun selectedTabRoute(currentRoute: String?): String? =
+    when {
+        currentRoute == Routes.HOME -> Routes.HOME
+        orderTabRoutes.contains(currentRoute) -> Routes.STORE
+        currentRoute == Routes.MY -> Routes.MY
+        else -> null
+    }
 
 @Composable
 private fun CafeBottomBar(
@@ -206,6 +338,7 @@ private fun CafeBottomBar(
 ) {
     val colors = CafeTheme.colors
     val spacing = CafeTheme.spacing
+    val selectedRoute = selectedTabRoute(currentRoute)
 
     Box(
         modifier = modifier
@@ -224,7 +357,7 @@ private fun CafeBottomBar(
     ) {
         Row(modifier = Modifier.fillMaxSize()) {
             bottomTabs.forEach { tab ->
-                val selected = currentRoute == tab.route
+                val selected = selectedRoute == tab.route
 
                 Box(
                     modifier = Modifier
@@ -247,3 +380,5 @@ private fun CafeBottomBar(
         }
     }
 }
+
+private const val SplashGateDelayMillis = 1_200L

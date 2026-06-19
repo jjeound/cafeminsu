@@ -5,12 +5,13 @@
     {
       "step": 0,
       "name": "nav-splash-gate",
-      "status": "pending",
+      "status": "completed",
       "images": [
         "docs/screens/Splash.png",
         "docs/screens/홈.png"
       ],
-      "started_at": "2026-06-19T16:04:05+0900"
+      "started_at": "2026-06-19T16:04:05+0900",
+      "summary": "스플래시 인증 게이트와 홈/주문/MY 3탭 네비게이션 셸을 구성했다."
     },
     {
       "step": 1,
