@@ -50,4 +50,25 @@ class LoginScreenTest {
             assertEquals(1, clicks)
         }
     }
+
+    @Test
+    fun ownerLoginLinkHandlesClick() {
+        var clicks = 0
+
+        composeRule.setContent {
+            CafeTheme {
+                LoginScreen(
+                    uiState = LoginUiState(),
+                    onKakaoLoginClick = {},
+                    onOwnerLoginClick = { clicks += 1 },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("점주 로그인").performClick()
+
+        composeRule.runOnIdle {
+            assertEquals(1, clicks)
+        }
+    }
 }

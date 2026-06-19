@@ -23,6 +23,11 @@ class RoutesTest {
         assertEquals("coupon", Routes.COUPON)
         assertEquals("gift", Routes.GIFT)
         assertEquals("history", Routes.HISTORY)
+        assertEquals("owner_login", Routes.OWNER_LOGIN)
+        assertEquals("owner_home", Routes.OWNER_HOME)
+        assertEquals("owner_orders", Routes.OWNER_ORDERS)
+        assertEquals("owner_menu", Routes.OWNER_MENU)
+        assertEquals("owner_sales", Routes.OWNER_SALES)
     }
 
     @Test

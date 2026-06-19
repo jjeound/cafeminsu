@@ -26,6 +26,11 @@ object Routes {
     const val HISTORY = "history"
     const val HISTORY_ORDER_ID = "orderId"
     const val HISTORY_DETAIL = "$HISTORY/{$HISTORY_ORDER_ID}"
+    const val OWNER_LOGIN = "owner_login"
+    const val OWNER_HOME = "owner_home"
+    const val OWNER_ORDERS = "owner_orders"
+    const val OWNER_MENU = "owner_menu"
+    const val OWNER_SALES = "owner_sales"
 
     const val PAYMENT_ORDER_ID = PAY_ORDER_ID
     const val PAYMENT = PAY

@@ -5,10 +5,12 @@
     {
       "step": 0,
       "name": "owner-foundation-login",
-      "status": "pending",
+      "status": "completed",
       "images": [
         "docs/screens/점주 - 00 (로그인).png"
-      ]
+      ],
+      "started_at": "2026-06-19T17:19:51+0900",
+      "summary": "점주 역할 모델, Mock 점주 인증, OWNER_LOGIN 화면, 역할 분기 네비와 점주 4탭 셸을 추가했다."
     },
     {
       "step": 1,
@@ -26,5 +28,6 @@
         "docs/screens/점주 - 02 (주문 관리).png"
       ]
     }
-  ]
+  ],
+  "created_at": "2026-06-19T17:19:51+0900"
 }

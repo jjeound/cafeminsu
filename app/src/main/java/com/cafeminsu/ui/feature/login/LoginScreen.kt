@@ -35,6 +35,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -47,6 +48,7 @@ import com.cafeminsu.ui.theme.CafeTheme
 fun LoginRoute(
     sessionRepository: SessionRepository,
     onLoginSuccess: () -> Unit,
+    onOwnerLoginClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LoginViewModel = viewModel(
         factory = LoginViewModelFactory(sessionRepository),
@@ -67,7 +69,7 @@ fun LoginRoute(
     LoginScreen(
         uiState = uiState,
         onKakaoLoginClick = viewModel::onKakaoLoginClick,
-        onOwnerLoginClick = {},
+        onOwnerLoginClick = onOwnerLoginClick,
         snackbarHostState = snackbarHostState,
         modifier = modifier,
     )
@@ -224,10 +226,12 @@ private fun OwnerLoginLink(
 ) {
     val colors = CafeTheme.colors
     Row(
-        modifier = modifier.clickable(
-            role = Role.Button,
-            onClick = onClick,
-        ),
+        modifier = modifier
+            .clickable(
+                role = Role.Button,
+                onClick = onClick,
+            )
+            .semantics(mergeDescendants = true) {},
         horizontalArrangement = Arrangement.Center,
         verticalAlignment = Alignment.CenterVertically,
     ) {

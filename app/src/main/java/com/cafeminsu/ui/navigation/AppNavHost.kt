@@ -2,12 +2,15 @@ package com.cafeminsu.ui.navigation
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -31,7 +34,9 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.cafeminsu.core.AppResult
+import com.cafeminsu.domain.auth.OwnerAuthProvider
 import com.cafeminsu.domain.model.AuthState
+import com.cafeminsu.domain.model.UserRole
 import com.cafeminsu.domain.repository.SessionRepository
 import com.cafeminsu.ui.feature.cart.CartRoute
 import com.cafeminsu.ui.feature.gifticon.GifticonDetailRoute
@@ -43,6 +48,7 @@ import com.cafeminsu.ui.feature.menu.MenuRoute
 import com.cafeminsu.ui.feature.my.MyRoute
 import com.cafeminsu.ui.feature.notification.NotiRoute
 import com.cafeminsu.ui.feature.order.OrderStatusRoute
+import com.cafeminsu.ui.feature.owner.login.OwnerLoginRoute
 import com.cafeminsu.ui.feature.payment.PaymentRoute
 import com.cafeminsu.ui.feature.splash.SplashScreen
 import com.cafeminsu.ui.feature.stamp.StampRoute
@@ -53,6 +59,7 @@ import kotlinx.coroutines.delay
 @Composable
 fun AppNavHost(
     sessionRepository: SessionRepository,
+    ownerAuthProvider: OwnerAuthProvider,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     splashDelayMillis: Long = SplashGateDelayMillis,
@@ -64,7 +71,20 @@ fun AppNavHost(
         modifier = modifier,
         containerColor = CafeTheme.colors.canvas,
         bottomBar = {
-            if (shouldShowBottomBar(currentRoute)) {
+            if (shouldShowOwnerBottomBar(currentRoute)) {
+                OwnerBottomBar(
+                    currentRoute = currentRoute,
+                    onTabSelected = { route ->
+                        navController.navigate(route) {
+                            popUpTo(Routes.OWNER_HOME) {
+                                saveState = true
+                            }
+                            launchSingleTop = true
+                            restoreState = true
+                        }
+                    },
+                )
+            } else if (shouldShowBottomBar(currentRoute)) {
                 CafeBottomBar(
                     currentRoute = currentRoute,
                     onTabSelected = { route ->
@@ -91,8 +111,13 @@ fun AppNavHost(
                 SplashGate(
                     sessionRepository = sessionRepository,
                     splashDelayMillis = splashDelayMillis,
-                    onAuthenticated = {
-                        navController.navigate(Routes.HOME) {
+                    onAuthenticated = { authState ->
+                        val destination = if (authState.role == UserRole.Owner) {
+                            Routes.OWNER_HOME
+                        } else {
+                            Routes.HOME
+                        }
+                        navController.navigate(destination) {
                             popUpTo(Routes.SPLASH) {
                                 inclusive = true
                             }
@@ -120,7 +145,34 @@ fun AppNavHost(
                             launchSingleTop = true
                         }
                     },
+                    onOwnerLoginClick = { navController.navigate(Routes.OWNER_LOGIN) },
                 )
+            }
+            composable(Routes.OWNER_LOGIN) {
+                OwnerLoginRoute(
+                    ownerAuthProvider = ownerAuthProvider,
+                    onBackClick = { navController.popBackStack() },
+                    onLoginSuccess = {
+                        navController.navigate(Routes.OWNER_HOME) {
+                            popUpTo(Routes.OWNER_LOGIN) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
+            composable(Routes.OWNER_HOME) {
+                PlaceholderScreen(title = "대시보드")
+            }
+            composable(Routes.OWNER_ORDERS) {
+                PlaceholderScreen(title = "주문")
+            }
+            composable(Routes.OWNER_MENU) {
+                PlaceholderScreen(title = "메뉴")
+            }
+            composable(Routes.OWNER_SALES) {
+                PlaceholderScreen(title = "매출")
             }
             composable(Routes.HOME) {
                 HomeRoute(
@@ -266,7 +318,7 @@ fun AppNavHost(
 private fun SplashGate(
     sessionRepository: SessionRepository,
     splashDelayMillis: Long,
-    onAuthenticated: () -> Unit,
+    onAuthenticated: (AuthState.Authenticated) -> Unit,
     onUnauthenticated: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -285,7 +337,7 @@ private fun SplashGate(
         }
 
         when (resolvedState) {
-            is AuthState.Authenticated -> onAuthenticated()
+            is AuthState.Authenticated -> onAuthenticated(resolvedState)
             AuthState.Guest,
             AuthState.Expired,
             -> onUnauthenticated()
@@ -333,6 +385,13 @@ private val bottomTabs = listOf(
     BottomTab(Routes.MY, "MY"),
 )
 
+private val ownerBottomTabs = listOf(
+    BottomTab(Routes.OWNER_HOME, "대시보드"),
+    BottomTab(Routes.OWNER_ORDERS, "주문"),
+    BottomTab(Routes.OWNER_MENU, "메뉴"),
+    BottomTab(Routes.OWNER_SALES, "매출"),
+)
+
 private val orderTabRoutes = setOf(
     Routes.STORE,
     Routes.MENU,
@@ -341,11 +400,23 @@ private val orderTabRoutes = setOf(
 private fun shouldShowBottomBar(currentRoute: String?): Boolean =
     selectedTabRoute(currentRoute) != null
 
+private fun shouldShowOwnerBottomBar(currentRoute: String?): Boolean =
+    selectedOwnerTabRoute(currentRoute) != null
+
 private fun selectedTabRoute(currentRoute: String?): String? =
     when {
         currentRoute == Routes.HOME -> Routes.HOME
         orderTabRoutes.contains(currentRoute) -> Routes.STORE
         currentRoute == Routes.MY -> Routes.MY
+        else -> null
+    }
+
+private fun selectedOwnerTabRoute(currentRoute: String?): String? =
+    when (currentRoute) {
+        Routes.OWNER_HOME -> Routes.OWNER_HOME
+        Routes.OWNER_ORDERS -> Routes.OWNER_ORDERS
+        Routes.OWNER_MENU -> Routes.OWNER_MENU
+        Routes.OWNER_SALES -> Routes.OWNER_SALES
         else -> null
     }
 
@@ -394,6 +465,72 @@ private fun CafeBottomBar(
                         style = CafeTheme.typography.caption,
                         color = if (selected) colors.primary else colors.muted,
                     )
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun OwnerBottomBar(
+    currentRoute: String?,
+    onTabSelected: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = CafeTheme.colors
+    val spacing = CafeTheme.spacing
+    val selectedRoute = selectedOwnerTabRoute(currentRoute)
+
+    Box(
+        modifier = modifier
+            .fillMaxWidth()
+            .height(spacing.space18)
+            .background(colors.canvas)
+            .drawWithContent {
+                drawContent()
+                drawLine(
+                    color = colors.hairline,
+                    start = Offset.Zero,
+                    end = Offset(size.width, 0f),
+                    strokeWidth = 1.dp.toPx(),
+                )
+            },
+    ) {
+        Row(modifier = Modifier.fillMaxSize()) {
+            ownerBottomTabs.forEach { tab ->
+                val selected = selectedRoute == tab.route
+
+                Box(
+                    modifier = Modifier
+                        .weight(1f)
+                        .fillMaxHeight()
+                        .selectable(
+                            selected = selected,
+                            role = Role.Tab,
+                            onClick = { onTabSelected(tab.route) },
+                        ),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        if (selected) {
+                            Box(
+                                modifier = Modifier
+                                    .size(spacing.space1)
+                                    .background(
+                                        color = colors.primary,
+                                        shape = CafeTheme.shapes.radiusPill,
+                                    ),
+                            )
+                        } else {
+                            Spacer(modifier = Modifier.size(spacing.space1))
+                        }
+                        Spacer(modifier = Modifier.height(spacing.space1))
+                        Text(
+                            text = tab.label,
+                            style = CafeTheme.typography.caption,
+                            color = if (selected) colors.primary else colors.muted,
+                        )
+                    }
                 }
             }
         }
