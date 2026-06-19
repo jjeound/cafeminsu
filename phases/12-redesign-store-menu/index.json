@@ -11,7 +11,8 @@
       ],
       "started_at": "2026-06-19T23:26:17+0900",
       "summary": "STORE 매장 선택/상세 바텀시트 MVVM 구현 및 MockStoreRepository 연동",
-      "status": "completed"
+      "status": "completed",
+      "completed_at": "2026-06-19T23:38:42+0900"
     },
     {
       "step": 1,
