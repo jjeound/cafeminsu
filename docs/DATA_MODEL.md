@@ -259,3 +259,117 @@ sealed interface DataUiState<out T> {
 
 화면별 sealed `UiState`를 쓰는 경우에도 위 4상태 의미를 빠뜨리지 않는다. 결제 화면은 처리 중 상태를 별도로 두되,
 서버/Mock 확정 전에는 성공 화면으로 전환하지 않는다.
+
+---
+
+## 재설계 추가 모델 (`docs/screens` 반영)
+아래는 화면 디자인 정렬을 위해 추가되는 계약이다. 기존 모델/원칙(금액 Int·AppResult·토큰화 등)을 그대로 따른다.
+
+### Store / 매장
+```kotlin
+data class Store(
+    val id: String,
+    val name: String,            // "카페민수 강남점"
+    val address: String,
+    val phone: String,
+    val distanceMeters: Int,     // 현재 위치 기준
+    val latitude: Double,
+    val longitude: Double,
+    val status: StoreStatus,
+    val closingTimeLabel: String?, // "22:00 마감"
+    val amenities: List<StoreAmenity>, // 콘센트/Wi-Fi/드라이브스루/테라스 등
+)
+
+enum class StoreStatus { Open, ClosingSoon, Closed }
+enum class StoreAmenity { Outlet, Wifi, DriveThru, Terrace, Parking }
+```
+
+### Order 확장 (주문 방식·요청사항·매장)
+```kotlin
+enum class OrderType { DineIn, Takeout }   // 매장에서 먹기 / 포장(픽업)
+// Order 에 추가: val storeId: String, val orderType: OrderType, val requestNote: String?,
+//               val estimatedReadyMinutes: Int?
+```
+`Cart`/체크아웃은 `orderType`과 `requestNote`(예: "얼음 적게")를 보유한다.
+
+### Coupon / Stamp (쿠폰 화면 통합)
+```kotlin
+data class Coupon(
+    val id: String,
+    val type: CouponType,
+    val title: String,           // "무료 음료 1잔 쿠폰" / "₩10,000"
+    val amount: Int?,            // 금액형이면 원, 무료음료면 null
+    val expiresAtMillis: Long,
+    val status: CouponStatus,
+)
+enum class CouponType { FreeDrink, Amount }
+enum class CouponStatus { Available, Used, Expired }
+// 스탬프는 기존 StampCard 재사용(매장별 currentCount/goalCount). 쿠폰 화면은 StampCard + List<Coupon>.
+```
+
+### Membership / Profile 확장
+```kotlin
+enum class MembershipTier { Basic, Silver, Gold }
+// UserProfile 에 추가: val tier: MembershipTier, val orderCount: Int,
+//                      val stampCount: Int, val couponCount: Int
+```
+
+### Notification / 알림
+```kotlin
+data class AppNotification(
+    val id: String,
+    val type: NotificationType,  // OrderReady/OrderAccepted/StampEarned/GifticonReceived/OrderCompleted
+    val title: String,
+    val body: String,
+    val createdAtMillis: Long,
+    val read: Boolean,
+)
+enum class NotificationType { OrderAccepted, OrderReady, OrderCompleted, StampEarned, GifticonReceived }
+```
+
+### Gift / 선물하기
+```kotlin
+data class GiftSendRequest(
+    val amount: Int,             // 금액형 기프티콘 (5000/10000/20000/직접입력)
+    val channel: GiftChannel,    // KakaoTalk / Sms
+    val recipientRef: String,    // 카카오 친구 식별 또는 연락처(저장·로깅 최소화)
+    val message: String?,
+)
+enum class GiftChannel { KakaoTalk, Sms }
+data class GiftSendResult(val giftId: String, val sentAtMillis: Long)
+```
+
+### Auth / 로그인 (카카오)
+```kotlin
+interface LoginProvider {                      // 실(Kakao)/Mock 교체 가능
+    suspend fun login(): AppResult<AuthState>  // 성공 시 Authenticated(UserProfile)
+    suspend fun logout(): AppResult<Unit>
+}
+```
+
+## 추가 Repository Contracts
+```kotlin
+interface StoreRepository {
+    fun observeNearbyStores(query: String? = null): Flow<AppResult<List<Store>>>
+    suspend fun getStore(storeId: String): AppResult<Store>
+    suspend fun selectStore(storeId: String): AppResult<Unit>   // 현재 주문 매장 설정
+    fun observeSelectedStore(): Flow<Store?>
+}
+
+interface CouponRepository {                 // 또는 RewardRepository 확장
+    fun observeCoupons(): Flow<AppResult<List<Coupon>>>
+    suspend fun useCoupon(id: String): AppResult<Coupon>
+}
+
+interface NotificationRepository {
+    fun observeNotifications(): Flow<AppResult<List<AppNotification>>>
+    suspend fun markAllRead(): AppResult<Unit>
+}
+
+interface GiftRepository {
+    suspend fun sendGift(request: GiftSendRequest): AppResult<GiftSendResult>  // 실Kakao/Mock
+}
+```
+- 신규 Mock 리포지토리(StoreRepository/CouponRepository/NotificationRepository/GiftRepository)는 기존 패턴대로
+  인메모리 시드 + `@Binds`로 DI 연결한다. 실연동(카카오/지도/선물)은 키 게이트 + 폴백(키 부재 시 Mock)으로 둔다.
+- 선물 수신자(연락처·카카오 친구)·토큰은 저장·로깅 최소화(`SECURITY.md §4`).
