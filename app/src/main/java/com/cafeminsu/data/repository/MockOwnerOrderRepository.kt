@@ -101,7 +101,7 @@ class MockOwnerOrderRepository @Inject constructor() : OwnerOrderRepository {
                 itemName = if (index % 2 == 0) "아메리카노(R) ICE" else "헤이즐넛라떼(R) HOT",
                 itemCount = 1,
                 totalAmount = completedSeedAmount(index),
-                status = OrderStatus.Completed,
+                status = completedSeedStatus(index),
                 createdAtMillis = TodayAt1200Millis - index * TenMinutesMillis,
             )
         }
@@ -114,6 +114,13 @@ class MockOwnerOrderRepository @Inject constructor() : OwnerOrderRepository {
             LastCompletedAmount
         } else {
             StandardCompletedAmount
+        }
+
+    private fun completedSeedStatus(index: Int): OrderStatus =
+        when {
+            index <= ReadySeedOrderCount -> OrderStatus.Ready
+            index <= ReadySeedOrderCount + ExtraPreparingSeedOrderCount -> OrderStatus.Preparing
+            else -> OrderStatus.Completed
         }
 
     private fun ownerOrder(
@@ -171,6 +178,8 @@ class MockOwnerOrderRepository @Inject constructor() : OwnerOrderRepository {
 
     private companion object {
         const val CompletedSeedOrderCount = 33
+        const val ReadySeedOrderCount = 2
+        const val ExtraPreparingSeedOrderCount = 4
         const val StandardCompletedAmount = 13_500
         const val LastCompletedAmount = 18_000
         const val TenMinutesMillis = 10L * 60L * 1000L

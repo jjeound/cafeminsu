@@ -50,6 +50,7 @@ import com.cafeminsu.ui.feature.notification.NotiRoute
 import com.cafeminsu.ui.feature.order.OrderStatusRoute
 import com.cafeminsu.ui.feature.owner.home.OwnerHomeRoute
 import com.cafeminsu.ui.feature.owner.login.OwnerLoginRoute
+import com.cafeminsu.ui.feature.owner.orders.OwnerOrdersRoute
 import com.cafeminsu.ui.feature.payment.PaymentRoute
 import com.cafeminsu.ui.feature.splash.SplashScreen
 import com.cafeminsu.ui.feature.stamp.StampRoute
@@ -169,7 +170,7 @@ fun AppNavHost(
                 )
             }
             composable(Routes.OWNER_ORDERS) {
-                PlaceholderScreen(title = "주문")
+                OwnerOrdersRoute()
             }
             composable(Routes.OWNER_MENU) {
                 PlaceholderScreen(title = "메뉴")

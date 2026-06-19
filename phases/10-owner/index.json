@@ -27,10 +27,13 @@
     {
       "step": 2,
       "name": "owner-orders",
-      "status": "pending",
+      "status": "completed",
       "images": [
         "docs/screens/점주 - 02 (주문 관리).png"
-      ]
+      ],
+      "started_at": "2026-06-19T17:43:37+0900",
+      "summary": "OWNER_ORDERS MVVM 화면을 추가하고 필터별 카운트·상태 전이·Empty/Error 처리를 연결했다.",
+      "completed_at": "2026-06-19T17:52:37+0900"
     }
   ],
   "created_at": "2026-06-19T17:19:51+0900"

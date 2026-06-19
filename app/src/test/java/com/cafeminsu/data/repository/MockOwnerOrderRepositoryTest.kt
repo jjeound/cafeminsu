@@ -20,6 +20,8 @@ class MockOwnerOrderRepositoryTest {
             assertEquals(37, orders.size)
             assertEquals(482_000, orders.sumOf { it.totalAmount })
             assertEquals(3, orders.count { it.status == OrderStatus.Accepted })
+            assertEquals(5, orders.count { it.status == OrderStatus.Preparing })
+            assertEquals(2, orders.count { it.status == OrderStatus.Ready })
             assertTrue(orders.any { it.orderNumber == "1042" })
             assertTrue(orders.any { it.orderNumber == "1041" })
 
