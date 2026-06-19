@@ -16,13 +16,10 @@
     {
       "step": 1,
       "name": "pay-redesign",
-      "status": "error",
+      "status": "pending",
       "images": [
         "docs/screens/주문 - 07(결제).png"
-      ],
-      "started_at": "2026-06-20T00:16:31+0900",
-      "error_message": "[3회 시도 후 실패] Step did not update status",
-      "failed_at": "2026-06-20T00:16:42+0900"
+      ]
     },
     {
       "step": 2,
