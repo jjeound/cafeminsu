@@ -1,0 +1,30 @@
+{
+  "project": "CafeMinsu",
+  "phase": "owner",
+  "steps": [
+    {
+      "step": 0,
+      "name": "owner-foundation-login",
+      "status": "pending",
+      "images": [
+        "docs/screens/점주 - 00 (로그인).png"
+      ]
+    },
+    {
+      "step": 1,
+      "name": "owner-dashboard",
+      "status": "pending",
+      "images": [
+        "docs/screens/점주 - 01 (대시보드).png"
+      ]
+    },
+    {
+      "step": 2,
+      "name": "owner-orders",
+      "status": "pending",
+      "images": [
+        "docs/screens/점주 - 02 (주문 관리).png"
+      ]
+    }
+  ]
+}

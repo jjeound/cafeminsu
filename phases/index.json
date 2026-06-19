@@ -70,6 +70,18 @@
       "status": "completed",
       "summary": "3탭 네비(홈/주문/MY) + 스플래시 + 카카오 로그인 게이트 + 홈 재작업 + 알림 (디자인 정렬)",
       "completed_at": "2026-06-19T17:09:14+0900"
+    },
+    {
+      "dir": "10-owner",
+      "name": "owner",
+      "status": "pending",
+      "summary": "점주 콘솔 토대 — 역할 분기 네비 + 점주 로그인(OWNER_LOGIN) + 대시보드(OWNER_HOME) + 실시간 주문 관리(OWNER_ORDERS)"
+    },
+    {
+      "dir": "11-owner-ops",
+      "name": "owner-ops",
+      "status": "pending",
+      "summary": "점주 운영 — 메뉴 관리(OWNER_MENU, 품절 토글) + 매출·정산(OWNER_SALES)"
     }
   ]
 }

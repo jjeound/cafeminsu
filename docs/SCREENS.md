@@ -178,6 +178,53 @@
 
 ---
 
+## 점주(매장 관리자) 화면
+점주 화면은 고객과 **동일 토큰·컴포넌트**를 재사용한다(점주 전용 색/토큰 신규 금지). 진입은 `LOGIN` 하단 "점주 로그인 →" 링크.
+하단 탭바 **대시보드 · 주문 · 메뉴 · 매출 (4개)**: 활성 `primary`(라벨+상단 점), 비활성 `muted`, 상단 1px `hairline`.
+주문 상태는 기존 `OrderStatus`(Accepted/Preparing/Ready/Completed) 재사용. 모든 데이터 화면은 4상태(Loading/Empty/Error/Offline) 유지.
+
+## OWNER_LOGIN (점주 로그인) — `점주 - 00 (로그인).png`
+- `CafeTopBar`: 좌 `←`, 중앙 "점주 로그인". 배경 `canvas`.
+- 코랄 애스터리스크 `*`(`primary`) + "매장 관리자 로그인" `h1`/`ink` + "카페민수 매장 계정으로 로그인하세요." `body`/`muted`.
+- **아이디** 라벨 `caption`/`ink` + `CafeTextField`(placeholder "아이디를 입력하세요", `surface-card`).
+- **비밀번호** 라벨 + `CafeTextField`(placeholder "비밀번호를 입력하세요", **마스킹**, 화면/로그 노출 금지).
+- 하단 폭 꽉 찬 **"로그인"** `CafeButton`(primary) → `OwnerAuthProvider.login(id, pw)` → 성공 시 `OWNER_HOME`, 실패 스낵바.
+
+## OWNER_HOME (점주 대시보드) — `점주 - 01 (대시보드).png`
+- 상단: 매장명 **"강남점 ▾"** `h1`/`ink`(매장 선택, MVP는 드롭다운 표시만) + 우측 **"● 영업중" 토글 pill**(`surface-card`, `success` 점, ON/OFF로 `setStoreOpen`).
+- "6월 19일 (금)" `caption`/`muted` + **"오늘의 매장 현황"** `h2`/`ink`.
+- **3 stat 카드 row**(`surface-card`): 라벨 `caption`/`muted` + 값 `h2`/`ink`. 오늘 매출 "₩482,000" · 주문 "37건" · 신규 대기 "3건"(값 `primary` 강조).
+- **"지금 처리할 주문"** `h2` + 우측 "전체 보기 →"(`primary`) → `OWNER_ORDERS`. 주문 카드(`surface-card`):
+  주문번호 "#1042" + "· 오후 2:14" `caption`, 우측 상태 점+텍스트("● 신규" `warning` / "● 준비중" `primary`),
+  품목 "아메리카노(L) ICE 외 1" `body`/`ink`, 금액 "₩9,300" `primary`, 우측 액션 버튼(신규=**"접수하기"**, 준비중=**"준비완료"**) → `advanceStatus`.
+- 하단 탭바(대시보드 활성).
+
+## OWNER_ORDERS (실시간 주문 관리) — `점주 - 02 (주문 관리).png`
+- 상단 "주문 관리" `h1`/`ink` + 우측 "● 실시간" `caption`(`success` 점).
+- **필터 칩 row**(`CafeChip`): "신규 3"(선택=`primary`) · "준비중 5" · "준비완료 2"(개수는 상태별 카운트).
+- 주문 카드(`surface-card`): 주문번호 "#1042" `h3` + "오후 2:14" `caption`/`muted`, 우측 "● 신규" 상태.
+  품목 멀티라인 "아메리카노 (L) · ICE · 1 / 바닐라라떼 (R) · HOT · 1" `body`, 요청 "포장 · 요청: 얼음 적게" `caption`/`muted`,
+  금액 "₩9,300" `primary` + 우측 액션 버튼(신규="접수하기", 준비중="준비완료", 준비완료="픽업완료") → `advanceStatus`(접수→준비중→준비완료→픽업완료).
+- 빈 상태 `EmptyView`("새 주문이 없어요"). 하단 탭바(주문 활성).
+
+## OWNER_MENU (메뉴 관리) — `점주 - 03 (메뉴 관리).png`
+- 상단 "메뉴 관리" `h1`/`ink` + 우측 **"+ 메뉴 추가"** `primary` 텍스트버튼(MVP는 스텁/토스트).
+- **카테고리 칩 row**(`CafeChip`): "전체"(선택=`primary`) · "커피" · "논커피" · "디저트".
+- 메뉴 행(`surface-card`): 메뉴명 "아메리카노" `h3`/`ink`, 가격 "₩4,500" `primary`, 상태 점+텍스트("● 판매중" `success` / "● 품절" `error`),
+  우측 **토글 스위치**: ON=`primary`(판매중), OFF=`hairline`(품절) → `setSoldOut`. **품절 행은 셀 디밍(`muted`)** + `error` "품절" 태그.
+- 하단 탭바(메뉴 활성).
+
+## OWNER_SALES (매출·정산) — `점주 - 04 (매출·정산).png`
+- 상단 "매출 · 정산" `h1`/`ink`.
+- **기간 세그먼트**(`surface-card` pill 3분할): 오늘 · **이번 주**(선택=흰 배경/`ink`) · 이번 달 → `SalesPeriod`.
+- "이번 주 매출" `caption`/`muted` + 큰 숫자 **"₩2,840,000"** `display`/`primary` + **"▲ 12% 지난주 대비"** `caption`/`success`(증감 부호색).
+- **"요일별 매출"** 카드(`surface-card`): 막대 차트(일~토, `dailySales`). 최고/당일 막대 `primary`, 나머지 `accent-soft`. 축 라벨 `meta`/`muted`.
+- **"인기 메뉴"** `h2`. 순위 행: 순위 숫자 "1" `primary`, 메뉴명 "아메리카노" `h3` + "142잔" `caption`/`muted`, 우측 금액 "₩639,000" `bodyL`/`ink`.
+- **"정산 예정 금액"** 다크 카드(`surface-dark`): 좌측 라벨 `muted` + "6월 24일 입금 예정" `caption`, 우측 "₩2,556,000" `h2`/`on-dark`.
+- 하단 탭바(매출 활성).
+
+---
+
 ## 공통 규칙 요약
 - 모든 데이터 화면은 Loading/Empty/Error/Offline 상태(`DataUiStateContent`) + 보호 화면은 NeedsLogin.
 - CTA는 화면당 primary 1개 원칙. 가격·강조 수치 `primary`. 카드 타입별 radius 구분(`lg`/`xl`).
