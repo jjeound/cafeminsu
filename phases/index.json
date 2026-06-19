@@ -67,8 +67,9 @@
     {
       "dir": "9-redesign-shell",
       "name": "redesign-shell",
-      "status": "pending",
-      "summary": "3탭 네비(홈/주문/MY) + 스플래시 + 카카오 로그인 게이트 + 홈 재작업 + 알림 (디자인 정렬)"
+      "status": "completed",
+      "summary": "3탭 네비(홈/주문/MY) + 스플래시 + 카카오 로그인 게이트 + 홈 재작업 + 알림 (디자인 정렬)",
+      "completed_at": "2026-06-19T17:09:14+0900"
     }
   ]
 }
