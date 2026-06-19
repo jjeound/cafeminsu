@@ -1,8 +1,10 @@
 package com.cafeminsu.ui.feature.menu
 
+import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -11,30 +13,42 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.lazy.grid.GridCells
-import androidx.compose.foundation.lazy.grid.LazyVerticalGrid
-import androidx.compose.foundation.lazy.grid.items
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.cafeminsu.ui.components.CafeCard
-import com.cafeminsu.ui.components.CafeCardType
 import com.cafeminsu.ui.components.CafeChip
 import com.cafeminsu.ui.components.EmptyView
 import com.cafeminsu.ui.components.ErrorView
 import com.cafeminsu.ui.components.LoadingView
 import com.cafeminsu.ui.theme.CafeTheme
+import java.text.NumberFormat
+import java.util.Locale
 
 @Composable
 fun MenuRoute(
     onMenuClick: (String) -> Unit,
+    onVoiceClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: MenuViewModel = hiltViewModel(),
 ) {
@@ -44,6 +58,7 @@ fun MenuRoute(
         state = state,
         onCategorySelect = viewModel::onCategorySelect,
         onMenuClick = onMenuClick,
+        onVoiceClick = onVoiceClick,
         onRetry = viewModel::retry,
         modifier = modifier,
     )
@@ -54,6 +69,7 @@ fun MenuScreen(
     state: MenuUiState,
     onCategorySelect: (String) -> Unit,
     onMenuClick: (String) -> Unit,
+    onVoiceClick: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -62,42 +78,91 @@ fun MenuScreen(
         color = CafeTheme.colors.canvas,
         contentColor = CafeTheme.colors.body,
     ) {
+        Box(modifier = Modifier.fillMaxSize()) {
+            Column(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(
+                        start = CafeTheme.spacing.space5,
+                        top = CafeTheme.spacing.space6,
+                        end = CafeTheme.spacing.space5,
+                    ),
+            ) {
+                MenuHeader(storeName = state.storeName)
+
+                Spacer(modifier = Modifier.height(CafeTheme.spacing.space3))
+
+                when (state) {
+                    MenuUiState.Loading -> LoadingView(modifier = Modifier.fillMaxWidth())
+                    is MenuUiState.Content -> MenuContent(
+                        state = state,
+                        onCategorySelect = onCategorySelect,
+                        onMenuClick = onMenuClick,
+                        modifier = Modifier.weight(MenuContentWeight),
+                    )
+
+                    is MenuUiState.Empty -> MenuEmpty(
+                        state = state,
+                        onCategorySelect = onCategorySelect,
+                        modifier = Modifier.weight(MenuContentWeight),
+                    )
+
+                    is MenuUiState.Error -> ErrorView(
+                        message = state.message,
+                        retryable = state.retryable,
+                        onRetry = onRetry,
+                        modifier = Modifier.fillMaxWidth(),
+                    )
+                }
+            }
+
+            VoiceFloatingButton(
+                onClick = onVoiceClick,
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(
+                        end = CafeTheme.spacing.space5,
+                        bottom = CafeTheme.spacing.space4,
+                    ),
+            )
+        }
+    }
+}
+
+@Composable
+private fun MenuHeader(
+    storeName: String,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(
-                    start = CafeTheme.spacing.space5,
-                    top = CafeTheme.spacing.space6,
-                    end = CafeTheme.spacing.space5,
-                    bottom = CafeTheme.spacing.space6,
-                ),
-            verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space5),
+            modifier = Modifier.weight(HeaderTitleWeight),
+            verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space1),
         ) {
             Text(
-                text = "메뉴",
+                text = storeName,
                 style = CafeTheme.typography.h1,
                 color = CafeTheme.colors.ink,
             )
+            Text(
+                text = "오늘의 추천 메뉴",
+                style = CafeTheme.typography.caption,
+                color = CafeTheme.colors.muted,
+            )
+        }
 
-            when (state) {
-                MenuUiState.Loading -> LoadingView()
-                is MenuUiState.Content -> MenuContent(
-                    state = state,
-                    onCategorySelect = onCategorySelect,
-                    onMenuClick = onMenuClick,
-                )
+        Spacer(modifier = Modifier.width(CafeTheme.spacing.space4))
 
-                is MenuUiState.Empty -> MenuEmpty(
-                    state = state,
-                    onCategorySelect = onCategorySelect,
-                )
-
-                is MenuUiState.Error -> ErrorView(
-                    message = state.message,
-                    retryable = state.retryable,
-                    onRetry = onRetry,
-                )
-            }
+        Box(
+            modifier = Modifier
+                .size(CafeTheme.spacing.space10)
+                .semantics { contentDescription = "검색" },
+            contentAlignment = Alignment.Center,
+        ) {
+            SearchIcon(modifier = Modifier.size(CafeTheme.spacing.space6))
         }
     }
 }
@@ -107,37 +172,48 @@ private fun MenuContent(
     state: MenuUiState.Content,
     onCategorySelect: (String) -> Unit,
     onMenuClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    MenuCategoryTabs(
-        categories = state.categories,
-        selectedCategoryId = state.selectedCategoryId,
-        onCategorySelect = onCategorySelect,
-    )
+    Column(modifier = modifier.fillMaxWidth()) {
+        MenuCategoryTabs(
+            categories = state.categories,
+            selectedCategoryId = state.selectedCategoryId,
+            onCategorySelect = onCategorySelect,
+        )
 
-    MenuGrid(
-        menus = state.menus,
-        onMenuClick = onMenuClick,
-    )
+        Spacer(modifier = Modifier.height(CafeTheme.spacing.space5))
+
+        MenuList(
+            menus = state.menus,
+            onMenuClick = onMenuClick,
+            modifier = Modifier.fillMaxSize(),
+        )
+    }
 }
 
 @Composable
 private fun MenuEmpty(
     state: MenuUiState.Empty,
     onCategorySelect: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    if (state.categories.isNotEmpty()) {
-        MenuCategoryTabs(
-            categories = state.categories,
-            selectedCategoryId = state.selectedCategoryId,
-            onCategorySelect = onCategorySelect,
+    Column(modifier = modifier.fillMaxWidth()) {
+        if (state.categories.isNotEmpty()) {
+            MenuCategoryTabs(
+                categories = state.categories,
+                selectedCategoryId = state.selectedCategoryId,
+                onCategorySelect = onCategorySelect,
+            )
+
+            Spacer(modifier = Modifier.height(CafeTheme.spacing.space5))
+        }
+
+        EmptyView(
+            message = state.message,
+            actionLabel = null,
+            onAction = null,
         )
     }
-
-    EmptyView(
-        message = state.message,
-        actionLabel = null,
-        onAction = null,
-    )
 }
 
 @Composable
@@ -163,87 +239,106 @@ private fun MenuCategoryTabs(
 }
 
 @Composable
-private fun MenuGrid(
+private fun MenuList(
     menus: List<MenuItemUiModel>,
     onMenuClick: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
-    LazyVerticalGrid(
-        columns = GridCells.Fixed(MenuGridColumns),
-        modifier = Modifier.fillMaxSize(),
-        contentPadding = PaddingValues(bottom = CafeTheme.spacing.space6),
-        horizontalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space4),
-        verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space4),
+    LazyColumn(
+        modifier = modifier,
+        contentPadding = PaddingValues(bottom = CafeTheme.spacing.space18),
     ) {
-        items(
+        itemsIndexed(
             items = menus,
-            key = { it.id },
-        ) { menu ->
-            MenuProductCard(
+            key = { _, menu -> menu.id },
+        ) { index, menu ->
+            MenuListItem(
                 menu = menu,
                 onClick = { onMenuClick(menu.id) },
+            )
+
+            if (index < menus.lastIndex) {
+                HorizontalDivider(color = CafeTheme.colors.hairline)
+            }
+        }
+    }
+}
+
+@Composable
+private fun MenuListItem(
+    menu: MenuItemUiModel,
+    onClick: () -> Unit,
+) {
+    val spacing = CafeTheme.spacing
+    val itemModifier = Modifier
+        .fillMaxWidth()
+        .semantics(mergeDescendants = true) {}
+        .then(
+            if (menu.isEnabled) {
+                Modifier.clickable(onClick = onClick)
+            } else {
+                Modifier
+            },
+        )
+        .alpha(if (menu.isEnabled) EnabledMenuAlpha else DisabledMenuAlpha)
+        .padding(vertical = spacing.space4)
+
+    Row(
+        modifier = itemModifier,
+        horizontalArrangement = Arrangement.spacedBy(spacing.space4),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        MenuThumbnail()
+
+        Column(
+            modifier = Modifier.weight(MenuInfoWeight),
+            verticalArrangement = Arrangement.spacedBy(spacing.space1),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    modifier = Modifier.weight(MenuInfoWeight),
+                    text = menu.name,
+                    style = CafeTheme.typography.h3,
+                    color = CafeTheme.colors.ink,
+                    maxLines = MenuNameMaxLines,
+                    overflow = TextOverflow.Ellipsis,
+                )
+
+                if (menu.isSoldOut) {
+                    Spacer(modifier = Modifier.width(spacing.space2))
+                    SoldOutBadge()
+                }
+            }
+
+            Text(
+                text = menu.description,
+                style = CafeTheme.typography.caption,
+                color = CafeTheme.colors.muted,
+                maxLines = MenuDescriptionMaxLines,
+                overflow = TextOverflow.Ellipsis,
+            )
+
+            Text(
+                text = menu.price.toPriceLabel(),
+                style = CafeTheme.typography.bodyL,
+                color = CafeTheme.colors.ink,
             )
         }
     }
 }
 
 @Composable
-private fun MenuProductCard(
-    menu: MenuItemUiModel,
-    onClick: () -> Unit,
+private fun MenuThumbnail(
+    modifier: Modifier = Modifier,
 ) {
-    val colors = CafeTheme.colors
-    val spacing = CafeTheme.spacing
-
-    CafeCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(spacing.space18 * ProductCardHeightMultiplier + spacing.space4)
-            .clickable(
-                enabled = !menu.isSoldOut,
-                onClick = onClick,
-            ),
-        type = CafeCardType.Product,
-    ) {
-        Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceBetween,
-        ) {
-            Column(verticalArrangement = Arrangement.spacedBy(spacing.space2)) {
-                Row(
-                    modifier = Modifier.fillMaxWidth(),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                ) {
-                    Text(
-                        modifier = Modifier.weight(ProductNameWeight),
-                        text = menu.name,
-                        style = CafeTheme.typography.h3,
-                        color = colors.onDark,
-                        maxLines = ProductNameMaxLines,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-
-                    if (menu.isSoldOut) {
-                        Spacer(modifier = Modifier.width(spacing.space2))
-                        SoldOutBadge()
-                    }
-                }
-
-                Text(
-                    text = menu.description,
-                    style = CafeTheme.typography.body,
-                    color = colors.onDark,
-                    maxLines = ProductDescriptionMaxLines,
-                    overflow = TextOverflow.Ellipsis,
-                )
-            }
-
-            Text(
-                text = "${menu.price}원",
-                style = CafeTheme.typography.caption,
-                color = colors.primary,
-            )
-        }
-    }
+    Surface(
+        modifier = modifier.size(CafeTheme.spacing.space18 - CafeTheme.spacing.space2),
+        shape = CafeTheme.shapes.radiusSm,
+        color = CafeTheme.colors.surfaceCard,
+        contentColor = CafeTheme.colors.surfaceCard,
+    ) {}
 }
 
 @Composable
@@ -265,8 +360,156 @@ private fun SoldOutBadge() {
     }
 }
 
-private const val MenuGridColumns = 2
-private const val ProductCardHeightMultiplier = 2
-private const val ProductNameWeight = 1f
-private const val ProductNameMaxLines = 2
-private const val ProductDescriptionMaxLines = 2
+@Composable
+private fun VoiceFloatingButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Surface(
+        onClick = onClick,
+        modifier = modifier
+            .size(CafeTheme.spacing.space10)
+            .semantics { contentDescription = "음성 주문" },
+        shape = CafeTheme.shapes.radiusPill,
+        color = CafeTheme.colors.primary,
+        contentColor = CafeTheme.colors.onPrimary,
+    ) {
+        Box(
+            modifier = Modifier.fillMaxSize(),
+            contentAlignment = Alignment.Center,
+        ) {
+            MicIcon(modifier = Modifier.size(CafeTheme.spacing.space5))
+        }
+    }
+}
+
+@Composable
+private fun SearchIcon(
+    modifier: Modifier = Modifier,
+) {
+    val color = CafeTheme.colors.ink
+    Canvas(modifier = modifier) {
+        val stroke = Stroke(
+            width = IconStrokeWidth.toPx(),
+            cap = StrokeCap.Round,
+        )
+        val radius = size.minDimension / SearchCircleRadiusDivider
+        val center = Offset(
+            x = size.width / SearchCircleCenterDivider,
+            y = size.height / SearchCircleCenterDivider,
+        )
+        drawCircle(
+            color = color,
+            radius = radius,
+            center = center,
+            style = stroke,
+        )
+        drawLine(
+            color = color,
+            start = Offset(
+                x = size.width * SearchHandleStartFraction,
+                y = size.height * SearchHandleStartFraction,
+            ),
+            end = Offset(
+                x = size.width * SearchHandleEndFraction,
+                y = size.height * SearchHandleEndFraction,
+            ),
+            strokeWidth = IconStrokeWidth.toPx(),
+            cap = StrokeCap.Round,
+        )
+    }
+}
+
+@Composable
+private fun MicIcon(
+    modifier: Modifier = Modifier,
+) {
+    val color = CafeTheme.colors.onPrimary
+    Canvas(modifier = modifier) {
+        val stroke = Stroke(
+            width = IconStrokeWidth.toPx(),
+            cap = StrokeCap.Round,
+        )
+        val micWidth = size.width * MicWidthFraction
+        val micHeight = size.height * MicHeightFraction
+        val micLeft = (size.width - micWidth) / CenterDivider
+        val micTop = size.height * MicTopFraction
+        val centerX = size.width / CenterDivider
+
+        drawRoundRect(
+            color = color,
+            topLeft = Offset(micLeft, micTop),
+            size = Size(micWidth, micHeight),
+            cornerRadius = CornerRadius(micWidth / CenterDivider),
+            style = stroke,
+        )
+        drawArc(
+            color = color,
+            startAngle = MicArcStartAngle,
+            sweepAngle = MicArcSweepAngle,
+            useCenter = false,
+            topLeft = Offset(
+                x = centerX - size.width * MicArcWidthFraction / CenterDivider,
+                y = size.height * MicArcTopFraction,
+            ),
+            size = Size(
+                width = size.width * MicArcWidthFraction,
+                height = size.height * MicArcHeightFraction,
+            ),
+            style = stroke,
+        )
+        drawLine(
+            color = color,
+            start = Offset(centerX, size.height * MicStemTopFraction),
+            end = Offset(centerX, size.height * MicStemBottomFraction),
+            strokeWidth = IconStrokeWidth.toPx(),
+            cap = StrokeCap.Round,
+        )
+        drawLine(
+            color = color,
+            start = Offset(size.width * MicBaseStartFraction, size.height * MicBaseYFraction),
+            end = Offset(size.width * MicBaseEndFraction, size.height * MicBaseYFraction),
+            strokeWidth = IconStrokeWidth.toPx(),
+            cap = StrokeCap.Round,
+        )
+    }
+}
+
+private val MenuUiState.storeName: String
+    get() = when (this) {
+        is MenuUiState.Content -> this.storeName
+        is MenuUiState.Empty -> this.storeName
+        is MenuUiState.Error,
+        MenuUiState.Loading,
+        -> DefaultMenuStoreName
+    }
+
+private fun Int.toPriceLabel(): String =
+    "${NumberFormat.getNumberInstance(Locale.KOREA).format(this)}원"
+
+private const val HeaderTitleWeight = 1f
+private const val MenuContentWeight = 1f
+private const val MenuInfoWeight = 1f
+private const val EnabledMenuAlpha = 1f
+private const val DisabledMenuAlpha = 0.42f
+private const val MenuNameMaxLines = 1
+private const val MenuDescriptionMaxLines = 1
+private const val SearchCircleRadiusDivider = 3.5f
+private const val SearchCircleCenterDivider = 2.4f
+private const val SearchHandleStartFraction = 0.62f
+private const val SearchHandleEndFraction = 0.88f
+private const val CenterDivider = 2f
+private const val MicWidthFraction = 0.36f
+private const val MicHeightFraction = 0.48f
+private const val MicTopFraction = 0.08f
+private const val MicArcStartAngle = 0f
+private const val MicArcSweepAngle = 180f
+private const val MicArcWidthFraction = 0.68f
+private const val MicArcHeightFraction = 0.52f
+private const val MicArcTopFraction = 0.3f
+private const val MicStemTopFraction = 0.72f
+private const val MicStemBottomFraction = 0.84f
+private const val MicBaseStartFraction = 0.34f
+private const val MicBaseEndFraction = 0.66f
+private const val MicBaseYFraction = 0.88f
+private val IconStrokeWidth = 1.5.dp

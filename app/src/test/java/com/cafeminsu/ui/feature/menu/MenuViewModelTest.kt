@@ -6,7 +6,10 @@ import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.MenuCategory
 import com.cafeminsu.domain.model.MenuItem
+import com.cafeminsu.domain.model.Store
+import com.cafeminsu.domain.model.StoreStatus
 import com.cafeminsu.domain.repository.MenuRepository
+import com.cafeminsu.domain.repository.StoreRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -41,15 +44,21 @@ class MenuViewModelTest {
                 ),
             ),
         )
-        val viewModel = MenuViewModel(repository)
+        val viewModel = MenuViewModel(
+            menuRepository = repository,
+            storeRepository = FakeStoreRepository(),
+        )
 
         viewModel.uiState.test {
             val state = awaitSettledState()
             assertTrue(state is MenuUiState.Content)
             val content = state as MenuUiState.Content
-            assertEquals(listOf("coffee", "tea"), content.categories.map { it.id })
-            assertEquals("coffee", content.selectedCategoryId)
-            assertEquals(listOf("americano"), content.menus.map { it.id })
+            assertEquals(
+                listOf("recommendation", "coffee", "noncoffee", "dessert", "tea"),
+                content.categories.map { it.id },
+            )
+            assertEquals("recommendation", content.selectedCategoryId)
+            assertEquals(listOf("americano", "yuja-tea"), content.menus.map { it.id })
 
             cancelAndIgnoreRemainingEvents()
         }
@@ -68,10 +77,13 @@ class MenuViewModelTest {
                 ),
             ),
         )
-        val viewModel = MenuViewModel(repository)
+        val viewModel = MenuViewModel(
+            menuRepository = repository,
+            storeRepository = FakeStoreRepository(),
+        )
 
         viewModel.uiState.test {
-            assertEquals("coffee", (awaitSettledState() as MenuUiState.Content).selectedCategoryId)
+            assertEquals("recommendation", (awaitSettledState() as MenuUiState.Content).selectedCategoryId)
 
             viewModel.onCategorySelect("tea")
 
@@ -86,10 +98,11 @@ class MenuViewModelTest {
     @Test
     fun failureProducesErrorState() = runTest {
         val viewModel = MenuViewModel(
-            FakeMenuRepository(
+            menuRepository = FakeMenuRepository(
                 categories = AppResult.Failure(DomainError.Network),
                 menusByCategory = emptyMap(),
             ),
+            storeRepository = FakeStoreRepository(),
         )
 
         viewModel.uiState.test {
@@ -106,14 +119,17 @@ class MenuViewModelTest {
     @Test
     fun menuFailureProducesErrorState() = runTest {
         val viewModel = MenuViewModel(
-            FakeMenuRepository(
+            menuRepository = FakeMenuRepository(
                 categories = AppResult.Success(sampleCategories()),
                 menusByCategory = mapOf("coffee" to AppResult.Failure(DomainError.Timeout)),
             ),
+            storeRepository = FakeStoreRepository(),
         )
 
         viewModel.uiState.test {
-            val state = awaitSettledState()
+            awaitSettledState()
+            viewModel.onCategorySelect("coffee")
+            val state = awaitItem()
             assertTrue(state is MenuUiState.Error)
             val error = state as MenuUiState.Error
             assertEquals("응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요", error.message)
@@ -126,10 +142,11 @@ class MenuViewModelTest {
     @Test
     fun emptyCategoriesProduceEmptyState() = runTest {
         val viewModel = MenuViewModel(
-            FakeMenuRepository(
+            menuRepository = FakeMenuRepository(
                 categories = AppResult.Success(emptyList()),
                 menusByCategory = emptyMap(),
             ),
+            storeRepository = FakeStoreRepository(),
         )
 
         viewModel.uiState.test {
@@ -146,10 +163,10 @@ class MenuViewModelTest {
     @Test
     fun soldOutMenuItemStaysInListWithFlag() = runTest {
         val viewModel = MenuViewModel(
-            FakeMenuRepository(
+            menuRepository = FakeMenuRepository(
                 categories = AppResult.Success(sampleCategories()),
                 menusByCategory = mapOf(
-                    "coffee" to AppResult.Success(
+                    null to AppResult.Success(
                         listOf(
                             sampleMenu(
                                 id = "einspanner",
@@ -160,12 +177,36 @@ class MenuViewModelTest {
                     ),
                 ),
             ),
+            storeRepository = FakeStoreRepository(),
         )
 
         viewModel.uiState.test {
             val content = awaitSettledState() as MenuUiState.Content
             assertEquals("einspanner", content.menus.single().id)
             assertTrue(content.menus.single().isSoldOut)
+            assertEquals(false, content.menus.single().isEnabled)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun selectedStoreNameIsMappedForHeader() = runTest {
+        val viewModel = MenuViewModel(
+            menuRepository = FakeMenuRepository(
+                categories = AppResult.Success(sampleCategories()),
+                menusByCategory = mapOf(
+                    null to AppResult.Success(listOf(sampleMenu(id = "americano", categoryId = "coffee"))),
+                ),
+            ),
+            storeRepository = FakeStoreRepository(
+                selectedStore = sampleStore(name = "카페민수 강남점"),
+            ),
+        )
+
+        viewModel.uiState.test {
+            val content = awaitSettledState() as MenuUiState.Content
+            assertEquals("강남점", content.storeName)
 
             cancelAndIgnoreRemainingEvents()
         }
@@ -205,7 +246,7 @@ class MenuViewModelTest {
 
 private class FakeMenuRepository(
     categories: AppResult<List<MenuCategory>>,
-    private val menusByCategory: Map<String, AppResult<List<MenuItem>>>,
+    private val menusByCategory: Map<String?, AppResult<List<MenuItem>>>,
 ) : MenuRepository {
     private val categories = MutableStateFlow(categories)
 
@@ -213,8 +254,7 @@ private class FakeMenuRepository(
 
     override fun observeMenus(categoryId: String?): Flow<AppResult<List<MenuItem>>> =
         MutableStateFlow(
-            categoryId
-                ?.let { menusByCategory[it] }
+            menusByCategory[categoryId]
                 ?: AppResult.Success(menusByCategory.values.flatMap { result ->
                     when (result) {
                         is AppResult.Success -> result.data
@@ -228,6 +268,37 @@ private class FakeMenuRepository(
 
     override suspend fun refreshMenus(): AppResult<Unit> = AppResult.Success(Unit)
 }
+
+private class FakeStoreRepository(
+    selectedStore: Store? = null,
+) : StoreRepository {
+    private val selectedStore = MutableStateFlow(selectedStore)
+
+    override fun observeNearbyStores(query: String?): Flow<AppResult<List<Store>>> =
+        MutableStateFlow(AppResult.Success(emptyList()))
+
+    override suspend fun getStore(storeId: String): AppResult<Store> =
+        AppResult.Failure(DomainError.NotFound)
+
+    override suspend fun selectStore(storeId: String): AppResult<Unit> =
+        AppResult.Success(Unit)
+
+    override fun observeSelectedStore(): Flow<Store?> = selectedStore
+}
+
+private fun sampleStore(name: String): Store =
+    Store(
+        id = "gangnam",
+        name = name,
+        address = "서울 강남구 테헤란로 134",
+        phone = "02-3456-7890",
+        distanceMeters = 120,
+        latitude = 37.498,
+        longitude = 127.028,
+        status = StoreStatus.Open,
+        closingTimeLabel = "22:00 마감",
+        amenities = emptyList(),
+    )
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class MainDispatcherRule(

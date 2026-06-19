@@ -6,7 +6,9 @@ import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.MenuCategory
 import com.cafeminsu.domain.model.MenuItem
+import com.cafeminsu.domain.model.Store
 import com.cafeminsu.domain.repository.MenuRepository
+import com.cafeminsu.domain.repository.StoreRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -14,6 +16,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.flatMapLatest
 import kotlinx.coroutines.flow.flowOf
@@ -25,13 +28,27 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class MenuViewModel @Inject constructor(
     private val menuRepository: MenuRepository,
+    private val storeRepository: StoreRepository,
 ) : ViewModel() {
-    private val selectedCategoryId = MutableStateFlow<String?>(null)
+    private val selectedCategoryId = MutableStateFlow(RecommendationCategoryId)
 
-    val uiState: StateFlow<MenuUiState> = menuRepository.observeCategories()
-        .flatMapLatest { categoryResult ->
-            when (categoryResult) {
-                is AppResult.Success -> categoryResult.data.toMenuStateFlow()
+    val uiState: StateFlow<MenuUiState> = combine(
+        menuRepository.observeCategories(),
+        storeRepository.observeSelectedStore(),
+        selectedCategoryId,
+    ) { categoryResult, selectedStore, requestedCategoryId ->
+        MenuSourceState(
+            categoryResult = categoryResult,
+            storeName = selectedStore.toMenuStoreName(),
+            requestedCategoryId = requestedCategoryId,
+        )
+    }
+        .flatMapLatest { source ->
+            when (val categoryResult = source.categoryResult) {
+                is AppResult.Success -> categoryResult.data.toMenuStateFlow(
+                    storeName = source.storeName,
+                    requestedCategoryId = source.requestedCategoryId,
+                )
                 is AppResult.Failure -> flowOf(categoryResult.error.toMenuError())
             }
         }
@@ -49,8 +66,8 @@ class MenuViewModel @Inject constructor(
             initialValue = MenuUiState.Loading,
         )
 
-    fun onCategorySelect(id: String) {
-        selectedCategoryId.value = id
+    fun onCategorySelect(categoryId: String) {
+        selectedCategoryId.value = categoryId
     }
 
     fun retry() {
@@ -61,52 +78,56 @@ class MenuViewModel @Inject constructor(
         }
     }
 
-    private fun List<MenuCategory>.toMenuStateFlow() =
+    private fun List<MenuCategory>.toMenuStateFlow(
+        storeName: String,
+        requestedCategoryId: String,
+    ) =
         if (isEmpty()) {
             flowOf(
                 MenuUiState.Empty(
                     categories = emptyList(),
                     selectedCategoryId = null,
                     message = "표시할 카테고리가 아직 없어요",
+                    storeName = storeName,
                 ),
             )
         } else {
-            val categories = sortedBy { it.sortOrder }
+            val categories = toMenuCategoryTabs()
+            val selectedCategoryId = categories.selectedCategoryIdFor(requestedCategoryId)
 
-            selectedCategoryId
-                .map { requestedCategoryId -> categories.selectedCategoryIdFor(requestedCategoryId) }
-                .distinctUntilChanged()
-                .flatMapLatest { selectedCategoryId ->
-                    menuRepository.observeMenus(selectedCategoryId)
-                        .map { menuResult ->
-                            menuResult.toMenuUiState(
-                                categories = categories,
-                                selectedCategoryId = selectedCategoryId,
-                            )
-                        }
+            menuRepository.observeMenus(selectedCategoryId.toRepositoryCategoryId())
+                .map { menuResult ->
+                    menuResult.toMenuUiState(
+                        categories = categories,
+                        selectedCategoryId = selectedCategoryId,
+                        storeName = storeName,
+                    )
                 }
+                .distinctUntilChanged()
         }
 
     private fun AppResult<List<MenuItem>>.toMenuUiState(
-        categories: List<MenuCategory>,
+        categories: List<MenuCategoryUiModel>,
         selectedCategoryId: String,
+        storeName: String,
     ): MenuUiState =
         when (this) {
             is AppResult.Success -> {
-                val categoryTabs = categories.toUiModels()
                 val menuItems = data.map { it.toUiModel() }
 
                 if (menuItems.isEmpty()) {
                     MenuUiState.Empty(
-                        categories = categoryTabs,
+                        categories = categories,
                         selectedCategoryId = selectedCategoryId,
                         message = "선택한 카테고리에 준비된 메뉴가 없어요",
+                        storeName = storeName,
                     )
                 } else {
                     MenuUiState.Content(
-                        categories = categoryTabs,
+                        categories = categories,
                         selectedCategoryId = selectedCategoryId,
                         menus = menuItems,
+                        storeName = storeName,
                     )
                 }
             }
@@ -114,16 +135,43 @@ class MenuViewModel @Inject constructor(
             is AppResult.Failure -> error.toMenuError()
         }
 
-    private fun List<MenuCategory>.selectedCategoryIdFor(requestedCategoryId: String?): String =
-        firstOrNull { it.id == requestedCategoryId }?.id ?: first().id
+    private fun List<MenuCategoryUiModel>.selectedCategoryIdFor(requestedCategoryId: String): String =
+        firstOrNull { it.id == requestedCategoryId }?.id ?: RecommendationCategoryId
 
-    private fun List<MenuCategory>.toUiModels(): List<MenuCategoryUiModel> =
-        map { category ->
+    private fun List<MenuCategory>.toMenuCategoryTabs(): List<MenuCategoryUiModel> =
+        listOf(MenuCategoryUiModel(id = RecommendationCategoryId, name = "추천")) +
+            requiredMenuCategoryTabs() +
+            extraMenuCategoryTabs()
+
+    private fun List<MenuCategory>.requiredMenuCategoryTabs(): List<MenuCategoryUiModel> {
+        val categoriesById = associateBy { it.id }
+        val categoriesByName = associateBy { it.name }
+        return RequiredCategorySpecs.map { spec ->
+            val category = categoriesById[spec.id] ?: categoriesByName[spec.name]
             MenuCategoryUiModel(
-                id = category.id,
-                name = category.name,
+                id = category?.id ?: spec.id,
+                name = category?.name ?: spec.name,
             )
         }
+    }
+
+    private fun List<MenuCategory>.extraMenuCategoryTabs(): List<MenuCategoryUiModel> {
+        val requiredIds = RequiredCategorySpecs.map { it.id }.toSet()
+        val requiredNames = RequiredCategorySpecs.map { it.name }.toSet()
+        return filterNot { category ->
+            category.id in requiredIds || category.name in requiredNames
+        }
+            .sortedBy { it.sortOrder }
+            .map { category ->
+                MenuCategoryUiModel(
+                    id = category.id,
+                    name = category.name,
+                )
+            }
+    }
+
+    private fun String.toRepositoryCategoryId(): String? =
+        if (this == RecommendationCategoryId) null else this
 
     private fun MenuItem.toUiModel(): MenuItemUiModel =
         MenuItemUiModel(
@@ -132,7 +180,16 @@ class MenuViewModel @Inject constructor(
             description = description,
             price = basePrice,
             isSoldOut = isSoldOut,
+            isEnabled = !isSoldOut,
         )
+
+    private fun Store?.toMenuStoreName(): String =
+        this
+            ?.name
+            ?.removePrefix(CafeMinsuStorePrefix)
+            ?.removePrefix(MinsuStorePrefix)
+            ?.ifBlank { null }
+            ?: DefaultMenuStoreName
 
     private fun DomainError.toMenuError(): MenuUiState.Error =
         MenuUiState.Error(
@@ -167,5 +224,25 @@ class MenuViewModel @Inject constructor(
 
     private companion object {
         const val StateStopTimeoutMillis = 5_000L
+        const val RecommendationCategoryId = "recommendation"
+        const val CafeMinsuStorePrefix = "카페민수 "
+        const val MinsuStorePrefix = "민수 "
+        val RequiredCategorySpecs = listOf(
+            MenuCategorySpec(id = "coffee", name = "커피"),
+            MenuCategorySpec(id = "noncoffee", name = "논커피"),
+            MenuCategorySpec(id = "dessert", name = "디저트"),
+            MenuCategorySpec(id = "tea", name = "티"),
+        )
     }
 }
+
+private data class MenuSourceState(
+    val categoryResult: AppResult<List<MenuCategory>>,
+    val storeName: String,
+    val requestedCategoryId: String,
+)
+
+private data class MenuCategorySpec(
+    val id: String,
+    val name: String,
+)

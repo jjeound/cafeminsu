@@ -7,12 +7,14 @@ sealed interface MenuUiState {
         val categories: List<MenuCategoryUiModel>,
         val selectedCategoryId: String,
         val menus: List<MenuItemUiModel>,
+        val storeName: String = DefaultMenuStoreName,
     ) : MenuUiState
 
     data class Empty(
         val categories: List<MenuCategoryUiModel>,
         val selectedCategoryId: String?,
         val message: String,
+        val storeName: String = DefaultMenuStoreName,
     ) : MenuUiState
 
     data class Error(
@@ -32,4 +34,7 @@ data class MenuItemUiModel(
     val description: String,
     val price: Int,
     val isSoldOut: Boolean,
+    val isEnabled: Boolean = !isSoldOut,
 )
+
+const val DefaultMenuStoreName = "강남점"

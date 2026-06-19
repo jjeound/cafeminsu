@@ -213,6 +213,7 @@ fun AppNavHost(
                     onMenuClick = { menuItemId ->
                         navController.navigate(Routes.menuDetail(menuItemId))
                     },
+                    onVoiceClick = { navController.navigate(Routes.VOICE) },
                 )
             }
             composable(
