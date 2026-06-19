@@ -1,0 +1,23 @@
+{
+  "project": "CafeMinsu",
+  "phase": "owner-ops",
+  "steps": [
+    {
+      "step": 0,
+      "name": "owner-menu",
+      "status": "pending",
+      "images": [
+        "docs/screens/점주 - 03 (메뉴 관리).png"
+      ]
+    },
+    {
+      "step": 1,
+      "name": "owner-sales",
+      "status": "pending",
+      "images": [
+        "docs/screens/점주 - 04 (매출·정산).png"
+      ]
+    }
+  ],
+  "created_at": "2026-06-19T17:54:31+0900"
+}

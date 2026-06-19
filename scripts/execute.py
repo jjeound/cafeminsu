@@ -260,13 +260,26 @@ class StepExecutor:
             sys.exit(1)
 
         prompt = preamble + step_file.read_text()
+
+        # step index 의 "images" 에 적힌 디자인 PNG 를 codex 에 첨부해, 화면을 직접 보고 따라 그리게 한다.
+        # (codex exec 의 -i/--image 지원). 누락된 파일은 건너뛴다. 프롬프트는 위치 인자로 두고 이미지 플래그를
+        # 뒤에 붙여, 이미지가 없을 때 명령이 기존과 동일하도록 유지한다(회귀 방지).
+        image_args = []
+        for img in step.get("images", []):
+            img_path = Path(self._root) / img
+            if img_path.exists():
+                image_args += ["--image", str(img_path)]
+            else:
+                print(f"\n  WARN: step {step_num} 디자인 이미지 누락(첨부 건너뜀): {img}")
+
         # --dangerously-bypass-hook-trust: 자동화가 검증한 훅(.codex/hooks.json)을 신뢰 프롬프트
         # 없이 실행하도록 한다. 단 Codex 0.140.0 기준 PreToolUse 훅은 대화형 TUI에서만 발화되고
         # `codex exec`(헤드리스)에서는 발화되지 않으므로, 현재 하네스에서 TDD 가드는 동작하지 않는다.
         # (가드는 대화형 Codex 세션용. 플래그는 exec 훅 지원 시를 대비한 forward-compat.)
         result = subprocess.run(
             ["codex", "exec", "--dangerously-bypass-approvals-and-sandbox",
-             "--dangerously-bypass-hook-trust", "--skip-git-repo-check", "--json", prompt],
+             "--dangerously-bypass-hook-trust", "--skip-git-repo-check", "--json", prompt]
+            + image_args,
             cwd=self._root, capture_output=True, text=True, timeout=1800,
         )
 
@@ -337,7 +350,8 @@ class StepExecutor:
 
             with progress_indicator(tag) as pi:
                 self._invoke_codex(step, preamble)
-                elapsed = int(pi.elapsed)
+            # pi.elapsed 는 progress_indicator 의 finally 에서 설정되므로 with 블록 종료 후 읽는다.
+            elapsed = int(pi.elapsed)
 
             index = self._read_json(self._index_file)
             status = next((s.get("status", "pending") for s in index["steps"] if s["step"] == step_num), "pending")

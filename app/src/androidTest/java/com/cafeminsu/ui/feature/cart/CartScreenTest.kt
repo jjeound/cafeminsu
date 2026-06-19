@@ -1,0 +1,85 @@
+package com.cafeminsu.ui.feature.cart
+
+import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithText
+import com.cafeminsu.domain.model.CartItem
+import com.cafeminsu.domain.model.CartValidation
+import com.cafeminsu.domain.model.SelectedOption
+import com.cafeminsu.ui.theme.CafeTheme
+import org.junit.Rule
+import org.junit.Test
+
+class CartScreenTest {
+    @get:Rule
+    val composeRule = createComposeRule()
+
+    @Test
+    fun showsEmptyCartAction() {
+        composeRule.setContent {
+            CafeTheme {
+                CartScreen(
+                    state = CartUiState.Empty(
+                        message = "담은 메뉴가 없어요",
+                        minimumOrderAmount = 10_000,
+                        validation = CartValidation.Invalid(emptyList()),
+                        checkoutInProgress = false,
+                    ),
+                    onQuantityChange = { _, _ -> },
+                    onRemove = {},
+                    onCheckout = {},
+                    onRetry = {},
+                    onBrowseMenuClick = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("장바구니").assertIsDisplayed()
+        composeRule.onNodeWithText("담은 메뉴가 없어요").assertIsDisplayed()
+        composeRule.onNodeWithText("메뉴 보러가기").assertIsDisplayed()
+    }
+
+    @Test
+    fun showsCartItemAndCheckoutButton() {
+        composeRule.setContent {
+            CafeTheme {
+                CartScreen(
+                    state = CartUiState.Content(
+                        items = listOf(sampleCartItem()),
+                        subtotal = 11_400,
+                        minimumOrderAmount = 10_000,
+                        validation = CartValidation.Valid,
+                        checkoutInProgress = false,
+                    ),
+                    onQuantityChange = { _, _ -> },
+                    onRemove = {},
+                    onCheckout = {},
+                    onRetry = {},
+                    onBrowseMenuClick = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("민수 라떼").assertIsDisplayed()
+        composeRule.onNodeWithText("라지").assertIsDisplayed()
+        composeRule.onNodeWithText("주문하기").assertIsDisplayed()
+        composeRule.onNodeWithText("11,400원").assertIsDisplayed()
+    }
+
+    private fun sampleCartItem(): CartItem =
+        CartItem(
+            id = "cart-item-1",
+            menuItemId = "latte",
+            name = "민수 라떼",
+            unitPrice = 5_700,
+            selectedOptions = listOf(
+                SelectedOption(
+                    groupId = "size",
+                    optionId = "large",
+                    name = "라지",
+                    extraPrice = 700,
+                ),
+            ),
+            quantity = 2,
+        )
+}

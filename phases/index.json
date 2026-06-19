@@ -1,0 +1,88 @@
+{
+  "project": "CafeMinsu",
+  "phases": [
+    {
+      "dir": "0-bootstrap",
+      "name": "bootstrap",
+      "status": "completed",
+      "summary": "Android/Compose/Hilt 프로젝트 스캐폴드 + 디자인 토큰 + 코어 결과 타입 + 네비게이션 골격",
+      "completed_at": "2026-06-17T20:43:02+0900"
+    },
+    {
+      "dir": "1-data",
+      "name": "data",
+      "status": "completed",
+      "summary": "도메인 계약 + Mock Repository(TDD) + Hilt DI 바인딩",
+      "completed_at": "2026-06-17T21:25:43+0900"
+    },
+    {
+      "dir": "2-components",
+      "name": "components",
+      "status": "completed",
+      "summary": "디자인 시스템 재사용 컴포넌트(Button/Card/Chip/TopBar + 상태 뷰)",
+      "completed_at": "2026-06-17T21:40:28+0900"
+    },
+    {
+      "dir": "3-home-menu",
+      "name": "home-menu",
+      "status": "completed",
+      "summary": "M-01 홈 · M-02 메뉴목록 · M-03 메뉴상세(담기) — MVVM + TDD",
+      "completed_at": "2026-06-18T20:25:51+0900"
+    },
+    {
+      "dir": "4-cart-order",
+      "name": "cart-order",
+      "status": "completed",
+      "summary": "M-05 장바구니(주문 생성) · M-07 주문 상태 — MVVM + TDD",
+      "completed_at": "2026-06-18T20:47:03+0900"
+    },
+    {
+      "dir": "5-payment",
+      "name": "payment",
+      "status": "completed",
+      "summary": "M-06 결제(Mock PG, 멱등키·낙관금지) + 장바구니→결제→주문상태 플로우 + 스탬프 적립",
+      "completed_at": "2026-06-18T21:03:34+0900"
+    },
+    {
+      "dir": "6-stamp-gifticon",
+      "name": "stamp-gifticon",
+      "status": "completed",
+      "summary": "M-08 스탬프 적립 · M-09 기프티콘(보호 화면, 민감값 보안) — MVVM + TDD",
+      "completed_at": "2026-06-18T21:22:51+0900"
+    },
+    {
+      "dir": "7-my",
+      "name": "my",
+      "status": "completed",
+      "summary": "M-10 마이페이지(프로필·주문내역·로그아웃) — MVVM + TDD",
+      "completed_at": "2026-06-19T01:24:58+0900"
+    },
+    {
+      "dir": "8-voice",
+      "name": "voice",
+      "status": "completed",
+      "summary": "M-04 음성 AI 주문 — 규칙기반 파서 + 온디바이스 STT + 화면(MVVM, TDD)",
+      "completed_at": "2026-06-19T01:48:04+0900"
+    },
+    {
+      "dir": "9-redesign-shell",
+      "name": "redesign-shell",
+      "status": "completed",
+      "summary": "3탭 네비(홈/주문/MY) + 스플래시 + 카카오 로그인 게이트 + 홈 재작업 + 알림 (디자인 정렬)",
+      "completed_at": "2026-06-19T17:09:14+0900"
+    },
+    {
+      "dir": "10-owner",
+      "name": "owner",
+      "status": "completed",
+      "summary": "점주 콘솔 토대 — 역할 분기 네비 + 점주 로그인(OWNER_LOGIN) + 대시보드(OWNER_HOME) + 실시간 주문 관리(OWNER_ORDERS)",
+      "completed_at": "2026-06-19T17:53:41+0900"
+    },
+    {
+      "dir": "11-owner-ops",
+      "name": "owner-ops",
+      "status": "pending",
+      "summary": "점주 운영 — 메뉴 관리(OWNER_MENU, 품절 토글) + 매출·정산(OWNER_SALES)"
+    }
+  ]
+}

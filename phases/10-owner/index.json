@@ -1,0 +1,41 @@
+{
+  "project": "CafeMinsu",
+  "phase": "owner",
+  "steps": [
+    {
+      "step": 0,
+      "name": "owner-foundation-login",
+      "status": "completed",
+      "images": [
+        "docs/screens/점주 - 00 (로그인).png"
+      ],
+      "started_at": "2026-06-19T17:19:51+0900",
+      "summary": "점주 역할 모델, Mock 점주 인증, OWNER_LOGIN 화면, 역할 분기 네비와 점주 4탭 셸을 추가했다.",
+      "completed_at": "2026-06-19T17:30:52+0900"
+    },
+    {
+      "step": 1,
+      "name": "owner-dashboard",
+      "status": "completed",
+      "images": [
+        "docs/screens/점주 - 01 (대시보드).png"
+      ],
+      "started_at": "2026-06-19T17:30:52+0900",
+      "summary": "OwnerOrderRepository와 OWNER_HOME MVVM 대시보드를 추가하고 통계·주문 처리·영업 토글을 연결했다.",
+      "completed_at": "2026-06-19T17:43:36+0900"
+    },
+    {
+      "step": 2,
+      "name": "owner-orders",
+      "status": "completed",
+      "images": [
+        "docs/screens/점주 - 02 (주문 관리).png"
+      ],
+      "started_at": "2026-06-19T17:43:37+0900",
+      "summary": "OWNER_ORDERS MVVM 화면을 추가하고 필터별 카운트·상태 전이·Empty/Error 처리를 연결했다.",
+      "completed_at": "2026-06-19T17:53:41+0900"
+    }
+  ],
+  "created_at": "2026-06-19T17:19:51+0900",
+  "completed_at": "2026-06-19T17:53:41+0900"
+}

@@ -521,6 +521,44 @@ class TestInvokeCodex:
 
         assert mock_run.call_args[1]["timeout"] == 1800
 
+    def test_no_images_keeps_prompt_last(self, executor):
+        """images 키가 없으면 명령은 기존과 동일(prompt 가 마지막) 해야 한다."""
+        mock_result = MagicMock(returncode=0, stdout="{}", stderr="")
+        step = {"step": 2, "name": "ui"}
+
+        with patch("subprocess.run", return_value=mock_result) as mock_run:
+            executor._invoke_codex(step, "preamble")
+
+        cmd = mock_run.call_args[0][0]
+        assert "--image" not in cmd
+        assert "preamble" in cmd[-1]
+
+    def test_attaches_existing_images(self, executor):
+        """step.images 의 실재 파일은 --image <abs path> 로 첨부된다."""
+        img = Path(executor._root) / "docs" / "screens" / "홈.png"
+        img.parent.mkdir(parents=True, exist_ok=True)
+        img.write_bytes(b"\x89PNG\r\n")
+        step = {"step": 2, "name": "ui", "images": ["docs/screens/홈.png"]}
+        mock_result = MagicMock(returncode=0, stdout="{}", stderr="")
+
+        with patch("subprocess.run", return_value=mock_result) as mock_run:
+            executor._invoke_codex(step, "preamble")
+
+        cmd = mock_run.call_args[0][0]
+        assert "--image" in cmd
+        assert str(img) in cmd
+
+    def test_skips_missing_images(self, executor):
+        """존재하지 않는 이미지는 첨부하지 않고 건너뛴다(크래시 없음)."""
+        step = {"step": 2, "name": "ui", "images": ["docs/screens/없는파일.png"]}
+        mock_result = MagicMock(returncode=0, stdout="{}", stderr="")
+
+        with patch("subprocess.run", return_value=mock_result) as mock_run:
+            executor._invoke_codex(step, "preamble")
+
+        cmd = mock_run.call_args[0][0]
+        assert "--image" not in cmd
+
 
 # ---------------------------------------------------------------------------
 # progress_indicator (= 이전 Spinner)

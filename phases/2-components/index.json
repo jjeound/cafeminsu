@@ -1,0 +1,24 @@
+{
+  "project": "CafeMinsu",
+  "phase": "components",
+  "steps": [
+    {
+      "step": 0,
+      "name": "core-components",
+      "started_at": "2026-06-17T21:28:24+0900",
+      "summary": "CafeButton, CafeCard, CafeChip, CafeTopBar core design-system components and smoke tests added.",
+      "status": "completed",
+      "completed_at": "2026-06-17T21:35:00+0900"
+    },
+    {
+      "step": 1,
+      "name": "state-components",
+      "status": "completed",
+      "started_at": "2026-06-17T21:35:01+0900",
+      "summary": "Loading, Empty, Error, Offline, CafeSnackbarHost, and DataUiStateContent shared state components added.",
+      "completed_at": "2026-06-17T21:40:28+0900"
+    }
+  ],
+  "created_at": "2026-06-17T21:28:24+0900",
+  "completed_at": "2026-06-17T21:40:28+0900"
+}
