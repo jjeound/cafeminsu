@@ -1,12 +1,16 @@
 package com.cafeminsu.data.mock
 
+import com.cafeminsu.domain.model.AppNotification
 import com.cafeminsu.domain.model.Gifticon
 import com.cafeminsu.domain.model.GifticonStatus
 import com.cafeminsu.domain.model.MenuCategory
 import com.cafeminsu.domain.model.MenuItem
 import com.cafeminsu.domain.model.MenuOption
 import com.cafeminsu.domain.model.MenuOptionGroup
+import com.cafeminsu.domain.model.NotificationType
 import com.cafeminsu.domain.model.StampCard
+import java.time.Instant
+import java.time.ZoneId
 
 object MockData {
     const val minimumOrderAmount: Int = 10_000
@@ -153,4 +157,55 @@ object MockData {
             status = GifticonStatus.Expired,
         ),
     )
+
+    fun initialNotifications(nowMillis: Long): List<AppNotification> {
+        val zoneId = ZoneId.systemDefault()
+        val today = Instant.ofEpochMilli(nowMillis).atZone(zoneId).toLocalDate()
+        val yesterday = today.minusDays(1)
+
+        return listOf(
+            AppNotification(
+                id = "noti-order-ready",
+                type = NotificationType.OrderReady,
+                title = "주문이 준비됐어요",
+                body = "주문번호 A-2419 — 픽업대에서 수령해주세요",
+                createdAtMillis = nowMillis,
+                read = false,
+            ),
+            AppNotification(
+                id = "noti-order-accepted",
+                type = NotificationType.OrderAccepted,
+                title = "주문이 수락됐어요",
+                body = "주문번호 A-2419",
+                createdAtMillis = nowMillis - FiveMinutesMillis,
+                read = false,
+            ),
+            AppNotification(
+                id = "noti-stamp-earned",
+                type = NotificationType.StampEarned,
+                title = "스탬프 적립",
+                body = "강남점에서 스탬프 2개가 적립되었어요",
+                createdAtMillis = nowMillis - FiveMinutesMillis,
+                read = true,
+            ),
+            AppNotification(
+                id = "noti-gifticon-received",
+                type = NotificationType.GifticonReceived,
+                title = "기프티콘이 도착했어요",
+                body = "친구가 ₩10,000 기프티콘을 보냈어요",
+                createdAtMillis = yesterday.atTime(19, 42).atZone(zoneId).toInstant().toEpochMilli(),
+                read = true,
+            ),
+            AppNotification(
+                id = "noti-order-completed",
+                type = NotificationType.OrderCompleted,
+                title = "주문 완료",
+                body = "주문번호 A-2331 — 카페민수에서 즐거운 시간 되세요",
+                createdAtMillis = yesterday.atTime(14, 51).atZone(zoneId).toInstant().toEpochMilli(),
+                read = true,
+            ),
+        )
+    }
+
+    private const val FiveMinutesMillis = 5L * 60L * 1000L
 }

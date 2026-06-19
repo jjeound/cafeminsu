@@ -39,10 +39,13 @@
     {
       "step": 3,
       "name": "notifications",
-      "status": "pending",
+      "status": "completed",
       "images": [
         "docs/screens/알림.png"
-      ]
+      ],
+      "started_at": "2026-06-19T16:59:51+0900",
+      "summary": "알림 도메인·Mock 리포지토리·MVVM 화면을 추가하고 홈 벨에서 NOTI 라우트로 연결했다.",
+      "completed_at": "2026-06-19T17:08:17+0900"
     }
   ],
   "created_at": "2026-06-19T16:04:05+0900"

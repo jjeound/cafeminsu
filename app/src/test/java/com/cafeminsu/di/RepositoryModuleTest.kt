@@ -2,12 +2,14 @@ package com.cafeminsu.di
 
 import com.cafeminsu.data.repository.MockCartRepository
 import com.cafeminsu.data.repository.MockMenuRepository
+import com.cafeminsu.data.repository.MockNotificationRepository
 import com.cafeminsu.data.repository.MockOrderRepository
 import com.cafeminsu.data.repository.MockPaymentRepository
 import com.cafeminsu.data.repository.MockRewardRepository
 import com.cafeminsu.data.repository.MockSessionRepository
 import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.MenuRepository
+import com.cafeminsu.domain.repository.NotificationRepository
 import com.cafeminsu.domain.repository.OrderRepository
 import com.cafeminsu.domain.repository.PaymentRepository
 import com.cafeminsu.domain.repository.RewardRepository
@@ -25,6 +27,11 @@ class RepositoryModuleTest {
         assertBinding("bindOrderRepository", OrderRepository::class.java, MockOrderRepository::class.java)
         assertBinding("bindPaymentRepository", PaymentRepository::class.java, MockPaymentRepository::class.java)
         assertBinding("bindRewardRepository", RewardRepository::class.java, MockRewardRepository::class.java)
+        assertBinding(
+            "bindNotificationRepository",
+            NotificationRepository::class.java,
+            MockNotificationRepository::class.java,
+        )
         assertBinding("bindSessionRepository", SessionRepository::class.java, MockSessionRepository::class.java)
     }
 

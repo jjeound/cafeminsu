@@ -41,6 +41,7 @@ import com.cafeminsu.ui.feature.login.LoginRoute
 import com.cafeminsu.ui.feature.menu.MenuDetailRoute
 import com.cafeminsu.ui.feature.menu.MenuRoute
 import com.cafeminsu.ui.feature.my.MyRoute
+import com.cafeminsu.ui.feature.notification.NotiRoute
 import com.cafeminsu.ui.feature.order.OrderStatusRoute
 import com.cafeminsu.ui.feature.payment.PaymentRoute
 import com.cafeminsu.ui.feature.splash.SplashScreen
@@ -136,7 +137,9 @@ fun AppNavHost(
                 )
             }
             composable(Routes.NOTI) {
-                PlaceholderScreen(title = "알림")
+                NotiRoute(
+                    onBackClick = { navController.popBackStack() },
+                )
             }
             composable(Routes.STORE) {
                 PlaceholderScreen(title = "매장 선택")
