@@ -347,6 +347,36 @@ interface LoginProvider {                      // 실(Kakao)/Mock 교체 가능
 }
 ```
 
+### 점주(Owner) 모델 — 역할·인증·운영
+고객(카카오)과 분리된 **아이디/비밀번호** 인증. 비밀번호는 모델/로그/디스크에 두지 않고(메모리 전용·전송 후 폐기),
+세션 토큰만 EncryptedDataStore에 저장한다(`SECURITY.md`). 주문 상태는 기존 `OrderStatus`(Accepted/Preparing/Ready/Completed)를 재사용한다.
+```kotlin
+enum class UserRole { Customer, Owner }        // AuthState.Authenticated 가 보유(기본 Customer)
+
+data class OwnerProfile(
+    val id: String,
+    val storeId: String,
+    val storeName: String,        // "민수 강남점"
+    val loginId: String,          // 아이디만 보유 — 비밀번호/해시 미보유
+    val isStoreOpen: Boolean,     // 대시보드 "영업중" 토글
+)
+
+// 매출·정산 (OWNER_SALES)
+enum class SalesPeriod { Today, Week, Month }
+data class TopMenu(val rank: Int, val name: String, val soldCount: Int, val sales: Int)
+data class SalesSummary(
+    val period: SalesPeriod,
+    val totalSales: Int,          // 원
+    val orderCount: Int,
+    val deltaPercent: Int?,       // 직전 동기간 대비(±)
+    val dailySales: List<Int>,    // 막대 차트용(요일/일자별 원)
+    val topMenus: List<TopMenu>,
+    val payoutAmount: Int,        // 정산 예정 금액(원)
+    val payoutDateLabel: String?, // "6월 24일 입금 예정"
+)
+// MenuItem 에 추가: val isVisible: Boolean   // 메뉴 노출 on/off (품절은 기존 isSoldOut 재사용)
+```
+
 ## 추가 Repository Contracts
 ```kotlin
 interface StoreRepository {
@@ -369,7 +399,30 @@ interface NotificationRepository {
 interface GiftRepository {
     suspend fun sendGift(request: GiftSendRequest): AppResult<GiftSendResult>  // 실Kakao/Mock
 }
+
+// ---- 점주(Owner) 계약 ----
+interface OwnerAuthProvider {                  // 실/Mock 교체. 비밀번호는 저장·로깅 금지
+    suspend fun login(loginId: String, password: String): AppResult<OwnerProfile>
+    suspend fun logout(): AppResult<Unit>
+    suspend fun setStoreOpen(open: Boolean): AppResult<OwnerProfile>   // 영업중 토글
+}
+
+interface OwnerOrderRepository {               // OWNER_ORDERS 실시간 주문 관리
+    fun observeIncomingOrders(filter: OrderStatus? = null): Flow<AppResult<List<Order>>>
+    suspend fun advanceStatus(orderId: String, to: OrderStatus): AppResult<Order> // 접수→준비완료→픽업완료
+}
+
+interface OwnerMenuRepository {                // OWNER_MENU 메뉴 관리
+    fun observeManagedMenus(categoryId: String? = null): Flow<AppResult<List<MenuItem>>>
+    suspend fun setSoldOut(menuItemId: String, soldOut: Boolean): AppResult<MenuItem>
+    suspend fun setVisible(menuItemId: String, visible: Boolean): AppResult<MenuItem>
+}
+
+interface SalesRepository {                    // OWNER_SALES 매출·정산
+    fun observeSales(period: SalesPeriod): Flow<AppResult<SalesSummary>>
+}
 ```
-- 신규 Mock 리포지토리(StoreRepository/CouponRepository/NotificationRepository/GiftRepository)는 기존 패턴대로
-  인메모리 시드 + `@Binds`로 DI 연결한다. 실연동(카카오/지도/선물)은 키 게이트 + 폴백(키 부재 시 Mock)으로 둔다.
-- 선물 수신자(연락처·카카오 친구)·토큰은 저장·로깅 최소화(`SECURITY.md §4`).
+- 신규 Mock 리포지토리(StoreRepository/CouponRepository/NotificationRepository/GiftRepository/OwnerAuthProvider/
+  OwnerOrderRepository/OwnerMenuRepository/SalesRepository)는 기존 패턴대로 인메모리 시드 + `@Binds`로 DI 연결한다.
+  실연동(카카오/지도/선물/점주 인증·주문 푸시)은 키 게이트 + 폴백(키 부재 시 Mock)으로 둔다.
+- 선물 수신자(연락처·카카오 친구)·토큰은 저장·로깅 최소화(`SECURITY.md §4`). **점주 비밀번호는 모델/로그/디스크 미보유**, 세션 토큰만 EncryptedDataStore.
