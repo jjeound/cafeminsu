@@ -88,8 +88,9 @@
     {
       "dir": "12-redesign-store-menu",
       "name": "redesign-store-menu",
-      "status": "pending",
-      "summary": "고객 화면 재설계 — 매장 선택/상세(STORE/STORE_DETAIL) + 메뉴 선택(MENU) + 메뉴 상세(MENU_DETAIL)"
+      "status": "completed",
+      "summary": "고객 화면 재설계 — 매장 선택/상세(STORE/STORE_DETAIL) + 메뉴 선택(MENU) + 메뉴 상세(MENU_DETAIL)",
+      "completed_at": "2026-06-20T00:03:16+0900"
     },
     {
       "dir": "13-redesign-cart-pay",
