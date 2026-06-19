@@ -2,6 +2,7 @@ package com.cafeminsu.ui.feature.cart
 
 import com.cafeminsu.domain.model.CartInvalidReason
 import com.cafeminsu.domain.model.CartValidation
+import com.cafeminsu.domain.model.OrderType
 import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -29,5 +30,7 @@ class CartUiStateTest {
             minimumOrderAmount = 10_000,
             validation = validation,
             checkoutInProgress = checkoutInProgress,
+            orderType = OrderType.DineIn,
+            requestNote = "",
         )
 }

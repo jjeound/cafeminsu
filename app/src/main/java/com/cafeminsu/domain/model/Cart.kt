@@ -5,7 +5,14 @@ data class Cart(
     val subtotal: Int,
     val minimumOrderAmount: Int,
     val validation: CartValidation,
+    val orderType: OrderType = OrderType.DineIn,
+    val requestNote: String? = null,
 )
+
+enum class OrderType {
+    DineIn,
+    Takeout,
+}
 
 data class CartItem(
     val id: String,

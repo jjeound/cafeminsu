@@ -10,6 +10,7 @@ import com.cafeminsu.domain.model.CartItem
 import com.cafeminsu.domain.model.CartValidation
 import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.OrderStatus
+import com.cafeminsu.domain.model.OrderType
 import com.cafeminsu.domain.model.SelectedOption
 import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.OrderRepository
@@ -54,6 +55,8 @@ class CartViewModelTest {
             assertEquals(10_000, content.minimumOrderAmount)
             assertEquals(CartValidation.Valid, content.validation)
             assertEquals(listOf("민수 라떼"), content.items.map { it.name })
+            assertEquals(OrderType.DineIn, content.orderType)
+            assertEquals("", content.requestNote)
 
             cancelAndIgnoreRemainingEvents()
         }
@@ -69,6 +72,37 @@ class CartViewModelTest {
             val empty = awaitEmpty()
             assertEquals("담은 메뉴가 없어요", empty.message)
             assertEquals(CartValidation.Invalid(listOf(CartInvalidReason.Empty)), empty.validation)
+            assertEquals(OrderType.DineIn, empty.orderType)
+            assertEquals("", empty.requestNote)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun orderTypeToggleAndRequestNoteUpdateState() = runTest {
+        val viewModel = viewModel(
+            cartRepository = FakeCartRepository(
+                initialCart = sampleCart(
+                    items = listOf(sampleCartItem(unitPrice = 5_000, quantity = 2)),
+                    minimumOrderAmount = 10_000,
+                    validation = CartValidation.Valid,
+                ),
+            ),
+        )
+
+        viewModel.uiState.test {
+            assertEquals(OrderType.DineIn, awaitContent().orderType)
+
+            viewModel.onOrderTypeSelected(OrderType.Takeout)
+            val takeout = awaitContent()
+            assertEquals(OrderType.Takeout, takeout.orderType)
+            assertEquals("", takeout.requestNote)
+
+            viewModel.onRequestNoteChange("얼음 적게 부탁드려요")
+            val withNote = awaitContent()
+            assertEquals(OrderType.Takeout, withNote.orderType)
+            assertEquals("얼음 적게 부탁드려요", withNote.requestNote)
 
             cancelAndIgnoreRemainingEvents()
         }
@@ -196,6 +230,8 @@ class CartViewModelTest {
 
         viewModel.uiState.test {
             awaitContent()
+            viewModel.onOrderTypeSelected(OrderType.Takeout)
+            viewModel.onRequestNoteChange("얼음 적게")
 
             viewModel.events.test {
                 viewModel.onCheckout()
@@ -204,6 +240,8 @@ class CartViewModelTest {
                 assertEquals(CartEvent.NavigateToPayment("order-42"), event)
                 assertEquals(1, orderRepository.createOrderCalls)
                 assertEquals(10_000, orderRepository.createdCarts.single().subtotal)
+                assertEquals(OrderType.Takeout, orderRepository.createdCarts.single().orderType)
+                assertEquals("얼음 적게", orderRepository.createdCarts.single().requestNote)
 
                 cancelAndIgnoreRemainingEvents()
             }

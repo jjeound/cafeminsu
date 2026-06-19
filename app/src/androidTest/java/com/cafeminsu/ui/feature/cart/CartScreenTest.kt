@@ -5,6 +5,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import com.cafeminsu.domain.model.CartItem
 import com.cafeminsu.domain.model.CartValidation
+import com.cafeminsu.domain.model.OrderType
 import com.cafeminsu.domain.model.SelectedOption
 import com.cafeminsu.ui.theme.CafeTheme
 import org.junit.Rule
@@ -24,9 +25,13 @@ class CartScreenTest {
                         minimumOrderAmount = 10_000,
                         validation = CartValidation.Invalid(emptyList()),
                         checkoutInProgress = false,
+                        orderType = OrderType.DineIn,
+                        requestNote = "",
                     ),
+                    onBackClick = {},
                     onQuantityChange = { _, _ -> },
-                    onRemove = {},
+                    onOrderTypeSelected = {},
+                    onRequestNoteChange = {},
                     onCheckout = {},
                     onRetry = {},
                     onBrowseMenuClick = {},
@@ -50,9 +55,13 @@ class CartScreenTest {
                         minimumOrderAmount = 10_000,
                         validation = CartValidation.Valid,
                         checkoutInProgress = false,
+                        orderType = OrderType.DineIn,
+                        requestNote = "",
                     ),
+                    onBackClick = {},
                     onQuantityChange = { _, _ -> },
-                    onRemove = {},
+                    onOrderTypeSelected = {},
+                    onRequestNoteChange = {},
                     onCheckout = {},
                     onRetry = {},
                     onBrowseMenuClick = {},
@@ -62,7 +71,10 @@ class CartScreenTest {
 
         composeRule.onNodeWithText("민수 라떼").assertIsDisplayed()
         composeRule.onNodeWithText("라지").assertIsDisplayed()
-        composeRule.onNodeWithText("주문하기").assertIsDisplayed()
+        composeRule.onNodeWithText("주문 방식").assertIsDisplayed()
+        composeRule.onNodeWithText("요청사항").assertIsDisplayed()
+        composeRule.onNodeWithText("결제하기").assertIsDisplayed()
+        composeRule.onNodeWithText("총 결제 금액").assertIsDisplayed()
         composeRule.onNodeWithText("11,400원").assertIsDisplayed()
     }
 

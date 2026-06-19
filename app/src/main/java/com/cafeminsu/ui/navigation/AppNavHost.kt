@@ -241,6 +241,7 @@ fun AppNavHost(
                         navController.navigate(Routes.pay(orderId))
                     },
                     onBrowseMenuClick = { navController.navigate(Routes.STORE) },
+                    onBackClick = { navController.popBackStack() },
                 )
             }
             composable(

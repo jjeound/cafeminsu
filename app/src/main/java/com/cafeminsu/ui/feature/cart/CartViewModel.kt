@@ -7,6 +7,7 @@ import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.Cart
 import com.cafeminsu.domain.model.CartInvalidReason
 import com.cafeminsu.domain.model.CartValidation
+import com.cafeminsu.domain.model.OrderType
 import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.OrderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -29,6 +30,8 @@ class CartViewModel @Inject constructor(
     private val _events = MutableSharedFlow<CartEvent>(extraBufferCapacity = EventBufferCapacity)
     private var latestCart: Cart? = null
     private var checkoutInProgress = false
+    private var selectedOrderType = OrderType.DineIn
+    private var requestNote = ""
 
     val uiState: StateFlow<CartUiState> = _uiState.asStateFlow()
     val events: SharedFlow<CartEvent> = _events.asSharedFlow()
@@ -57,6 +60,16 @@ class CartViewModel @Inject constructor(
                 is AppResult.Failure -> _uiState.value = result.error.toCartError()
             }
         }
+    }
+
+    fun onOrderTypeSelected(orderType: OrderType) {
+        selectedOrderType = orderType
+        refreshCartState()
+    }
+
+    fun onRequestNoteChange(note: String) {
+        requestNote = note
+        refreshCartState()
     }
 
     fun onCheckout() {
@@ -108,7 +121,7 @@ class CartViewModel @Inject constructor(
         validation: CartValidation,
     ) {
         when (validation) {
-            CartValidation.Valid -> createOrder(cart.copy(validation = CartValidation.Valid))
+            CartValidation.Valid -> createOrder(cart.withCheckoutDetails(validation = CartValidation.Valid))
             is CartValidation.Invalid -> {
                 checkoutInProgress = false
                 _uiState.value = cart.toCartUiState(
@@ -123,9 +136,7 @@ class CartViewModel @Inject constructor(
         when (val result = orderRepository.createOrderFromCart(cart)) {
             is AppResult.Success -> {
                 checkoutInProgress = false
-                latestCart?.let { currentCart ->
-                    _uiState.value = currentCart.toCartUiState(checkoutInProgress = false)
-                }
+                refreshCartState()
                 _events.emit(CartEvent.NavigateToPayment(result.data.id))
             }
 
@@ -138,6 +149,12 @@ class CartViewModel @Inject constructor(
         _uiState.value = error.toCartError()
     }
 
+    private fun refreshCartState() {
+        latestCart?.let { cart ->
+            _uiState.value = cart.toCartUiState(checkoutInProgress = checkoutInProgress)
+        }
+    }
+
     private fun Cart.toCartUiState(
         checkoutInProgress: Boolean,
         validation: CartValidation = this.validation,
@@ -148,6 +165,8 @@ class CartViewModel @Inject constructor(
                 minimumOrderAmount = minimumOrderAmount,
                 validation = validation.ensureEmptyReason(),
                 checkoutInProgress = checkoutInProgress,
+                orderType = selectedOrderType,
+                requestNote = this@CartViewModel.requestNote,
             )
         } else {
             CartUiState.Content(
@@ -156,8 +175,17 @@ class CartViewModel @Inject constructor(
                 minimumOrderAmount = minimumOrderAmount,
                 validation = validation,
                 checkoutInProgress = checkoutInProgress,
+                orderType = selectedOrderType,
+                requestNote = this@CartViewModel.requestNote,
             )
         }
+
+    private fun Cart.withCheckoutDetails(validation: CartValidation): Cart =
+        copy(
+            validation = validation,
+            orderType = selectedOrderType,
+            requestNote = this@CartViewModel.requestNote.trim().ifEmpty { null },
+        )
 
     private fun CartValidation.ensureEmptyReason(): CartValidation =
         when (this) {
