@@ -41,15 +41,13 @@ import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.cafeminsu.ui.components.CafeButton
-import com.cafeminsu.ui.components.CafeButtonVariant
 import com.cafeminsu.ui.components.CafeCard
 import com.cafeminsu.ui.components.CafeCardType
 import com.cafeminsu.ui.components.EmptyView
 import com.cafeminsu.ui.components.ErrorView
 import com.cafeminsu.ui.components.LoadingView
+import com.cafeminsu.ui.components.LogoutConfirmDialog
 import com.cafeminsu.ui.theme.CafeTheme
 
 @Composable
@@ -486,53 +484,6 @@ private fun SettingRow(
 }
 
 @Composable
-private fun LogoutConfirmDialog(
-    onDismiss: () -> Unit,
-    onConfirm: () -> Unit,
-) {
-    Dialog(onDismissRequest = onDismiss) {
-        Surface(
-            shape = CafeTheme.shapes.radiusXl,
-            color = CafeTheme.colors.canvas,
-            contentColor = CafeTheme.colors.body,
-        ) {
-            Column(
-                modifier = Modifier.padding(CafeTheme.spacing.space5),
-                verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space5),
-            ) {
-                Column(verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space2)) {
-                    Text(
-                        text = "로그아웃 하시겠어요?",
-                        style = CafeTheme.typography.h2,
-                        color = CafeTheme.colors.ink,
-                    )
-                    Text(
-                        text = "로그인 정보를 잊지 않도록\n계정 정보를 확인해주세요.",
-                        style = CafeTheme.typography.body,
-                        color = CafeTheme.colors.muted,
-                    )
-                }
-                Row(
-                    horizontalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space3),
-                ) {
-                    CafeButton(
-                        text = "취소",
-                        onClick = onDismiss,
-                        modifier = Modifier.weight(DialogButtonWeight),
-                        variant = CafeButtonVariant.Secondary,
-                    )
-                    CafeButton(
-                        text = "로그아웃",
-                        onClick = onConfirm,
-                        modifier = Modifier.weight(DialogButtonWeight),
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
 private fun SectionTitle(text: String) {
     Text(
         text = text,
@@ -681,7 +632,6 @@ private const val LogoutSettingId = "logout"
 private const val StatCellWeight = 1f
 private const val QuickMenuTileWeight = 1f
 private const val SettingsLabelWeight = 1f
-private const val DialogButtonWeight = 1f
 private const val DarkDividerAlpha = 0.28f
 private val IconStrokeWidth = 1.5.dp
 private val IconCornerRadius = 4.dp

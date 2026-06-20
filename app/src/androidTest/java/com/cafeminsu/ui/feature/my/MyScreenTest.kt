@@ -71,6 +71,7 @@ class MyScreenTest {
 
         composeRule.onNodeWithText("로그아웃").performClick()
         composeRule.onNodeWithText("로그아웃 하시겠어요?").assertIsDisplayed()
+        composeRule.onNodeWithText("로그인 정보를 잊지 않도록\n계정 정보를 확인해주세요.").assertIsDisplayed()
         composeRule.onNodeWithText("취소").assertIsDisplayed()
         composeRule.onAllNodesWithText("로그아웃")[1].performClick()
         assertTrue(logoutConfirmed)

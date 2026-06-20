@@ -32,7 +32,23 @@ class StateComponentsTest {
             }
         }
 
-        composeRule.onNodeWithText("불러오는 중").assertIsDisplayed()
+        composeRule.onNodeWithText("메뉴 정보를 불러오고 있어요").assertIsDisplayed()
+        composeRule.onNodeWithText("잠시만 기다려주세요").assertIsDisplayed()
+    }
+
+    @Test
+    fun loadingViewAllowsScreenSpecificMessages() {
+        composeRule.setContent {
+            CafeTheme {
+                LoadingView(
+                    title = "쿠폰 정보를 불러오고 있어요",
+                    message = "잠시 후 다시 보여드릴게요",
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("쿠폰 정보를 불러오고 있어요").assertIsDisplayed()
+        composeRule.onNodeWithText("잠시 후 다시 보여드릴게요").assertIsDisplayed()
     }
 
     @Test
@@ -75,11 +91,68 @@ class StateComponentsTest {
             }
         }
 
+        composeRule.onNodeWithText("연결에 실패했어요").assertIsDisplayed()
         composeRule.onNodeWithText("메뉴를 불러오지 못했어요.").assertIsDisplayed()
+        composeRule.onNodeWithText("ERR_NETWORK_408").assertIsDisplayed()
+        composeRule.onNodeWithText("고객센터 문의").assertIsDisplayed()
         composeRule.onNodeWithText("다시 시도").performClick()
 
         composeRule.runOnIdle {
             assertEquals(1, retries)
+        }
+    }
+
+    @Test
+    fun errorViewCanRenderNetworkTopBar() {
+        composeRule.setContent {
+            CafeTheme {
+                ErrorView(
+                    message = "네트워크 상태를 확인하고\n다시 시도해주세요.",
+                    retryable = true,
+                    onRetry = {},
+                    showTopBar = true,
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("오류").assertIsDisplayed()
+        composeRule.onNodeWithText("연결에 실패했어요").assertIsDisplayed()
+        composeRule.onNodeWithText("ERR_NETWORK_408").assertIsDisplayed()
+    }
+
+    @Test
+    fun logoutConfirmDialogRendersStLogoutCopyAndActions() {
+        var dismissed = false
+        var confirmed = false
+
+        composeRule.setContent {
+            CafeTheme {
+                LogoutConfirmDialog(
+                    onDismiss = { dismissed = true },
+                    onConfirm = { confirmed = true },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("로그아웃 하시겠어요?").assertIsDisplayed()
+        composeRule.onNodeWithText("로그인 정보를 잊지 않도록\n계정 정보를 확인해주세요.").assertIsDisplayed()
+        composeRule.onNodeWithText("취소").performClick()
+        composeRule.runOnIdle {
+            assertEquals(true, dismissed)
+        }
+
+        composeRule.setContent {
+            CafeTheme {
+                LogoutConfirmDialog(
+                    onDismiss = {},
+                    onConfirm = { confirmed = true },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("로그아웃").performClick()
+        composeRule.runOnIdle {
+            assertEquals(true, confirmed)
         }
     }
 
