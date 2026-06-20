@@ -102,8 +102,9 @@
     {
       "dir": "14-redesign-my",
       "name": "redesign-my",
-      "status": "pending",
-      "summary": "고객 화면 재설계 — 마이(MY) + 쿠폰/선물(COUPON/GIFT) + 주문내역(HISTORY)"
+      "status": "completed",
+      "summary": "고객 화면 재설계 — 마이(MY) + 쿠폰/선물(COUPON/GIFT) + 주문내역(HISTORY)",
+      "completed_at": "2026-06-20T15:10:33+0900"
     },
     {
       "dir": "15-redesign-voice-states",
