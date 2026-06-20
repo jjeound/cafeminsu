@@ -8,7 +8,6 @@ import com.cafeminsu.data.repository.MockNotificationRepository
 import com.cafeminsu.data.repository.MockOrderRepository
 import com.cafeminsu.data.repository.MockOwnerMenuRepository
 import com.cafeminsu.data.repository.MockOwnerOrderRepository
-import com.cafeminsu.data.repository.MockPaymentRepository
 import com.cafeminsu.data.repository.MockRewardRepository
 import com.cafeminsu.data.repository.MockSessionRepository
 import com.cafeminsu.data.repository.MockStoreRepository
@@ -43,7 +42,6 @@ class RepositoryModuleTest {
             OwnerMenuRepository::class.java,
             MockOwnerMenuRepository::class.java,
         )
-        assertBinding("bindPaymentRepository", PaymentRepository::class.java, MockPaymentRepository::class.java)
         assertBinding("bindRewardRepository", RewardRepository::class.java, MockRewardRepository::class.java)
         assertBinding("bindCouponRepository", CouponRepository::class.java, MockCouponRepository::class.java)
         assertBinding("bindGiftRepository", GiftRepository::class.java, MockGiftRepository::class.java)
@@ -102,6 +100,34 @@ class RepositoryModuleTest {
         val mockRepository = FakeOrderRepository()
 
         val selected = selectOrderRepository(
+            baseUrl = "https://cafeminsu.example/",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(realRepository, selected)
+    }
+
+    @Test
+    fun blankBaseUrlSelectsMockPaymentRepositoryFallback() {
+        val realRepository = FakePaymentRepository()
+        val mockRepository = FakePaymentRepository()
+
+        val selected = selectPaymentRepository(
+            baseUrl = "",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(mockRepository, selected)
+    }
+
+    @Test
+    fun configuredBaseUrlSelectsRealPaymentRepository() {
+        val realRepository = FakePaymentRepository()
+        val mockRepository = FakePaymentRepository()
+
+        val selected = selectPaymentRepository(
             baseUrl = "https://cafeminsu.example/",
             realFactory = { realRepository },
             mockFactory = { mockRepository },
@@ -238,4 +264,17 @@ private class FakeOrderRepository : OrderRepository {
     override fun observeOrderHistory():
         kotlinx.coroutines.flow.Flow<com.cafeminsu.core.AppResult<List<com.cafeminsu.domain.model.Order>>> =
         kotlinx.coroutines.flow.flowOf(com.cafeminsu.core.AppResult.Success(emptyList()))
+}
+
+private class FakePaymentRepository : PaymentRepository {
+    override suspend fun pay(
+        request: com.cafeminsu.domain.model.PaymentRequest,
+    ): com.cafeminsu.core.AppResult<com.cafeminsu.domain.model.PaymentResult> =
+        com.cafeminsu.core.AppResult.Failure(com.cafeminsu.core.DomainError.Unknown)
+
+    override suspend fun getPaymentStatus(
+        orderId: String,
+        idempotencyKey: String,
+    ): com.cafeminsu.core.AppResult<com.cafeminsu.domain.model.PaymentResult> =
+        com.cafeminsu.core.AppResult.Failure(com.cafeminsu.core.DomainError.NotFound)
 }

@@ -88,6 +88,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun providePaymentApi(retrofit: Retrofit): PaymentApi =
+        retrofit.create(PaymentApi::class.java)
+
+    @Provides
+    @Singleton
     @Unauthenticated
     fun provideStoreApi(
         @Unauthenticated retrofit: Retrofit,

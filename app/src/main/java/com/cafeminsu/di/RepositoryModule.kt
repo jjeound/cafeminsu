@@ -1,5 +1,7 @@
 package com.cafeminsu.di
 
+import com.cafeminsu.data.payment.MockPgClient
+import com.cafeminsu.data.payment.PgClient
 import com.cafeminsu.data.repository.MockCartRepository
 import com.cafeminsu.data.repository.MockCouponRepository
 import com.cafeminsu.data.repository.MockGiftRepository
@@ -15,6 +17,7 @@ import com.cafeminsu.data.repository.MockSessionRepository
 import com.cafeminsu.data.repository.MockStoreRepository
 import com.cafeminsu.data.repository.RealMenuRepository
 import com.cafeminsu.data.repository.RealOrderRepository
+import com.cafeminsu.data.repository.RealPaymentRepository
 import com.cafeminsu.data.repository.RealSessionRepository
 import com.cafeminsu.data.repository.RealStoreRepository
 import com.cafeminsu.domain.repository.CartRepository
@@ -59,7 +62,7 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindPaymentRepository(repository: MockPaymentRepository): PaymentRepository
+    abstract fun bindPgClient(client: MockPgClient): PgClient
 
     @Binds
     @Singleton
@@ -109,6 +112,18 @@ abstract class RepositoryModule {
             mockRepository: Provider<MockOrderRepository>,
         ): OrderRepository =
             selectOrderRepository(
+                baseUrl = com.cafeminsu.BuildConfig.BASE_URL,
+                realFactory = { realRepository.get() },
+                mockFactory = { mockRepository.get() },
+            )
+
+        @Provides
+        @Singleton
+        fun providePaymentRepository(
+            realRepository: Provider<RealPaymentRepository>,
+            mockRepository: Provider<MockPaymentRepository>,
+        ): PaymentRepository =
+            selectPaymentRepository(
                 baseUrl = com.cafeminsu.BuildConfig.BASE_URL,
                 realFactory = { realRepository.get() },
                 mockFactory = { mockRepository.get() },
@@ -166,6 +181,17 @@ internal fun selectOrderRepository(
     realFactory: () -> OrderRepository,
     mockFactory: () -> OrderRepository,
 ): OrderRepository =
+    if (baseUrl.isNotBlank()) {
+        realFactory()
+    } else {
+        mockFactory()
+    }
+
+internal fun selectPaymentRepository(
+    baseUrl: String,
+    realFactory: () -> PaymentRepository,
+    mockFactory: () -> PaymentRepository,
+): PaymentRepository =
     if (baseUrl.isNotBlank()) {
         realFactory()
     } else {
