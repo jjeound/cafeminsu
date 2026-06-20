@@ -15,6 +15,14 @@ val localProperties = Properties().apply {
     }
 }
 val kakaoNativeAppKey = localProperties.getProperty("KAKAO_NATIVE_APP_KEY").orEmpty()
+val baseUrl = localProperties.getProperty("BASE_URL").orEmpty().trim()
+
+require(baseUrl.isBlank() || baseUrl.startsWith("https://")) {
+    "BASE_URL must start with https:// when set."
+}
+
+fun String.toBuildConfigLiteral(): String =
+    "\"${replace("\\", "\\\\").replace("\"", "\\\"")}\""
 
 android {
     namespace = "com.cafeminsu"
@@ -27,7 +35,8 @@ android {
         versionCode = 1
         versionName = "1.0"
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
-        buildConfigField("String", "KAKAO_NATIVE_APP_KEY", "\"$kakaoNativeAppKey\"")
+        buildConfigField("String", "KAKAO_NATIVE_APP_KEY", kakaoNativeAppKey.toBuildConfigLiteral())
+        buildConfigField("String", "BASE_URL", baseUrl.toBuildConfigLiteral())
         manifestPlaceholders["kakaoRedirectScheme"] = "kakao$kakaoNativeAppKey"
     }
 
@@ -70,11 +79,20 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kakao.user)
     implementation(libs.hilt.android)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.converter.moshi)
+    implementation(libs.okhttp)
+    implementation(libs.okhttp.logging.interceptor)
+    implementation(libs.moshi)
+    implementation(libs.androidx.datastore.preferences)
+    implementation(libs.androidx.security.crypto)
     ksp(libs.hilt.compiler)
+    ksp(libs.moshi.kotlin.codegen)
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.turbine)
     testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.okhttp.mockwebserver)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     debugImplementation(libs.androidx.compose.ui.tooling)
