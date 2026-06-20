@@ -28,11 +28,14 @@
     {
       "step": 2,
       "name": "history-redesign",
-      "status": "pending",
+      "status": "completed",
+      "summary": "HISTORY 화면을 진행중 주문 스텝퍼, 지난 주문 재주문 카드, 빈 상태 중심으로 재설계하고 ViewModel 테스트를 추가함",
       "images": [
         "docs/screens/MY - 04 (주문내역).png",
         "docs/screens/MY - 05 (주문내역 empty).png"
-      ]
+      ],
+      "started_at": "2026-06-20T15:00:18+0900",
+      "completed_at": "2026-06-20T15:09:44+0900"
     }
   ],
   "created_at": "2026-06-20T14:36:41+0900"

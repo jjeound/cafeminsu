@@ -42,6 +42,7 @@ import com.cafeminsu.ui.feature.cart.CartRoute
 import com.cafeminsu.ui.feature.coupon.CouponRoute
 import com.cafeminsu.ui.feature.gift.GiftRoute
 import com.cafeminsu.ui.feature.gifticon.GifticonDetailRoute
+import com.cafeminsu.ui.feature.history.HistoryRoute
 import com.cafeminsu.ui.feature.home.HomeRoute
 import com.cafeminsu.ui.feature.login.LoginRoute
 import com.cafeminsu.ui.feature.menu.MenuDetailRoute
@@ -50,7 +51,6 @@ import com.cafeminsu.ui.feature.my.MyRoute
 import com.cafeminsu.ui.feature.notification.NotiRoute
 import com.cafeminsu.ui.feature.order.OrderFailureDialog
 import com.cafeminsu.ui.feature.order.OrderResultRoute
-import com.cafeminsu.ui.feature.order.OrderStatusRoute
 import com.cafeminsu.ui.feature.owner.home.OwnerHomeRoute
 import com.cafeminsu.ui.feature.owner.login.OwnerLoginRoute
 import com.cafeminsu.ui.feature.owner.menu.OwnerMenuRoute
@@ -333,7 +333,12 @@ fun AppNavHost(
                 )
             }
             composable(Routes.HISTORY) {
-                PlaceholderScreen(title = "주문내역")
+                HistoryRoute(
+                    onBackClick = { navController.popBackStack() },
+                    onReorderClick = { menuItemId ->
+                        navController.navigate(Routes.menuDetail(menuItemId))
+                    },
+                )
             }
             composable(
                 route = Routes.HISTORY_DETAIL,
@@ -343,7 +348,12 @@ fun AppNavHost(
                     },
                 ),
             ) {
-                OrderStatusRoute()
+                HistoryRoute(
+                    onBackClick = { navController.popBackStack() },
+                    onReorderClick = { menuItemId ->
+                        navController.navigate(Routes.menuDetail(menuItemId))
+                    },
+                )
             }
         }
     }
