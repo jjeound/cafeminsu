@@ -208,11 +208,22 @@
 - 빈 상태 `EmptyView`("새 주문이 없어요"). 하단 탭바(주문 활성).
 
 ## OWNER_MENU (메뉴 관리) — `점주 - 03 (메뉴 관리).png`
-- 상단 "메뉴 관리" `h1`/`ink` + 우측 **"+ 메뉴 추가"** `primary` 텍스트버튼(MVP는 스텁/토스트).
+- 상단 "메뉴 관리" `h1`/`ink` + 우측 **"+ 메뉴 추가"** `primary` 텍스트버튼 → `OWNER_MENU_ADD`.
 - **카테고리 칩 row**(`CafeChip`): "전체"(선택=`primary`) · "커피" · "논커피" · "디저트".
 - 메뉴 행(`surface-card`): 메뉴명 "아메리카노" `h3`/`ink`, 가격 "₩4,500" `primary`, 상태 점+텍스트("● 판매중" `success` / "● 품절" `error`),
   우측 **토글 스위치**: ON=`primary`(판매중), OFF=`hairline`(품절) → `setSoldOut`. **품절 행은 셀 디밍(`muted`)** + `error` "품절" 태그.
 - 하단 탭바(메뉴 활성).
+
+## OWNER_MENU_ADD (메뉴 추가) — `점주 - 05 (메뉴 추가).png`
+`OWNER_MENU` 우측 "+ 메뉴 추가"로 진입하는 신규 메뉴 등록 폼. 점주 화면 공통 토큰/컴포넌트 재사용(전용 색/토큰 신규 금지).
+- `CafeTopBar`: 좌 `←`(취소·복귀), 중앙 "메뉴 추가" `h2`/`ink`. 배경 `canvas`.
+- **대표 사진 추가**: 점선(`hairline`, dash) 보더 + `surface-card` 업로드 박스(`radius-lg`). 중앙 `＋` + "대표 사진 추가" `caption`/`muted`. 탭 시 갤러리/카메라(권한 rationale, 이미지 1장).
+- **카테고리** `*필수`: `CafeChip` row "커피"(기본 선택=`primary`) · "논커피" · "디저트". 단일 선택.
+- **메뉴명** `*필수`: `CafeTextField`(placeholder "메뉴 이름을 입력하세요", `surface-card`). 공백·길이 검증.
+- **가격** `*필수`: `₩` prefix + `CafeTextField`(숫자 키패드, placeholder "0"). 0 초과 정수만, 금액 입력 검증.
+- **설명**(선택): 멀티라인 텍스트영역(`surface-card`, placeholder "메뉴 설명을 입력하세요 (선택)").
+- **판매 상태** 카드(`surface-card`): "판매 상태" `h3`/`ink` + "등록 즉시 판매중으로 표시됩니다" `caption`/`muted` + 우측 토글(ON=`primary`/판매중, OFF=`hairline`/품절).
+- 하단 고정 바(상단 1px `hairline`): 폭 꽉 찬 **"저장하기"** `CafeButton`(primary) → 필수값 검증 → `addMenu(...)`. 등록 액션은 **낙관적 UI 금지**(확정 후 `OWNER_MENU` 복귀 + 토스트), 중복탭 가드. 실패 시 스낵바.
 
 ## OWNER_SALES (매출·정산) — `점주 - 04 (매출·정산).png`
 - 상단 "매출 · 정산" `h1`/`ink`.
