@@ -32,7 +32,7 @@
       "status": "completed",
       "started_at": "2026-06-20T21:38:57+0900",
       "summary": "OrderApi DTO·매퍼와 RealOrderRepository를 추가하고 BASE_URL 게이트로 Mock 폴백을 유지했다.",
-      "completed_at": "2026-06-20T21:46:00+0900"
+      "completed_at": "2026-06-20T21:47:14+0900"
     },
     {
       "step": 4,
