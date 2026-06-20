@@ -302,10 +302,9 @@ fun AppNavHost(
             }
             composable(Routes.MY) {
                 MyRoute(
-                    onOrderClick = { orderId ->
-                        navController.navigate(Routes.history(orderId))
-                    },
-                    onBrowseMenuClick = { navController.navigate(Routes.STORE) },
+                    onHistoryClick = { navController.navigate(Routes.HISTORY) },
+                    onGiftClick = { navController.navigate(Routes.GIFT) },
+                    onCouponClick = { navController.navigate(Routes.COUPON) },
                     onLoginClick = { navController.navigate(Routes.LOGIN) },
                 )
             }

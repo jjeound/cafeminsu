@@ -2,8 +2,11 @@ package com.cafeminsu.ui.feature.my
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import com.cafeminsu.ui.theme.CafeTheme
+import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
 
@@ -12,21 +15,15 @@ class MyScreenTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun showsProfileOrderHistorySettingsAndMaskedPhone() {
+    fun showsProfileStatsQuickMenusAndSettings() {
         composeRule.setContent {
             CafeTheme {
                 MyScreen(
-                    state = MyUiState.Content(
-                        profile = MyProfileUiModel(
-                            displayName = "민수",
-                            phoneLast4 = "1234",
-                        ),
-                        recentOrders = listOf(sampleOrderSummary()),
-                        settings = listOf(MySettingItemUiModel(id = "logout", label = "로그아웃")),
-                        appMeta = "앱 버전 1.0",
-                    ),
-                    onOrderClick = {},
-                    onBrowseMenuClick = {},
+                    state = sampleContent(),
+                    onHistoryClick = {},
+                    onGiftClick = {},
+                    onCouponClick = {},
+                    onNotificationSettingsClick = {},
                     onLoginClick = {},
                     onLogoutClick = {},
                     onRetry = {},
@@ -34,41 +31,49 @@ class MyScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("마이페이지").assertIsDisplayed()
-        composeRule.onNodeWithText("민수").assertIsDisplayed()
-        composeRule.onNodeWithText("010-****-1234").assertIsDisplayed()
-        composeRule.onNodeWithText("주문번호 M001").assertExists()
-        composeRule.onNodeWithText("결제 완료").assertExists()
+        composeRule.onNodeWithText("MY").assertIsDisplayed()
+        composeRule.onNodeWithText("진지원 님").assertIsDisplayed()
+        composeRule.onNodeWithText("GOLD").assertIsDisplayed()
+        composeRule.onNodeWithText("12").assertExists()
+        composeRule.onNodeWithText("7/10").assertExists()
+        composeRule.onNodeWithText("3").assertExists()
+        composeRule.onNodeWithText("주문내역").assertExists()
+        composeRule.onNodeWithText("선물하기").assertExists()
+        composeRule.onNodeWithText("쿠폰").assertExists()
+        composeRule.onNodeWithText("알림설정").assertExists()
+        composeRule.onNodeWithText("이용 약관").assertExists()
+        composeRule.onNodeWithText("자주 묻는 질문").assertExists()
+        composeRule.onNodeWithText("고객센터").assertExists()
+        composeRule.onNodeWithText("1588-1234").assertExists()
+        composeRule.onNodeWithText("버전 정보").assertExists()
+        composeRule.onNodeWithText("v1.0.0").assertExists()
         composeRule.onNodeWithText("로그아웃").assertExists()
-        composeRule.onNodeWithText("앱 버전 1.0").assertExists()
     }
 
     @Test
-    fun showsEmptyOrderHistoryAction() {
+    fun logoutRowShowsConfirmDialog() {
+        var logoutConfirmed = false
+
         composeRule.setContent {
             CafeTheme {
                 MyScreen(
-                    state = MyUiState.Empty(
-                        profile = MyProfileUiModel(
-                            displayName = "민수",
-                            phoneLast4 = "1234",
-                        ),
-                        message = "주문 내역이 없어요",
-                        actionLabel = "메뉴 보러가기",
-                        settings = listOf(MySettingItemUiModel(id = "logout", label = "로그아웃")),
-                        appMeta = "앱 버전 1.0",
-                    ),
-                    onOrderClick = {},
-                    onBrowseMenuClick = {},
+                    state = sampleContent(),
+                    onHistoryClick = {},
+                    onGiftClick = {},
+                    onCouponClick = {},
+                    onNotificationSettingsClick = {},
                     onLoginClick = {},
-                    onLogoutClick = {},
+                    onLogoutClick = { logoutConfirmed = true },
                     onRetry = {},
                 )
             }
         }
 
-        composeRule.onNodeWithText("주문 내역이 없어요").assertIsDisplayed()
-        composeRule.onNodeWithText("메뉴 보러가기").assertIsDisplayed()
+        composeRule.onNodeWithText("로그아웃").performClick()
+        composeRule.onNodeWithText("로그아웃 하시겠어요?").assertIsDisplayed()
+        composeRule.onNodeWithText("취소").assertIsDisplayed()
+        composeRule.onAllNodesWithText("로그아웃")[1].performClick()
+        assertTrue(logoutConfirmed)
     }
 
     @Test
@@ -80,8 +85,10 @@ class MyScreenTest {
                         message = "로그인이 필요해요",
                         actionLabel = "다시 로그인하기",
                     ),
-                    onOrderClick = {},
-                    onBrowseMenuClick = {},
+                    onHistoryClick = {},
+                    onGiftClick = {},
+                    onCouponClick = {},
+                    onNotificationSettingsClick = {},
                     onLoginClick = {},
                     onLogoutClick = {},
                     onRetry = {},
@@ -93,12 +100,31 @@ class MyScreenTest {
         composeRule.onNodeWithText("다시 로그인하기").assertIsDisplayed()
     }
 
-    private fun sampleOrderSummary(): MyOrderSummaryUiModel =
-        MyOrderSummaryUiModel(
-            orderId = "order-1",
-            orderNumber = "M001",
-            createdAtMillis = 1_803_974_400_000L,
-            totalAmount = 5_500,
-            statusLabel = "결제 완료",
+    private fun sampleContent(): MyUiState.Content =
+        MyUiState.Content(
+            profile = MyProfileUiModel(
+                displayName = "진지원",
+                initial = "진",
+                tierLabel = "GOLD",
+            ),
+            stats = MyStatsUiModel(
+                orderCount = 12,
+                stampCount = 7,
+                stampGoalCount = 10,
+                couponCount = 3,
+            ),
+            quickMenus = listOf(
+                MyQuickMenuUiModel(id = "history", label = "주문내역"),
+                MyQuickMenuUiModel(id = "gift", label = "선물하기"),
+                MyQuickMenuUiModel(id = "coupon", label = "쿠폰"),
+                MyQuickMenuUiModel(id = "notification_settings", label = "알림설정"),
+            ),
+            settings = listOf(
+                MySettingItemUiModel(id = "terms", label = "이용 약관"),
+                MySettingItemUiModel(id = "faq", label = "자주 묻는 질문"),
+                MySettingItemUiModel(id = "support", label = "고객센터", trailingText = "1588-1234"),
+                MySettingItemUiModel(id = "version", label = "버전 정보", trailingText = "v1.0.0"),
+                MySettingItemUiModel(id = "logout", label = "로그아웃", isDestructive = true),
+            ),
         )
 }

@@ -5,17 +5,14 @@ sealed interface MyUiState {
 
     data class Content(
         val profile: MyProfileUiModel,
-        val recentOrders: List<MyOrderSummaryUiModel>,
+        val stats: MyStatsUiModel,
+        val quickMenus: List<MyQuickMenuUiModel>,
         val settings: List<MySettingItemUiModel>,
-        val appMeta: String,
     ) : MyUiState
 
     data class Empty(
-        val profile: MyProfileUiModel,
         val message: String,
         val actionLabel: String,
-        val settings: List<MySettingItemUiModel>,
-        val appMeta: String,
     ) : MyUiState
 
     data class Error(
@@ -29,20 +26,31 @@ sealed interface MyUiState {
     ) : MyUiState
 }
 
+sealed interface MyEvent {
+    data object NavigateLogin : MyEvent
+}
+
 data class MyProfileUiModel(
     val displayName: String,
-    val phoneLast4: String?,
+    val initial: String,
+    val tierLabel: String,
 )
 
-data class MyOrderSummaryUiModel(
-    val orderId: String,
-    val orderNumber: String,
-    val createdAtMillis: Long,
-    val totalAmount: Int,
-    val statusLabel: String,
+data class MyStatsUiModel(
+    val orderCount: Int,
+    val stampCount: Int,
+    val stampGoalCount: Int,
+    val couponCount: Int,
+)
+
+data class MyQuickMenuUiModel(
+    val id: String,
+    val label: String,
 )
 
 data class MySettingItemUiModel(
     val id: String,
     val label: String,
+    val trailingText: String? = null,
+    val isDestructive: Boolean = false,
 )

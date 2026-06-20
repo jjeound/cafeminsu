@@ -5,16 +5,22 @@ import androidx.lifecycle.viewModelScope
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.AuthState
+import com.cafeminsu.domain.model.Gifticon
+import com.cafeminsu.domain.model.GifticonStatus
 import com.cafeminsu.domain.model.Order
-import com.cafeminsu.domain.model.OrderStatus
+import com.cafeminsu.domain.model.StampCard
 import com.cafeminsu.domain.model.UserProfile
 import com.cafeminsu.domain.repository.OrderRepository
+import com.cafeminsu.domain.repository.RewardRepository
 import com.cafeminsu.domain.repository.SessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
@@ -24,20 +30,27 @@ import kotlinx.coroutines.launch
 class MyViewModel @Inject constructor(
     private val sessionRepository: SessionRepository,
     private val orderRepository: OrderRepository,
+    private val rewardRepository: RewardRepository,
 ) : ViewModel() {
     private val logoutError = MutableStateFlow<DomainError?>(null)
+    private val _events = MutableSharedFlow<MyEvent>(extraBufferCapacity = EventBufferCapacity)
+    val events: SharedFlow<MyEvent> = _events.asSharedFlow()
 
     val uiState: StateFlow<MyUiState> = combine(
         sessionRepository.observeAuthState(),
         orderRepository.observeOrderHistory(),
+        rewardRepository.observeStampCard(),
+        rewardRepository.observeGifticons(),
         logoutError,
-    ) { authState, orderHistoryResult, currentLogoutError ->
+    ) { authState, orderHistoryResult, stampResult, gifticonResult, currentLogoutError ->
         if (currentLogoutError != null) {
             currentLogoutError.toMyError()
         } else {
             mapMyState(
                 authState = authState,
                 orderHistoryResult = orderHistoryResult,
+                stampResult = stampResult,
+                gifticonResult = gifticonResult,
             )
         }
     }.catch {
@@ -72,6 +85,8 @@ class MyViewModel @Inject constructor(
 
             if (result is AppResult.Failure) {
                 logoutError.value = result.error
+            } else {
+                _events.emit(MyEvent.NavigateLogin)
             }
         }
     }
@@ -79,8 +94,10 @@ class MyViewModel @Inject constructor(
     private fun mapMyState(
         authState: AuthState,
         orderHistoryResult: AppResult<List<Order>>,
-    ): MyUiState =
-        when (authState) {
+        stampResult: AppResult<StampCard>,
+        gifticonResult: AppResult<List<Gifticon>>,
+    ): MyUiState {
+        return when (authState) {
             AuthState.Unknown -> MyUiState.Loading
             AuthState.Guest,
             AuthState.Expired,
@@ -90,64 +107,85 @@ class MyViewModel @Inject constructor(
             )
 
             is AuthState.Authenticated -> when (orderHistoryResult) {
-                is AppResult.Success -> authState.user.toMyState(orderHistoryResult.data)
+                is AppResult.Success -> {
+                    val stampCard = when (stampResult) {
+                        is AppResult.Success -> stampResult.data
+                        is AppResult.Failure -> return stampResult.error.toMyError()
+                    }
+                    val gifticons = when (gifticonResult) {
+                        is AppResult.Success -> gifticonResult.data
+                        is AppResult.Failure -> return gifticonResult.error.toMyError()
+                    }
+                    authState.user.toMyState(
+                        orders = orderHistoryResult.data,
+                        stampCard = stampCard,
+                        gifticons = gifticons,
+                    )
+                }
+
                 is AppResult.Failure -> orderHistoryResult.error.toMyError()
             }
         }
-
-    private fun UserProfile.toMyState(orders: List<Order>): MyUiState {
-        val profile = MyProfileUiModel(
-            displayName = displayName,
-            phoneLast4 = phoneLast4,
-        )
-        val settings = defaultSettings()
-
-        return if (orders.isEmpty()) {
-            MyUiState.Empty(
-                profile = profile,
-                message = "주문 내역이 없어요",
-                actionLabel = "메뉴 보러가기",
-                settings = settings,
-                appMeta = AppMeta,
-            )
-        } else {
-            MyUiState.Content(
-                profile = profile,
-                recentOrders = orders
-                    .sortedByDescending { it.createdAtMillis }
-                    .map { it.toMyOrderSummary() },
-                settings = settings,
-                appMeta = AppMeta,
-            )
-        }
     }
 
-    private fun Order.toMyOrderSummary(): MyOrderSummaryUiModel =
-        MyOrderSummaryUiModel(
-            orderId = id,
-            orderNumber = orderNumber,
-            createdAtMillis = createdAtMillis,
-            totalAmount = totalAmount,
-            statusLabel = status.toMyStatusLabel(),
+    private fun UserProfile.toMyState(
+        orders: List<Order>,
+        stampCard: StampCard,
+        gifticons: List<Gifticon>,
+    ): MyUiState =
+        MyUiState.Content(
+            profile = toMyProfile(),
+            stats = MyStatsUiModel(
+                orderCount = orders.size,
+                stampCount = stampCard.currentCount,
+                stampGoalCount = stampCard.goalCount,
+                couponCount = gifticons.count { it.status == GifticonStatus.Available },
+            ),
+            quickMenus = defaultQuickMenus(),
+            settings = defaultSettings(),
         )
 
-    private fun OrderStatus.toMyStatusLabel(): String =
-        when (this) {
-            OrderStatus.PendingPayment -> "결제 확인 중"
-            OrderStatus.Paid -> "결제 완료"
-            OrderStatus.Accepted -> "주문 접수"
-            OrderStatus.Preparing -> "준비 중"
-            OrderStatus.Ready -> "픽업 준비 완료"
-            OrderStatus.Completed -> "픽업 완료"
-            OrderStatus.Cancelled -> "주문 취소"
-            OrderStatus.Failed -> "주문 실패"
-        }
+    private fun UserProfile.toMyProfile(): MyProfileUiModel {
+        val safeName = displayName.ifBlank { DefaultDisplayName }
+        return MyProfileUiModel(
+            displayName = safeName,
+            initial = safeName.take(InitialLength),
+            tierLabel = DefaultTierLabel,
+        )
+    }
+
+    private fun defaultQuickMenus(): List<MyQuickMenuUiModel> =
+        listOf(
+            MyQuickMenuUiModel(id = HistoryQuickMenuId, label = "주문내역"),
+            MyQuickMenuUiModel(id = GiftQuickMenuId, label = "선물하기"),
+            MyQuickMenuUiModel(id = CouponQuickMenuId, label = "쿠폰"),
+            MyQuickMenuUiModel(id = NotificationQuickMenuId, label = "알림설정"),
+        )
 
     private fun defaultSettings(): List<MySettingItemUiModel> =
         listOf(
             MySettingItemUiModel(
+                id = TermsSettingId,
+                label = "이용 약관",
+            ),
+            MySettingItemUiModel(
+                id = FaqSettingId,
+                label = "자주 묻는 질문",
+            ),
+            MySettingItemUiModel(
+                id = SupportSettingId,
+                label = "고객센터",
+                trailingText = SupportPhone,
+            ),
+            MySettingItemUiModel(
+                id = VersionSettingId,
+                label = "버전 정보",
+                trailingText = AppVersion,
+            ),
+            MySettingItemUiModel(
                 id = LogoutSettingId,
                 label = "로그아웃",
+                isDestructive = true,
             ),
         )
 
@@ -183,8 +221,21 @@ class MyViewModel @Inject constructor(
         }
 
     private companion object {
+        const val HistoryQuickMenuId = "history"
+        const val GiftQuickMenuId = "gift"
+        const val CouponQuickMenuId = "coupon"
+        const val NotificationQuickMenuId = "notification_settings"
+        const val TermsSettingId = "terms"
+        const val FaqSettingId = "faq"
+        const val SupportSettingId = "support"
+        const val VersionSettingId = "version"
         const val LogoutSettingId = "logout"
-        const val AppMeta = "앱 버전 1.0"
+        const val SupportPhone = "1588-1234"
+        const val AppVersion = "v1.0.0"
+        const val DefaultDisplayName = "민수"
+        const val DefaultTierLabel = "GOLD"
+        const val InitialLength = 1
+        const val EventBufferCapacity = 1
         const val StateStopTimeoutMillis = 5_000L
     }
 }

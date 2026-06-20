@@ -1,21 +1,47 @@
 package com.cafeminsu.ui.feature.my
 
+import android.widget.Toast
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.window.Dialog
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cafeminsu.ui.components.CafeButton
 import com.cafeminsu.ui.components.CafeButtonVariant
@@ -25,26 +51,35 @@ import com.cafeminsu.ui.components.EmptyView
 import com.cafeminsu.ui.components.ErrorView
 import com.cafeminsu.ui.components.LoadingView
 import com.cafeminsu.ui.theme.CafeTheme
-import java.text.NumberFormat
-import java.time.Instant
-import java.time.ZoneId
-import java.time.format.DateTimeFormatter
-import java.util.Locale
 
 @Composable
 fun MyRoute(
-    onOrderClick: (String) -> Unit,
-    onBrowseMenuClick: () -> Unit,
+    onHistoryClick: () -> Unit,
+    onGiftClick: () -> Unit,
+    onCouponClick: () -> Unit,
     onLoginClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: MyViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { event ->
+            when (event) {
+                MyEvent.NavigateLogin -> onLoginClick()
+            }
+        }
+    }
 
     MyScreen(
         state = state,
-        onOrderClick = onOrderClick,
-        onBrowseMenuClick = onBrowseMenuClick,
+        onHistoryClick = onHistoryClick,
+        onGiftClick = onGiftClick,
+        onCouponClick = onCouponClick,
+        onNotificationSettingsClick = {
+            Toast.makeText(context, "알림설정은 준비 중이에요", Toast.LENGTH_SHORT).show()
+        },
         onLoginClick = onLoginClick,
         onLogoutClick = viewModel::onLogout,
         onRetry = viewModel::retry,
@@ -55,13 +90,17 @@ fun MyRoute(
 @Composable
 fun MyScreen(
     state: MyUiState,
-    onOrderClick: (String) -> Unit,
-    onBrowseMenuClick: () -> Unit,
+    onHistoryClick: () -> Unit,
+    onGiftClick: () -> Unit,
+    onCouponClick: () -> Unit,
+    onNotificationSettingsClick: () -> Unit,
     onLoginClick: () -> Unit,
     onLogoutClick: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    var showLogoutConfirm by remember { mutableStateOf(false) }
+
     Surface(
         modifier = modifier.fillMaxSize(),
         color = CafeTheme.colors.canvas,
@@ -77,29 +116,25 @@ fun MyScreen(
                     end = CafeTheme.spacing.space5,
                     bottom = CafeTheme.spacing.space6,
                 ),
-            verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space5),
+            verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space6),
         ) {
-            Text(
-                text = "마이페이지",
-                style = CafeTheme.typography.h1,
-                color = CafeTheme.colors.ink,
-            )
+            MyHeader()
 
             when (state) {
                 MyUiState.Loading -> LoadingView()
                 is MyUiState.Content -> MyContent(
-                    profile = state.profile,
-                    recentOrders = state.recentOrders,
-                    settings = state.settings,
-                    appMeta = state.appMeta,
-                    onOrderClick = onOrderClick,
-                    onLogoutClick = onLogoutClick,
+                    state = state,
+                    onHistoryClick = onHistoryClick,
+                    onGiftClick = onGiftClick,
+                    onCouponClick = onCouponClick,
+                    onNotificationSettingsClick = onNotificationSettingsClick,
+                    onLogoutClick = { showLogoutConfirm = true },
                 )
 
-                is MyUiState.Empty -> MyEmpty(
-                    state = state,
-                    onBrowseMenuClick = onBrowseMenuClick,
-                    onLogoutClick = onLogoutClick,
+                is MyUiState.Empty -> EmptyView(
+                    message = state.message,
+                    actionLabel = state.actionLabel,
+                    onAction = onLoginClick,
                 )
 
                 is MyUiState.Error -> ErrorView(
@@ -116,172 +151,384 @@ fun MyScreen(
             }
         }
     }
+
+    if (showLogoutConfirm) {
+        LogoutConfirmDialog(
+            onDismiss = { showLogoutConfirm = false },
+            onConfirm = {
+                showLogoutConfirm = false
+                onLogoutClick()
+            },
+        )
+    }
+}
+
+@Composable
+private fun MyHeader() {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = "MY",
+            style = CafeTheme.typography.h1,
+            color = CafeTheme.colors.ink,
+        )
+        Box(
+            modifier = Modifier
+                .size(CafeTheme.spacing.space10 + CafeTheme.spacing.space2)
+                .semantics { contentDescription = "설정" },
+            contentAlignment = Alignment.Center,
+        ) {
+            Text(
+                text = "⚙",
+                style = CafeTheme.typography.h2,
+                color = CafeTheme.colors.ink,
+            )
+        }
+    }
 }
 
 @Composable
 private fun MyContent(
-    profile: MyProfileUiModel,
-    recentOrders: List<MyOrderSummaryUiModel>,
-    settings: List<MySettingItemUiModel>,
-    appMeta: String,
-    onOrderClick: (String) -> Unit,
+    state: MyUiState.Content,
+    onHistoryClick: () -> Unit,
+    onGiftClick: () -> Unit,
+    onCouponClick: () -> Unit,
+    onNotificationSettingsClick: () -> Unit,
     onLogoutClick: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space6)) {
-        ProfileHeader(profile = profile)
-        OrderHistoryList(
-            recentOrders = recentOrders,
-            onOrderClick = onOrderClick,
+        ProfileCard(
+            profile = state.profile,
+            stats = state.stats,
         )
-        SettingsSection(
-            settings = settings,
-            appMeta = appMeta,
-            onLogoutClick = onLogoutClick,
+        QuickMenuSection(
+            quickMenus = state.quickMenus,
+            onHistoryClick = onHistoryClick,
+            onGiftClick = onGiftClick,
+            onCouponClick = onCouponClick,
+            onNotificationSettingsClick = onNotificationSettingsClick,
         )
-    }
-}
-
-@Composable
-private fun MyEmpty(
-    state: MyUiState.Empty,
-    onBrowseMenuClick: () -> Unit,
-    onLogoutClick: () -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space6)) {
-        ProfileHeader(profile = state.profile)
-        Column(verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space4)) {
-            SectionTitle(text = "주문 내역")
-            EmptyView(
-                message = state.message,
-                actionLabel = state.actionLabel,
-                onAction = onBrowseMenuClick,
-            )
-        }
-        SettingsSection(
+        SettingsList(
             settings = state.settings,
-            appMeta = state.appMeta,
             onLogoutClick = onLogoutClick,
         )
     }
 }
 
 @Composable
-private fun ProfileHeader(profile: MyProfileUiModel) {
+private fun ProfileCard(
+    profile: MyProfileUiModel,
+    stats: MyStatsUiModel,
+) {
     val colors = CafeTheme.colors
     val spacing = CafeTheme.spacing
 
     CafeCard(
         modifier = Modifier.fillMaxWidth(),
-        type = CafeCardType.Default,
+        type = CafeCardType.Product,
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(spacing.space2)) {
-            Text(
-                text = profile.displayName,
-                style = CafeTheme.typography.h2,
-                color = colors.ink,
-            )
-            Text(
-                text = maskedPhone(profile.phoneLast4),
-                style = CafeTheme.typography.caption,
-                color = colors.muted,
-            )
+        Column(verticalArrangement = Arrangement.spacedBy(spacing.space5)) {
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(spacing.space4),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Surface(
+                    modifier = Modifier.size(spacing.space14),
+                    shape = CafeTheme.shapes.radiusPill,
+                    color = colors.primary,
+                    contentColor = colors.onPrimary,
+                ) {
+                    Box(contentAlignment = Alignment.Center) {
+                        Text(
+                            text = profile.initial,
+                            style = CafeTheme.typography.h2,
+                            color = colors.onPrimary,
+                        )
+                    }
+                }
+                Column(verticalArrangement = Arrangement.spacedBy(spacing.space2)) {
+                    Text(
+                        text = "${profile.displayName} 님",
+                        style = CafeTheme.typography.h2,
+                        color = colors.onDark,
+                    )
+                    TierBadge(label = profile.tierLabel)
+                }
+            }
+
+            HorizontalDivider(color = colors.ink.copy(alpha = DarkDividerAlpha))
+            StatsRow(stats = stats)
         }
     }
 }
 
 @Composable
-private fun OrderHistoryList(
-    recentOrders: List<MyOrderSummaryUiModel>,
-    onOrderClick: (String) -> Unit,
+private fun TierBadge(label: String) {
+    Surface(
+        shape = CafeTheme.shapes.radiusPill,
+        color = CafeTheme.colors.accentSoft,
+        contentColor = CafeTheme.colors.primary,
+    ) {
+        Text(
+            modifier = Modifier.padding(
+                horizontal = CafeTheme.spacing.space3,
+                vertical = CafeTheme.spacing.space1,
+            ),
+            text = label,
+            style = CafeTheme.typography.caption,
+            color = CafeTheme.colors.primary,
+        )
+    }
+}
+
+@Composable
+private fun StatsRow(stats: MyStatsUiModel) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        StatCell(
+            value = stats.orderCount.toString(),
+            label = "주문",
+            modifier = Modifier.weight(StatCellWeight),
+        )
+        StatDivider()
+        StatCell(
+            value = "${stats.stampCount}/${stats.stampGoalCount}",
+            label = "스탬프",
+            modifier = Modifier.weight(StatCellWeight),
+        )
+        StatDivider()
+        StatCell(
+            value = stats.couponCount.toString(),
+            label = "쿠폰",
+            modifier = Modifier.weight(StatCellWeight),
+        )
+    }
+}
+
+@Composable
+private fun StatCell(
+    value: String,
+    label: String,
+    modifier: Modifier = Modifier,
+) {
+    Column(
+        modifier = modifier,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space1),
+    ) {
+        Text(
+            text = value,
+            style = CafeTheme.typography.h3,
+            color = CafeTheme.colors.onDark,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = label,
+            style = CafeTheme.typography.caption,
+            color = CafeTheme.colors.muted,
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
+private fun StatDivider() {
+    Spacer(
+        modifier = Modifier
+            .width(1.dp)
+            .height(CafeTheme.spacing.space8)
+            .background(CafeTheme.colors.ink.copy(alpha = DarkDividerAlpha))
+    )
+}
+
+@Composable
+private fun QuickMenuSection(
+    quickMenus: List<MyQuickMenuUiModel>,
+    onHistoryClick: () -> Unit,
+    onGiftClick: () -> Unit,
+    onCouponClick: () -> Unit,
+    onNotificationSettingsClick: () -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space4)) {
-        SectionTitle(text = "주문 내역")
-        recentOrders.forEach { order ->
-            OrderHistoryItem(
-                order = order,
-                onClick = { onOrderClick(order.orderId) },
-            )
-        }
-    }
-}
-
-@Composable
-private fun OrderHistoryItem(
-    order: MyOrderSummaryUiModel,
-    onClick: () -> Unit,
-) {
-    val colors = CafeTheme.colors
-    val spacing = CafeTheme.spacing
-
-    CafeCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
-        type = CafeCardType.Info,
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(spacing.space3)) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.Top,
-            ) {
-                Column(
-                    modifier = Modifier.weight(OrderTextWeight),
-                    verticalArrangement = Arrangement.spacedBy(spacing.space1),
-                ) {
-                    Text(
-                        text = "주문번호 ${order.orderNumber}",
-                        style = CafeTheme.typography.h3,
-                        color = colors.ink,
-                    )
-                    Text(
-                        text = formatOrderDate(order.createdAtMillis),
-                        style = CafeTheme.typography.caption,
-                        color = colors.muted,
-                    )
-                }
-                Text(
-                    text = order.statusLabel,
-                    style = CafeTheme.typography.caption,
-                    color = colors.primary,
+        SectionTitle(text = "빠른 메뉴")
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space2),
+        ) {
+            quickMenus.forEach { quickMenu ->
+                QuickMenuTile(
+                    quickMenu = quickMenu,
+                    onClick = when (quickMenu.id) {
+                        HistoryQuickMenuId -> onHistoryClick
+                        GiftQuickMenuId -> onGiftClick
+                        CouponQuickMenuId -> onCouponClick
+                        else -> onNotificationSettingsClick
+                    },
+                    modifier = Modifier.weight(QuickMenuTileWeight),
                 )
             }
+        }
+    }
+}
 
+@Composable
+private fun QuickMenuTile(
+    quickMenu: MyQuickMenuUiModel,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val spacing = CafeTheme.spacing
+
+    Surface(
+        modifier = modifier
+            .height(spacing.space18 + spacing.space5)
+            .clickable(onClick = onClick)
+            .semantics(mergeDescendants = true) {},
+        shape = CafeTheme.shapes.radiusLg,
+        color = CafeTheme.colors.surfaceCard,
+        contentColor = CafeTheme.colors.primary,
+    ) {
+        Column(
+            modifier = Modifier.padding(
+                horizontal = spacing.space2,
+                vertical = spacing.space4,
+            ),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.SpaceBetween,
+        ) {
+            QuickMenuIcon(
+                id = quickMenu.id,
+                modifier = Modifier.size(spacing.space8),
+            )
             Text(
-                text = formatWon(order.totalAmount),
-                style = CafeTheme.typography.bodyL,
-                color = colors.body,
+                text = quickMenu.label,
+                style = CafeTheme.typography.caption,
+                color = CafeTheme.colors.ink,
+                textAlign = TextAlign.Center,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
             )
         }
     }
 }
 
 @Composable
-private fun SettingsSection(
+private fun SettingsList(
     settings: List<MySettingItemUiModel>,
-    appMeta: String,
     onLogoutClick: () -> Unit,
 ) {
-    val colors = CafeTheme.colors
-    val spacing = CafeTheme.spacing
-
-    Column(verticalArrangement = Arrangement.spacedBy(spacing.space4)) {
-        SectionTitle(text = "설정")
-        settings.forEach { setting ->
-            if (setting.id == LogoutSettingId) {
-                CafeButton(
-                    modifier = Modifier.fillMaxWidth(),
-                    text = setting.label,
-                    onClick = onLogoutClick,
-                    variant = CafeButtonVariant.Secondary,
+    CafeCard(
+        modifier = Modifier.fillMaxWidth(),
+        type = CafeCardType.Default,
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            settings.forEachIndexed { index, item ->
+                SettingRow(
+                    item = item,
+                    onClick = if (item.id == LogoutSettingId) onLogoutClick else null,
                 )
+                if (index != settings.lastIndex) {
+                    HorizontalDivider(color = CafeTheme.colors.hairline)
+                }
             }
         }
+    }
+}
+
+@Composable
+private fun SettingRow(
+    item: MySettingItemUiModel,
+    onClick: (() -> Unit)?,
+) {
+    val colors = CafeTheme.colors
+    val spacing = CafeTheme.spacing
+    val rowModifier = if (onClick != null) {
+        Modifier.clickable(onClick = onClick)
+    } else {
+        Modifier
+    }
+
+    Row(
+        modifier = rowModifier
+            .fillMaxWidth()
+            .heightIn(min = spacing.space10 + spacing.space3)
+            .padding(vertical = spacing.space3),
+        horizontalArrangement = Arrangement.spacedBy(spacing.space3),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
         Text(
-            text = appMeta,
-            style = CafeTheme.typography.meta,
-            color = colors.mutedSoft,
+            text = item.label,
+            modifier = Modifier.weight(SettingsLabelWeight),
+            style = CafeTheme.typography.body,
+            color = if (item.isDestructive) colors.primary else colors.ink,
         )
+        item.trailingText?.let { trailingText ->
+            Text(
+                text = trailingText,
+                style = CafeTheme.typography.meta,
+                color = colors.muted,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+        }
+        Text(
+            text = "›",
+            style = CafeTheme.typography.h2,
+            color = colors.muted,
+        )
+    }
+}
+
+@Composable
+private fun LogoutConfirmDialog(
+    onDismiss: () -> Unit,
+    onConfirm: () -> Unit,
+) {
+    Dialog(onDismissRequest = onDismiss) {
+        Surface(
+            shape = CafeTheme.shapes.radiusXl,
+            color = CafeTheme.colors.canvas,
+            contentColor = CafeTheme.colors.body,
+        ) {
+            Column(
+                modifier = Modifier.padding(CafeTheme.spacing.space5),
+                verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space5),
+            ) {
+                Column(verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space2)) {
+                    Text(
+                        text = "로그아웃 하시겠어요?",
+                        style = CafeTheme.typography.h2,
+                        color = CafeTheme.colors.ink,
+                    )
+                    Text(
+                        text = "로그인 정보를 잊지 않도록\n계정 정보를 확인해주세요.",
+                        style = CafeTheme.typography.body,
+                        color = CafeTheme.colors.muted,
+                    )
+                }
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space3),
+                ) {
+                    CafeButton(
+                        text = "취소",
+                        onClick = onDismiss,
+                        modifier = Modifier.weight(DialogButtonWeight),
+                        variant = CafeButtonVariant.Secondary,
+                    )
+                    CafeButton(
+                        text = "로그아웃",
+                        onClick = onConfirm,
+                        modifier = Modifier.weight(DialogButtonWeight),
+                    )
+                }
+            }
+        }
     }
 }
 
@@ -294,22 +541,182 @@ private fun SectionTitle(text: String) {
     )
 }
 
-private fun maskedPhone(phoneLast4: String?): String =
-    phoneLast4
-        ?.takeIf { it.isNotBlank() }
-        ?.let { "010-****-$it" }
-        ?: "전화번호 미등록"
+@Composable
+private fun QuickMenuIcon(
+    id: String,
+    modifier: Modifier = Modifier,
+) {
+    val color = CafeTheme.colors.primary
 
-private fun formatOrderDate(createdAtMillis: Long): String =
-    Instant.ofEpochMilli(createdAtMillis)
-        .atZone(ZoneId.systemDefault())
-        .format(orderDateFormatter)
+    Canvas(modifier = modifier) {
+        val stroke = Stroke(
+            width = IconStrokeWidth.toPx(),
+            cap = StrokeCap.Round,
+        )
+        when (id) {
+            HistoryQuickMenuId -> {
+                drawRoundRect(
+                    color = color,
+                    topLeft = Offset(size.width * IconInsetRatio, size.height * IconTopRatio),
+                    size = Size(size.width * IconBodyWidthRatio, size.height * IconBodyHeightRatio),
+                    cornerRadius = CornerRadius(IconCornerRadius.toPx()),
+                    style = stroke,
+                )
+                drawLine(
+                    color = color,
+                    start = Offset(size.width * IconLineLeftRatio, size.height * IconLineOneYRatio),
+                    end = Offset(size.width * IconLineRightRatio, size.height * IconLineOneYRatio),
+                    strokeWidth = IconStrokeWidth.toPx(),
+                    cap = StrokeCap.Round,
+                )
+                drawLine(
+                    color = color,
+                    start = Offset(size.width * IconLineLeftRatio, size.height * IconLineTwoYRatio),
+                    end = Offset(size.width * IconLineRightRatio, size.height * IconLineTwoYRatio),
+                    strokeWidth = IconStrokeWidth.toPx(),
+                    cap = StrokeCap.Round,
+                )
+            }
 
-private fun formatWon(amount: Int): String =
-    "${NumberFormat.getNumberInstance(Locale.KOREA).format(amount)}원"
+            GiftQuickMenuId -> {
+                drawRoundRect(
+                    color = color,
+                    topLeft = Offset(size.width * IconInsetRatio, size.height * GiftBoxTopRatio),
+                    size = Size(size.width * IconBodyWidthRatio, size.height * GiftBoxHeightRatio),
+                    cornerRadius = CornerRadius(IconCornerRadius.toPx()),
+                    style = stroke,
+                )
+                drawLine(
+                    color = color,
+                    start = Offset(size.width * IconCenterRatio, size.height * GiftBoxTopRatio),
+                    end = Offset(size.width * IconCenterRatio, size.height * GiftBoxBottomRatio),
+                    strokeWidth = IconStrokeWidth.toPx(),
+                    cap = StrokeCap.Round,
+                )
+                drawLine(
+                    color = color,
+                    start = Offset(size.width * IconInsetRatio, size.height * GiftRibbonYRatio),
+                    end = Offset(size.width * IconRightRatio, size.height * GiftRibbonYRatio),
+                    strokeWidth = IconStrokeWidth.toPx(),
+                    cap = StrokeCap.Round,
+                )
+                drawLine(
+                    color = color,
+                    start = Offset(size.width * GiftBowLeftRatio, size.height * GiftBowYRatio),
+                    end = Offset(size.width * IconCenterRatio, size.height * GiftBoxTopRatio),
+                    strokeWidth = IconStrokeWidth.toPx(),
+                    cap = StrokeCap.Round,
+                )
+                drawLine(
+                    color = color,
+                    start = Offset(size.width * GiftBowRightRatio, size.height * GiftBowYRatio),
+                    end = Offset(size.width * IconCenterRatio, size.height * GiftBoxTopRatio),
+                    strokeWidth = IconStrokeWidth.toPx(),
+                    cap = StrokeCap.Round,
+                )
+            }
 
-private val orderDateFormatter: DateTimeFormatter =
-    DateTimeFormatter.ofPattern("yyyy.MM.dd HH:mm", Locale.KOREA)
+            CouponQuickMenuId -> {
+                drawRoundRect(
+                    color = color,
+                    topLeft = Offset(size.width * IconInsetRatio, size.height * CouponTopRatio),
+                    size = Size(size.width * IconBodyWidthRatio, size.height * CouponHeightRatio),
+                    cornerRadius = CornerRadius(IconCornerRadius.toPx()),
+                    style = stroke,
+                )
+                drawLine(
+                    color = color,
+                    start = Offset(size.width * CouponFoldRatio, size.height * CouponTopRatio),
+                    end = Offset(size.width * CouponFoldRatio, size.height * CouponBottomRatio),
+                    strokeWidth = IconStrokeWidth.toPx(),
+                    cap = StrokeCap.Round,
+                )
+            }
 
+            else -> {
+                drawArc(
+                    color = color,
+                    startAngle = BellArcStartAngle,
+                    sweepAngle = BellArcSweepAngle,
+                    useCenter = false,
+                    topLeft = Offset(size.width * BellArcLeftRatio, size.height * BellArcTopRatio),
+                    size = Size(size.width * BellArcWidthRatio, size.height * BellArcHeightRatio),
+                    style = stroke,
+                )
+                drawLine(
+                    color = color,
+                    start = Offset(size.width * BellLeftXRatio, size.height * BellBodyTopRatio),
+                    end = Offset(size.width * BellLeftXRatio, size.height * BellBodyBottomRatio),
+                    strokeWidth = IconStrokeWidth.toPx(),
+                    cap = StrokeCap.Round,
+                )
+                drawLine(
+                    color = color,
+                    start = Offset(size.width * BellRightXRatio, size.height * BellBodyTopRatio),
+                    end = Offset(size.width * BellRightXRatio, size.height * BellBodyBottomRatio),
+                    strokeWidth = IconStrokeWidth.toPx(),
+                    cap = StrokeCap.Round,
+                )
+                drawLine(
+                    color = color,
+                    start = Offset(size.width * BellBaseLeftRatio, size.height * BellBodyBottomRatio),
+                    end = Offset(size.width * BellBaseRightRatio, size.height * BellBodyBottomRatio),
+                    strokeWidth = IconStrokeWidth.toPx(),
+                    cap = StrokeCap.Round,
+                )
+                drawCircle(
+                    color = color,
+                    radius = BellClapperRadius.toPx(),
+                    center = Offset(size.width * IconCenterRatio, size.height * BellClapperYRatio),
+                )
+            }
+        }
+    }
+}
+
+private const val HistoryQuickMenuId = "history"
+private const val GiftQuickMenuId = "gift"
+private const val CouponQuickMenuId = "coupon"
 private const val LogoutSettingId = "logout"
-private const val OrderTextWeight = 1f
+private const val StatCellWeight = 1f
+private const val QuickMenuTileWeight = 1f
+private const val SettingsLabelWeight = 1f
+private const val DialogButtonWeight = 1f
+private const val DarkDividerAlpha = 0.28f
+private val IconStrokeWidth = 1.5.dp
+private val IconCornerRadius = 4.dp
+private const val IconInsetRatio = 0.18f
+private const val IconRightRatio = 0.82f
+private const val IconTopRatio = 0.14f
+private const val IconBodyWidthRatio = 0.64f
+private const val IconBodyHeightRatio = 0.72f
+private const val IconLineLeftRatio = 0.34f
+private const val IconLineRightRatio = 0.66f
+private const val IconLineOneYRatio = 0.42f
+private const val IconLineTwoYRatio = 0.58f
+private const val IconCenterRatio = 0.5f
+private const val GiftBoxTopRatio = 0.30f
+private const val GiftBoxHeightRatio = 0.54f
+private const val GiftBoxBottomRatio = 0.84f
+private const val GiftRibbonYRatio = 0.48f
+private const val GiftBowLeftRatio = 0.34f
+private const val GiftBowRightRatio = 0.66f
+private const val GiftBowYRatio = 0.16f
+private const val CouponTopRatio = 0.24f
+private const val CouponHeightRatio = 0.52f
+private const val CouponBottomRatio = 0.76f
+private const val CouponFoldRatio = 0.64f
+private const val BellArcStartAngle = 200f
+private const val BellArcSweepAngle = 140f
+private const val BellArcLeftRatio = 0.25f
+private const val BellArcTopRatio = 0.16f
+private const val BellArcWidthRatio = 0.5f
+private const val BellArcHeightRatio = 0.42f
+private const val BellLeftXRatio = 0.28f
+private const val BellRightXRatio = 0.72f
+private const val BellBodyTopRatio = 0.38f
+private const val BellBodyBottomRatio = 0.68f
+private const val BellBaseLeftRatio = 0.22f
+private const val BellBaseRightRatio = 0.78f
+private const val BellClapperYRatio = 0.78f
+private val BellClapperRadius = 1.5.dp

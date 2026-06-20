@@ -6,30 +6,33 @@ import org.junit.Test
 
 class MyUiStateTest {
     @Test
-    fun contentCarriesProfileOrdersSettingsAndAppMeta() {
+    fun contentCarriesProfileStatsQuickMenusAndSettings() {
         val state = MyUiState.Content(
             profile = MyProfileUiModel(
-                displayName = "민수",
-                phoneLast4 = "1234",
+                displayName = "진지원",
+                initial = "진",
+                tierLabel = "GOLD",
             ),
-            recentOrders = listOf(
-                MyOrderSummaryUiModel(
-                    orderId = "order-1",
-                    orderNumber = "M001",
-                    createdAtMillis = 1_803_974_400_000L,
-                    totalAmount = 5_500,
-                    statusLabel = "결제 완료",
-                ),
+            stats = MyStatsUiModel(
+                orderCount = 12,
+                stampCount = 7,
+                stampGoalCount = 10,
+                couponCount = 3,
             ),
-            settings = listOf(MySettingItemUiModel(id = "logout", label = "로그아웃")),
-            appMeta = "앱 버전 1.0",
+            quickMenus = listOf(MyQuickMenuUiModel(id = "history", label = "주문내역")),
+            settings = listOf(
+                MySettingItemUiModel(id = "version", label = "버전 정보", trailingText = "v1.0.0"),
+            ),
         )
 
-        assertEquals("민수", state.profile.displayName)
-        assertEquals("1234", state.profile.phoneLast4)
-        assertEquals("M001", state.recentOrders.single().orderNumber)
-        assertEquals("로그아웃", state.settings.single().label)
-        assertEquals("앱 버전 1.0", state.appMeta)
+        assertEquals("진지원", state.profile.displayName)
+        assertEquals("진", state.profile.initial)
+        assertEquals("GOLD", state.profile.tierLabel)
+        assertEquals(12, state.stats.orderCount)
+        assertEquals(7, state.stats.stampCount)
+        assertEquals(3, state.stats.couponCount)
+        assertEquals("주문내역", state.quickMenus.single().label)
+        assertEquals("v1.0.0", state.settings.single().trailingText)
     }
 
     @Test

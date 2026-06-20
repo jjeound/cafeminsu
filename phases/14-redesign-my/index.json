@@ -5,10 +5,12 @@
     {
       "step": 0,
       "name": "my-redesign",
-      "status": "pending",
+      "status": "completed",
+      "summary": "MY 화면을 다크 프로필 카드, 통계, 빠른 메뉴, 설정 리스트와 로그아웃 확인 흐름으로 재설계",
       "images": [
         "docs/screens/MY - 01.png"
-      ]
+      ],
+      "started_at": "2026-06-20T14:36:41+0900"
     },
     {
       "step": 1,
@@ -28,5 +30,6 @@
         "docs/screens/MY - 05 (주문내역 empty).png"
       ]
     }
-  ]
+  ],
+  "created_at": "2026-06-20T14:36:41+0900"
 }
