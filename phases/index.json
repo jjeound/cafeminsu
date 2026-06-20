@@ -109,8 +109,9 @@
     {
       "dir": "15-redesign-voice-states",
       "name": "redesign-voice-states",
-      "status": "pending",
-      "summary": "고객 화면 재설계 — 음성 주문(VOICE) + 공통 상태화면(Loading/Error/Logout) 디자인 정렬"
+      "status": "completed",
+      "summary": "고객 화면 재설계 — 음성 주문(VOICE) + 공통 상태화면(Loading/Error/Logout) 디자인 정렬",
+      "completed_at": "2026-06-20T19:38:09+0900"
     }
   ]
 }
