@@ -10,7 +10,8 @@
       "images": [
         "docs/screens/MY - 01.png"
       ],
-      "started_at": "2026-06-20T14:36:41+0900"
+      "started_at": "2026-06-20T14:36:41+0900",
+      "completed_at": "2026-06-20T14:46:35+0900"
     },
     {
       "step": 1,
