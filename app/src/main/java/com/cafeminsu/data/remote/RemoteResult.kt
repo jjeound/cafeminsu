@@ -27,7 +27,7 @@ suspend inline fun <T> runCatchingToAppResult(
         AppResult.Failure(throwable.toDomainError())
     }
 
-private fun Int.toDomainError(): DomainError =
+internal fun Int.toDomainError(): DomainError =
     when (this) {
         401 -> DomainError.Unauthorized
         404 -> DomainError.NotFound

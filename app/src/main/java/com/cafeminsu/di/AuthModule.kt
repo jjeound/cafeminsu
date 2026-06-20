@@ -2,7 +2,9 @@ package com.cafeminsu.di
 
 import android.content.Context
 import com.cafeminsu.BuildConfig
+import com.cafeminsu.data.auth.EncryptedSessionTokenStore
 import com.cafeminsu.data.auth.MockLoginProvider
+import com.cafeminsu.data.auth.SessionTokenStore
 import com.cafeminsu.data.platform.RealKakaoLoginProvider
 import com.cafeminsu.domain.auth.LoginProvider
 import dagger.Module
@@ -25,6 +27,13 @@ object AuthModule {
             realFactory = { RealKakaoLoginProvider(context) },
             mockFactory = { MockLoginProvider() },
         )
+
+    @Provides
+    @Singleton
+    fun provideSessionTokenStore(
+        @ApplicationContext context: Context,
+    ): SessionTokenStore =
+        EncryptedSessionTokenStore(context)
 }
 
 internal fun selectLoginProvider(

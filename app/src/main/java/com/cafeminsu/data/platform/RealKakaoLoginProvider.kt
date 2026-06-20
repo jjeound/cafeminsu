@@ -3,6 +3,7 @@ package com.cafeminsu.data.platform
 import android.content.Context
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
+import com.cafeminsu.domain.auth.KakaoOAuthToken
 import com.cafeminsu.domain.auth.LoginProvider
 import com.cafeminsu.domain.model.AuthState
 import com.cafeminsu.domain.model.UserProfile
@@ -21,11 +22,32 @@ class RealKakaoLoginProvider @Inject constructor(
     @ApplicationContext private val context: Context,
 ) : LoginProvider {
     override suspend fun login(): AppResult<AuthState> =
+        when (val tokenResult = requestKakaoAccessToken()) {
+            is AppResult.Success -> requestUserProfile()
+            is AppResult.Failure -> tokenResult
+        }
+
+    override suspend fun loginForServerExchange(): AppResult<KakaoOAuthToken> =
+        requestKakaoAccessToken()
+
+    override suspend fun logout(): AppResult<Unit> =
+        suspendCancellableCoroutine { continuation ->
+            UserApiClient.instance.logout { error ->
+                val result = if (error == null) {
+                    AppResult.Success(Unit)
+                } else {
+                    AppResult.Failure(error.toDomainError())
+                }
+                continuation.resumeIfActive(result)
+            }
+        }
+
+    private suspend fun requestKakaoAccessToken(): AppResult<KakaoOAuthToken> =
         suspendCancellableCoroutine { continuation ->
             val accountCallback: (OAuthToken?, Throwable?) -> Unit = { token, error ->
                 when {
                     error != null -> continuation.resumeIfActive(AppResult.Failure(error.toDomainError()))
-                    token != null -> requestUserProfile(continuation)
+                    token != null -> continuation.resumeIfActive(AppResult.Success(token.toKakaoOAuthToken()))
                     else -> continuation.resumeIfActive(AppResult.Failure(DomainError.Unknown))
                 }
             }
@@ -42,7 +64,7 @@ class RealKakaoLoginProvider @Inject constructor(
                                 callback = accountCallback,
                             )
 
-                        token != null -> requestUserProfile(continuation)
+                        token != null -> continuation.resumeIfActive(AppResult.Success(token.toKakaoOAuthToken()))
                         else -> continuation.resumeIfActive(AppResult.Failure(DomainError.Unknown))
                     }
                 }
@@ -54,30 +76,20 @@ class RealKakaoLoginProvider @Inject constructor(
             }
         }
 
-    override suspend fun logout(): AppResult<Unit> =
+    private suspend fun requestUserProfile(): AppResult<AuthState> =
         suspendCancellableCoroutine { continuation ->
-            UserApiClient.instance.logout { error ->
-                val result = if (error == null) {
-                    AppResult.Success(Unit)
-                } else {
-                    AppResult.Failure(error.toDomainError())
+            UserApiClient.instance.me { user, error ->
+                val result = when {
+                    error != null -> AppResult.Failure(error.toDomainError())
+                    user != null -> AppResult.Success(user.toAuthenticatedState())
+                    else -> AppResult.Failure(DomainError.Unknown)
                 }
                 continuation.resumeIfActive(result)
             }
         }
 
-    private fun requestUserProfile(
-        continuation: CancellableContinuation<AppResult<AuthState>>,
-    ) {
-        UserApiClient.instance.me { user, error ->
-            val result = when {
-                error != null -> AppResult.Failure(error.toDomainError())
-                user != null -> AppResult.Success(user.toAuthenticatedState())
-                else -> AppResult.Failure(DomainError.Unknown)
-            }
-            continuation.resumeIfActive(result)
-        }
-    }
+    private fun OAuthToken.toKakaoOAuthToken(): KakaoOAuthToken =
+        KakaoOAuthToken(accessToken)
 
     private fun User.toAuthenticatedState(): AuthState =
         kakaoProfileToAuthenticatedState(

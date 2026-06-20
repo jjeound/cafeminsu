@@ -54,8 +54,35 @@ class RepositoryModuleTest {
             NotificationRepository::class.java,
             MockNotificationRepository::class.java,
         )
-        assertBinding("bindSessionRepository", SessionRepository::class.java, MockSessionRepository::class.java)
         assertBinding("bindStoreRepository", StoreRepository::class.java, MockStoreRepository::class.java)
+    }
+
+    @Test
+    fun blankBaseUrlSelectsMockSessionRepositoryFallback() {
+        val realRepository = FakeSessionRepository()
+        val mockRepository = FakeSessionRepository()
+
+        val selected = selectSessionRepository(
+            baseUrl = "",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(mockRepository, selected)
+    }
+
+    @Test
+    fun configuredBaseUrlSelectsRealSessionRepository() {
+        val realRepository = FakeSessionRepository()
+        val mockRepository = FakeSessionRepository()
+
+        val selected = selectSessionRepository(
+            baseUrl = "https://cafeminsu.example/",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(realRepository, selected)
     }
 
     private fun assertBinding(
@@ -68,4 +95,15 @@ class RepositoryModuleTest {
         assertTrue(Modifier.isAbstract(method.modifiers))
         assertEquals(repositoryType, method.returnType)
     }
+}
+
+private class FakeSessionRepository : SessionRepository {
+    override fun observeAuthState(): kotlinx.coroutines.flow.Flow<com.cafeminsu.domain.model.AuthState> =
+        kotlinx.coroutines.flow.flowOf(com.cafeminsu.domain.model.AuthState.Guest)
+
+    override suspend fun refreshOnce(): com.cafeminsu.core.AppResult<com.cafeminsu.domain.model.AuthState> =
+        com.cafeminsu.core.AppResult.Success(com.cafeminsu.domain.model.AuthState.Guest)
+
+    override suspend fun clearSession(): com.cafeminsu.core.AppResult<Unit> =
+        com.cafeminsu.core.AppResult.Success(Unit)
 }

@@ -13,7 +13,10 @@
     {
       "step": 1,
       "name": "auth-session-real",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-06-20T21:13:32+0900",
+      "summary": "카카오 OAuth 토큰 서버 교환, 보안 세션 토큰 저장소, Bearer/401 refresh 처리와 BASE_URL Mock 폴백 DI를 추가했다.",
+      "completed_at": "2026-06-20T21:26:16+0900"
     },
     {
       "step": 2,

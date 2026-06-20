@@ -54,6 +54,19 @@ class NetworkModuleTest {
     }
 
     @Test
+    fun networkLoggerRedactsTokenHeadersAndJsonFields() {
+        assertEquals(
+            "Authorization: <redacted>",
+            "Authorization: Bearer secret-access".redactSensitiveNetworkValues(),
+        )
+        assertEquals(
+            """{"accessToken":"<redacted>","refreshToken":"<redacted>"}""",
+            """{"accessToken":"secret-access","refreshToken":"secret-refresh"}"""
+                .redactSensitiveNetworkValues(),
+        )
+    }
+
+    @Test
     fun retrofitUsesConfiguredBaseUrlAndKeepsOpenApiRootPath() = runTest {
         server.enqueue(
             MockResponse()

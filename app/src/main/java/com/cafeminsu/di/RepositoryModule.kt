@@ -13,6 +13,7 @@ import com.cafeminsu.data.repository.MockRewardRepository
 import com.cafeminsu.data.repository.MockSalesRepository
 import com.cafeminsu.data.repository.MockSessionRepository
 import com.cafeminsu.data.repository.MockStoreRepository
+import com.cafeminsu.data.repository.RealSessionRepository
 import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.CouponRepository
 import com.cafeminsu.domain.repository.GiftRepository
@@ -28,8 +29,10 @@ import com.cafeminsu.domain.repository.SessionRepository
 import com.cafeminsu.domain.repository.StoreRepository
 import dagger.Binds
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Provider
 import javax.inject.Singleton
 
 @Module
@@ -81,9 +84,30 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindSessionRepository(repository: MockSessionRepository): SessionRepository
-
-    @Binds
-    @Singleton
     abstract fun bindStoreRepository(repository: MockStoreRepository): StoreRepository
+
+    companion object {
+        @Provides
+        @Singleton
+        fun provideSessionRepository(
+            realRepository: Provider<RealSessionRepository>,
+            mockRepository: Provider<MockSessionRepository>,
+        ): SessionRepository =
+            selectSessionRepository(
+                baseUrl = com.cafeminsu.BuildConfig.BASE_URL,
+                realFactory = { realRepository.get() },
+                mockFactory = { mockRepository.get() },
+            )
+    }
 }
+
+internal fun selectSessionRepository(
+    baseUrl: String,
+    realFactory: () -> SessionRepository,
+    mockFactory: () -> SessionRepository,
+): SessionRepository =
+    if (baseUrl.isNotBlank()) {
+        realFactory()
+    } else {
+        mockFactory()
+    }
