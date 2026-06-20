@@ -36,13 +36,13 @@ class RealPaymentRepository @Inject constructor(
         withContext(ioDispatcher) {
             validate(request)?.let { error -> return@withContext AppResult.Failure(error) }
 
-            val userId = when (val result = currentUserId()) {
-                is AppResult.Success -> result.data
+            when (val result = ensureAuthenticated()) {
+                is AppResult.Success -> Unit
                 is AppResult.Failure -> return@withContext result
             }
             val orderId = request.orderId.toLongOrNull()
                 ?: return@withContext AppResult.Failure(DomainError.Validation("orderId"))
-            val preparedPayment = when (val result = preparePayment(userId, orderId, request)) {
+            val preparedPayment = when (val result = preparePayment(orderId, request)) {
                 is AppResult.Success -> result.data
                 is AppResult.Failure -> return@withContext result
             }
@@ -59,7 +59,6 @@ class RealPaymentRepository @Inject constructor(
             when (
                 val response = runCatchingToAppResult {
                     paymentApi.verify(
-                        userId = userId,
                         request = PaymentVerifyReq(
                             impUid = impUid,
                             merchantUid = preparedPayment.merchantUid,
@@ -93,8 +92,8 @@ class RealPaymentRepository @Inject constructor(
                 return@withContext AppResult.Failure(DomainError.Validation("idempotencyKey"))
             }
 
-            val userId = when (val result = currentUserId()) {
-                is AppResult.Success -> result.data
+            when (val result = ensureAuthenticated()) {
+                is AppResult.Success -> Unit
                 is AppResult.Failure -> return@withContext result
             }
             val paymentId = paymentIdsByKey[idempotencyKey]
@@ -102,10 +101,7 @@ class RealPaymentRepository @Inject constructor(
 
             when (
                 val response = runCatchingToAppResult {
-                    paymentApi.getPayment(
-                        paymentId = paymentId,
-                        userId = userId,
-                    )
+                    paymentApi.getPayment(paymentId = paymentId)
                 }
             ) {
                 is AppResult.Success -> {
@@ -127,7 +123,6 @@ class RealPaymentRepository @Inject constructor(
         }
 
     private suspend fun preparePayment(
-        userId: Long,
         orderId: Long,
         request: PaymentRequest,
     ): AppResult<PreparedPayment> {
@@ -142,7 +137,6 @@ class RealPaymentRepository @Inject constructor(
         return when (
             val response = runCatchingToAppResult {
                 paymentApi.prepare(
-                    userId = userId,
                     request = PaymentPrepareReq(
                         orderId = orderId,
                         cardAmount = request.amount,
@@ -171,14 +165,11 @@ class RealPaymentRepository @Inject constructor(
             else -> null
         }
 
-    private fun currentUserId(): AppResult<Long> {
+    private fun ensureAuthenticated(): AppResult<Unit> {
         val authState = sessionStateHolder.authState.value
         if (authState !is AuthState.Authenticated) {
             return AppResult.Failure(DomainError.Unauthorized)
         }
-
-        val userId = authState.user.id.toLongOrNull()
-            ?: return AppResult.Failure(DomainError.Validation("userId"))
-        return AppResult.Success(userId)
+        return AppResult.Success(Unit)
     }
 }

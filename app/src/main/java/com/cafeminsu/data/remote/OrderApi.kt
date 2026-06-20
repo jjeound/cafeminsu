@@ -10,19 +10,16 @@ import retrofit2.http.Query
 interface OrderApi {
     @POST("api/orders")
     suspend fun createOrder(
-        @Query("userId") userId: Long,
         @Body request: OrderCreateReq,
     ): BaseResponse<OrderCreateRes>
 
     @GET("api/orders/{orderId}")
     suspend fun getOrder(
         @Path("orderId") orderId: Long,
-        @Query("userId") userId: Long,
     ): BaseResponse<OrderDetailRes>
 
     @GET("api/orders/my")
     suspend fun getMyOrders(
-        @Query("userId") userId: Long,
         @Query("status") status: String? = null,
         @Query("page") page: Int = DefaultOrderPage,
         @Query("size") size: Int = DefaultOrderPageSize,

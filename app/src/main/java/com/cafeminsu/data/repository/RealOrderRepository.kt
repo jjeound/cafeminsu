@@ -38,8 +38,8 @@ class RealOrderRepository @Inject constructor(
                 return@withContext AppResult.Failure(DomainError.Validation("cart"))
             }
 
-            val userId = when (val result = currentUserId()) {
-                is AppResult.Success -> result.data
+            when (val result = ensureAuthenticated()) {
+                is AppResult.Success -> Unit
                 is AppResult.Failure -> return@withContext result
             }
             val storeId = when (val result = currentStoreId()) {
@@ -53,10 +53,7 @@ class RealOrderRepository @Inject constructor(
 
             when (
                 val response = runCatchingToAppResult {
-                    orderApi.createOrder(
-                        userId = userId,
-                        request = request,
-                    )
+                    orderApi.createOrder(request = request)
                 }
             ) {
                 is AppResult.Success -> response.data.unwrap {
@@ -78,8 +75,8 @@ class RealOrderRepository @Inject constructor(
                 return@flow
             }
 
-            val userId = when (val result = currentUserId()) {
-                is AppResult.Success -> result.data
+            when (val result = ensureAuthenticated()) {
+                is AppResult.Success -> Unit
                 is AppResult.Failure -> {
                     emit(result)
                     return@flow
@@ -89,10 +86,7 @@ class RealOrderRepository @Inject constructor(
             emit(
                 when (
                     val response = runCatchingToAppResult {
-                        orderApi.getOrder(
-                            orderId = serverOrderId,
-                            userId = userId,
-                        )
+                        orderApi.getOrder(orderId = serverOrderId)
                     }
                 ) {
                     is AppResult.Success -> response.data.unwrap { it.toOrder() }
@@ -103,8 +97,8 @@ class RealOrderRepository @Inject constructor(
 
     override fun observeOrderHistory(): Flow<AppResult<List<Order>>> =
         flow {
-            val userId = when (val result = currentUserId()) {
-                is AppResult.Success -> result.data
+            when (val result = ensureAuthenticated()) {
+                is AppResult.Success -> Unit
                 is AppResult.Failure -> {
                     emit(result)
                     return@flow
@@ -115,7 +109,6 @@ class RealOrderRepository @Inject constructor(
                 when (
                     val response = runCatchingToAppResult {
                         orderApi.getMyOrders(
-                            userId = userId,
                             page = DefaultOrderPage,
                             size = DefaultOrderPageSize,
                         )
@@ -127,15 +120,12 @@ class RealOrderRepository @Inject constructor(
             )
         }.flowOn(ioDispatcher)
 
-    private fun currentUserId(): AppResult<Long> {
+    private fun ensureAuthenticated(): AppResult<Unit> {
         val authState = sessionStateHolder.authState.value
         if (authState !is AuthState.Authenticated) {
             return AppResult.Failure(DomainError.Unauthorized)
         }
-
-        val userId = authState.user.id.toLongOrNull()
-            ?: return AppResult.Failure(DomainError.Validation("userId"))
-        return AppResult.Success(userId)
+        return AppResult.Success(Unit)
     }
 
     private fun currentStoreId(): AppResult<Long> {

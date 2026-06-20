@@ -57,7 +57,6 @@ class RealPaymentRepositoryTest {
 
         val prepare = server.takeRequest()
         assertEquals("/api/payments/prepare", prepare.requestUrl?.encodedPath)
-        assertEquals("42", prepare.requestUrl?.queryParameter("userId"))
         val prepareBody = prepare.body.readUtf8()
         assertTrue(prepareBody.contains("\"orderId\":77"))
         assertTrue(prepareBody.contains("\"cardAmount\":10000"))
@@ -65,7 +64,6 @@ class RealPaymentRepositoryTest {
 
         val verify = server.takeRequest()
         assertEquals("/api/payments/verify", verify.requestUrl?.encodedPath)
-        assertEquals("42", verify.requestUrl?.queryParameter("userId"))
         val verifyBody = verify.body.readUtf8()
         assertTrue(verifyBody.contains("\"impUid\":\"imp-success\""))
         assertTrue(verifyBody.contains("\"merchantUid\":\"merchant-1\""))
@@ -147,7 +145,6 @@ class RealPaymentRepositoryTest {
         server.takeRequest()
         val detail = server.takeRequest()
         assertEquals("/api/payments/31", detail.requestUrl?.encodedPath)
-        assertEquals("42", detail.requestUrl?.queryParameter("userId"))
     }
 
     @Test

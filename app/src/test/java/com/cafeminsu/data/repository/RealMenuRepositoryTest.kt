@@ -105,6 +105,24 @@ class RealMenuRepositoryTest {
     }
 
     @Test
+    fun observeMenusReturnsEmptySuccessWhenNoStoreSelected() = runTest(testDispatcher) {
+        // 로그인 직후 선택 매장이 없을 때 홈이 메뉴 Failure로 에러 화면에 빠지지 않도록 빈 목록 폴백.
+        val repository = RealMenuRepository(
+            menuApi = menuApi(),
+            selectedStoreHolder = SelectedStoreHolder(),
+            ioDispatcher = testDispatcher,
+        )
+
+        repository.observeMenus().test {
+            assertEquals(
+                AppResult.Success(emptyList<com.cafeminsu.domain.model.MenuItem>()),
+                awaitItem(),
+            )
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun getMenuMapsDetailOptionsIntoOptionGroups() = runTest(testDispatcher) {
         server.enqueue(
             MockResponse()

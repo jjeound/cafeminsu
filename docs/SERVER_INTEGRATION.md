@@ -24,6 +24,11 @@
   401 → refresh 1회 → 실패 시 `AuthState.Expired`.
 - **프로필**: `GET api/user/profile`(Bearer) → `result {id, nickname, profileImageUrl, role:CUSTOMER|OWNER}`.
 - **저장**: access/refresh JWT는 **EncryptedDataStore**(평문 금지), 로그아웃/만료 시 와이프(`SECURITY.md §1`).
+- ⚠ **`userId` 파라미터 금지(스펙 stale)**: `docs/openapi.json`은 `orders/my`·`orders`·`orders/{id}`·
+  `user/profile`·`payments/*`에 `userId`를 필수 query로 표기하지만, **서버는 이를 제거**하고 Bearer 토큰으로
+  사용자를 식별한다. 클라이언트는 **userId를 보내지 않는다**. 인증 필요 호출 전 `ensureAuthenticated()`(Guest면
+  `Unauthorized`)만 확인하고, 토큰은 OkHttp Authorization 인터셉터가 부착한다. (JWT `sub`=userId, `role`=role은
+  토큰 클레임에 있으나 파라미터로 보낼 필요 없음.)
 
 ## 도메인 매핑 규칙 & 차이 (반드시 준수)
 서버 모델은 도메인 모델(`DATA_MODEL.md`)과 일부 다르다. **매퍼(data 레이어)에서 흡수**한다.

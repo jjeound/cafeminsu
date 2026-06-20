@@ -73,8 +73,11 @@ class RealMenuRepository @Inject constructor(
         }
 
     private suspend fun fetchMenuList(categoryId: String?): AppResult<List<MenuListItemRes>> {
+        // 서버 메뉴는 매장별(/api/stores/{storeId}/menus)이라 선택 매장이 필요하다.
+        // 로그인 직후 등 선택 매장이 없을 때는 에러 대신 빈 목록으로 우아하게 폴백한다
+        // (홈이 메뉴 Failure로 에러 화면에 빠지지 않도록).
         val storeId = selectedStoreHolder.current()?.id?.toLongOrNull()
-            ?: return AppResult.Failure(DomainError.NotFound)
+            ?: return AppResult.Success(emptyList())
 
         return when (
             val response = runCatchingToAppResult {

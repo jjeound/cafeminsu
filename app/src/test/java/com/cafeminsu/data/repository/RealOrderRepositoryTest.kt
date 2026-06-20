@@ -60,7 +60,6 @@ class RealOrderRepositoryTest {
 
         val request = server.takeRequest()
         assertEquals("/api/orders", request.requestUrl?.encodedPath)
-        assertEquals("42", request.requestUrl?.queryParameter("userId"))
         val body = request.body.readUtf8()
         assertTrue(body.contains("\"storeId\":11"))
         assertTrue(body.contains("\"orderType\":\"MOBILE\""))
@@ -92,7 +91,6 @@ class RealOrderRepositoryTest {
 
         val request = server.takeRequest()
         assertEquals("/api/orders/77", request.requestUrl?.encodedPath)
-        assertEquals("42", request.requestUrl?.queryParameter("userId"))
     }
 
     @Test
@@ -113,7 +111,6 @@ class RealOrderRepositoryTest {
 
         val request = server.takeRequest()
         assertEquals("/api/orders/my", request.requestUrl?.encodedPath)
-        assertEquals("42", request.requestUrl?.queryParameter("userId"))
         assertEquals("0", request.requestUrl?.queryParameter("page"))
         assertEquals("20", request.requestUrl?.queryParameter("size"))
     }

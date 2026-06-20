@@ -5,25 +5,21 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.POST
 import retrofit2.http.Path
-import retrofit2.http.Query
 
 interface PaymentApi {
     @POST("api/payments/prepare")
     suspend fun prepare(
-        @Query("userId") userId: Long,
         @Body request: PaymentPrepareReq,
     ): BaseResponse<PaymentPrepareRes>
 
     @POST("api/payments/verify")
     suspend fun verify(
-        @Query("userId") userId: Long,
         @Body request: PaymentVerifyReq,
     ): BaseResponse<PaymentVerifyRes>
 
     @GET("api/payments/{paymentId}")
     suspend fun getPayment(
         @Path("paymentId") paymentId: Long,
-        @Query("userId") userId: Long,
     ): BaseResponse<PaymentDetailRes>
 }
 

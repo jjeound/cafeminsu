@@ -11,7 +11,6 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
-import retrofit2.http.Query
 
 interface AuthApi {
     @POST("api/user/kakao-login")
@@ -25,9 +24,7 @@ interface AuthApi {
     ): BaseResponse<RefreshRes>
 
     @GET("api/user/profile")
-    suspend fun getMyProfile(
-        @Query("userId") userId: Long,
-    ): BaseResponse<UserProfileRes>
+    suspend fun getMyProfile(): BaseResponse<UserProfileRes>
 }
 
 @JsonClass(generateAdapter = true)
