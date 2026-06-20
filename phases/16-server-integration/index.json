@@ -1,0 +1,31 @@
+{
+  "project": "CafeMinsu",
+  "phase": "server-integration",
+  "steps": [
+    {
+      "step": 0,
+      "name": "networking-foundation",
+      "status": "pending"
+    },
+    {
+      "step": 1,
+      "name": "auth-session-real",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "store-menu-real",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "name": "cart-order-real",
+      "status": "pending"
+    },
+    {
+      "step": 4,
+      "name": "payment-real",
+      "status": "pending"
+    }
+  ]
+}
