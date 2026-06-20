@@ -1,6 +1,8 @@
 package com.cafeminsu.di
 
 import com.cafeminsu.data.repository.MockCartRepository
+import com.cafeminsu.data.repository.MockCouponRepository
+import com.cafeminsu.data.repository.MockGiftRepository
 import com.cafeminsu.data.repository.MockMenuRepository
 import com.cafeminsu.data.repository.MockNotificationRepository
 import com.cafeminsu.data.repository.MockOrderRepository
@@ -12,6 +14,8 @@ import com.cafeminsu.data.repository.MockSalesRepository
 import com.cafeminsu.data.repository.MockSessionRepository
 import com.cafeminsu.data.repository.MockStoreRepository
 import com.cafeminsu.domain.repository.CartRepository
+import com.cafeminsu.domain.repository.CouponRepository
+import com.cafeminsu.domain.repository.GiftRepository
 import com.cafeminsu.domain.repository.MenuRepository
 import com.cafeminsu.domain.repository.NotificationRepository
 import com.cafeminsu.domain.repository.OrderRepository
@@ -62,6 +66,14 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindRewardRepository(repository: MockRewardRepository): RewardRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindCouponRepository(repository: MockCouponRepository): CouponRepository
+
+    @Binds
+    @Singleton
+    abstract fun bindGiftRepository(repository: MockGiftRepository): GiftRepository
 
     @Binds
     @Singleton

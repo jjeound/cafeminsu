@@ -1,6 +1,9 @@
 package com.cafeminsu.data.mock
 
 import com.cafeminsu.domain.model.AppNotification
+import com.cafeminsu.domain.model.Coupon
+import com.cafeminsu.domain.model.CouponStatus
+import com.cafeminsu.domain.model.CouponType
 import com.cafeminsu.domain.model.Gifticon
 import com.cafeminsu.domain.model.GifticonStatus
 import com.cafeminsu.domain.model.MenuCategory
@@ -212,6 +215,33 @@ object MockData {
             qrValue = "CAFE-MINSU-QR-0002",
             expiresAtMillis = 1_827_619_200_000L,
             status = GifticonStatus.Expired,
+        ),
+    )
+
+    val initialCoupons: List<Coupon> = listOf(
+        Coupon(
+            id = "coupon-free-drink",
+            type = CouponType.FreeDrink,
+            title = "무료 음료 1잔 쿠폰",
+            amount = null,
+            expiresAtMillis = 1_788_105_600_000L,
+            status = CouponStatus.Available,
+        ),
+        Coupon(
+            id = "coupon-10000",
+            type = CouponType.Amount,
+            title = "₩10,000",
+            amount = 10_000,
+            expiresAtMillis = 1_774_704_000_000L,
+            status = CouponStatus.Available,
+        ),
+        Coupon(
+            id = "coupon-8500",
+            type = CouponType.Amount,
+            title = "₩8,500",
+            amount = 8_500,
+            expiresAtMillis = 1_774_704_000_000L,
+            status = CouponStatus.Available,
         ),
     )
 

@@ -16,11 +16,14 @@
     {
       "step": 1,
       "name": "coupon-gift-redesign",
-      "status": "pending",
+      "status": "completed",
+      "summary": "COUPON 화면을 스탬프 다크 카드와 쿠폰 목록으로 재설계하고 GIFT 화면을 금액형 선물하기 폼과 Mock 전송 흐름으로 구현",
       "images": [
         "docs/screens/MY - 02 (쿠폰).png",
         "docs/screens/MY - 03 (선물하기).png"
-      ]
+      ],
+      "started_at": "2026-06-20T14:46:35+0900",
+      "completed_at": "2026-06-20T14:58:57+0900"
     },
     {
       "step": 2,

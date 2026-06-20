@@ -39,8 +39,9 @@ import com.cafeminsu.domain.model.AuthState
 import com.cafeminsu.domain.model.UserRole
 import com.cafeminsu.domain.repository.SessionRepository
 import com.cafeminsu.ui.feature.cart.CartRoute
+import com.cafeminsu.ui.feature.coupon.CouponRoute
+import com.cafeminsu.ui.feature.gift.GiftRoute
 import com.cafeminsu.ui.feature.gifticon.GifticonDetailRoute
-import com.cafeminsu.ui.feature.gifticon.GifticonRoute
 import com.cafeminsu.ui.feature.home.HomeRoute
 import com.cafeminsu.ui.feature.login.LoginRoute
 import com.cafeminsu.ui.feature.menu.MenuDetailRoute
@@ -59,7 +60,6 @@ import com.cafeminsu.ui.feature.payment.PaymentFailureReason
 import com.cafeminsu.ui.feature.payment.PaymentRoute
 import com.cafeminsu.ui.feature.payment.paymentFailureUiModel
 import com.cafeminsu.ui.feature.splash.SplashScreen
-import com.cafeminsu.ui.feature.stamp.StampRoute
 import com.cafeminsu.ui.feature.store.StoreRoute
 import com.cafeminsu.ui.feature.voice.VoiceRoute
 import com.cafeminsu.ui.theme.CafeTheme
@@ -309,17 +309,14 @@ fun AppNavHost(
                 )
             }
             composable(Routes.COUPON) {
-                StampRoute(
-                    onBrowseMenuClick = { navController.navigate(Routes.STORE) },
+                CouponRoute(
+                    onBackClick = { navController.popBackStack() },
                     onLoginClick = { navController.navigate(Routes.LOGIN) },
                 )
             }
             composable(Routes.GIFT) {
-                GifticonRoute(
-                    onGifticonClick = { gifticonId ->
-                        navController.navigate(Routes.gifticonDetail(gifticonId))
-                    },
-                    onStampClick = { navController.navigate(Routes.COUPON) },
+                GiftRoute(
+                    onBackClick = { navController.popBackStack() },
                     onLoginClick = { navController.navigate(Routes.LOGIN) },
                 )
             }

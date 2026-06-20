@@ -28,3 +28,40 @@ enum class GifticonStatus {
     Used,
     Expired,
 }
+
+data class Coupon(
+    val id: String,
+    val type: CouponType,
+    val title: String,
+    val amount: Int?,
+    val expiresAtMillis: Long,
+    val status: CouponStatus,
+)
+
+enum class CouponType {
+    FreeDrink,
+    Amount,
+}
+
+enum class CouponStatus {
+    Available,
+    Used,
+    Expired,
+}
+
+data class GiftSendRequest(
+    val amount: Int,
+    val channel: GiftChannel,
+    val recipientRef: String,
+    val message: String?,
+)
+
+enum class GiftChannel {
+    KakaoTalk,
+    Sms,
+}
+
+data class GiftSendResult(
+    val giftId: String,
+    val sentAtMillis: Long,
+)
