@@ -21,7 +21,10 @@
     {
       "step": 2,
       "name": "store-menu-real",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-06-20T21:27:41+0900",
+      "summary": "StoreApi/MenuApi DTO·매퍼와 RealStore/MenuRepository를 추가하고 BASE_URL 게이트로 Mock 폴백을 유지했다.",
+      "completed_at": "2026-06-20T21:37:18+0900"
     },
     {
       "step": 3,

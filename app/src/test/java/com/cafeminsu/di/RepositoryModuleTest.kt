@@ -31,8 +31,7 @@ import org.junit.Test
 
 class RepositoryModuleTest {
     @Test
-    fun repositoryModuleBindsAllRepositoryContractsToMockSingletons() {
-        assertBinding("bindMenuRepository", MenuRepository::class.java, MockMenuRepository::class.java)
+    fun repositoryModuleBindsUnchangedRepositoryContractsToMockSingletons() {
         assertBinding("bindCartRepository", CartRepository::class.java, MockCartRepository::class.java)
         assertBinding("bindOrderRepository", OrderRepository::class.java, MockOrderRepository::class.java)
         assertBinding(
@@ -54,7 +53,6 @@ class RepositoryModuleTest {
             NotificationRepository::class.java,
             MockNotificationRepository::class.java,
         )
-        assertBinding("bindStoreRepository", StoreRepository::class.java, MockStoreRepository::class.java)
     }
 
     @Test
@@ -85,6 +83,62 @@ class RepositoryModuleTest {
         assertEquals(realRepository, selected)
     }
 
+    @Test
+    fun blankBaseUrlSelectsMockStoreRepositoryFallback() {
+        val realRepository = FakeStoreRepository()
+        val mockRepository = FakeStoreRepository()
+
+        val selected = selectStoreRepository(
+            baseUrl = "",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(mockRepository, selected)
+    }
+
+    @Test
+    fun configuredBaseUrlSelectsRealStoreRepository() {
+        val realRepository = FakeStoreRepository()
+        val mockRepository = FakeStoreRepository()
+
+        val selected = selectStoreRepository(
+            baseUrl = "https://cafeminsu.example/",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(realRepository, selected)
+    }
+
+    @Test
+    fun blankBaseUrlSelectsMockMenuRepositoryFallback() {
+        val realRepository = FakeMenuRepository()
+        val mockRepository = FakeMenuRepository()
+
+        val selected = selectMenuRepository(
+            baseUrl = "",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(mockRepository, selected)
+    }
+
+    @Test
+    fun configuredBaseUrlSelectsRealMenuRepository() {
+        val realRepository = FakeMenuRepository()
+        val mockRepository = FakeMenuRepository()
+
+        val selected = selectMenuRepository(
+            baseUrl = "https://cafeminsu.example/",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(realRepository, selected)
+    }
+
     private fun assertBinding(
         methodName: String,
         repositoryType: Class<*>,
@@ -105,5 +159,40 @@ private class FakeSessionRepository : SessionRepository {
         com.cafeminsu.core.AppResult.Success(com.cafeminsu.domain.model.AuthState.Guest)
 
     override suspend fun clearSession(): com.cafeminsu.core.AppResult<Unit> =
+        com.cafeminsu.core.AppResult.Success(Unit)
+}
+
+private class FakeStoreRepository : StoreRepository {
+    override fun observeNearbyStores(
+        query: String?,
+    ): kotlinx.coroutines.flow.Flow<com.cafeminsu.core.AppResult<List<com.cafeminsu.domain.model.Store>>> =
+        kotlinx.coroutines.flow.flowOf(com.cafeminsu.core.AppResult.Success(emptyList()))
+
+    override suspend fun getStore(storeId: String): com.cafeminsu.core.AppResult<com.cafeminsu.domain.model.Store> =
+        com.cafeminsu.core.AppResult.Failure(com.cafeminsu.core.DomainError.NotFound)
+
+    override suspend fun selectStore(storeId: String): com.cafeminsu.core.AppResult<Unit> =
+        com.cafeminsu.core.AppResult.Success(Unit)
+
+    override fun observeSelectedStore(): kotlinx.coroutines.flow.Flow<com.cafeminsu.domain.model.Store?> =
+        kotlinx.coroutines.flow.flowOf(null)
+}
+
+private class FakeMenuRepository : MenuRepository {
+    override fun observeCategories():
+        kotlinx.coroutines.flow.Flow<com.cafeminsu.core.AppResult<List<com.cafeminsu.domain.model.MenuCategory>>> =
+        kotlinx.coroutines.flow.flowOf(com.cafeminsu.core.AppResult.Success(emptyList()))
+
+    override fun observeMenus(
+        categoryId: String?,
+    ): kotlinx.coroutines.flow.Flow<com.cafeminsu.core.AppResult<List<com.cafeminsu.domain.model.MenuItem>>> =
+        kotlinx.coroutines.flow.flowOf(com.cafeminsu.core.AppResult.Success(emptyList()))
+
+    override suspend fun getMenu(
+        menuItemId: String,
+    ): com.cafeminsu.core.AppResult<com.cafeminsu.domain.model.MenuItem> =
+        com.cafeminsu.core.AppResult.Failure(com.cafeminsu.core.DomainError.NotFound)
+
+    override suspend fun refreshMenus(): com.cafeminsu.core.AppResult<Unit> =
         com.cafeminsu.core.AppResult.Success(Unit)
 }

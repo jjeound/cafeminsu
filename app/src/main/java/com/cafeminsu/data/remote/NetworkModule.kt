@@ -84,6 +84,22 @@ object NetworkModule {
     @Provides
     @Singleton
     @Unauthenticated
+    fun provideStoreApi(
+        @Unauthenticated retrofit: Retrofit,
+    ): StoreApi =
+        retrofit.create(StoreApi::class.java)
+
+    @Provides
+    @Singleton
+    @Unauthenticated
+    fun provideMenuApi(
+        @Unauthenticated retrofit: Retrofit,
+    ): MenuApi =
+        retrofit.create(MenuApi::class.java)
+
+    @Provides
+    @Singleton
+    @Unauthenticated
     fun provideUnauthenticatedAuthApi(
         @Unauthenticated retrofit: Retrofit,
     ): AuthApi =

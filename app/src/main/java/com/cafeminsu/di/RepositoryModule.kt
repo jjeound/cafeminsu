@@ -13,7 +13,9 @@ import com.cafeminsu.data.repository.MockRewardRepository
 import com.cafeminsu.data.repository.MockSalesRepository
 import com.cafeminsu.data.repository.MockSessionRepository
 import com.cafeminsu.data.repository.MockStoreRepository
+import com.cafeminsu.data.repository.RealMenuRepository
 import com.cafeminsu.data.repository.RealSessionRepository
+import com.cafeminsu.data.repository.RealStoreRepository
 import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.CouponRepository
 import com.cafeminsu.domain.repository.GiftRepository
@@ -38,10 +40,6 @@ import javax.inject.Singleton
 @Module
 @InstallIn(SingletonComponent::class)
 abstract class RepositoryModule {
-    @Binds
-    @Singleton
-    abstract fun bindMenuRepository(repository: MockMenuRepository): MenuRepository
-
     @Binds
     @Singleton
     abstract fun bindCartRepository(repository: MockCartRepository): CartRepository
@@ -82,11 +80,31 @@ abstract class RepositoryModule {
     @Singleton
     abstract fun bindNotificationRepository(repository: MockNotificationRepository): NotificationRepository
 
-    @Binds
-    @Singleton
-    abstract fun bindStoreRepository(repository: MockStoreRepository): StoreRepository
-
     companion object {
+        @Provides
+        @Singleton
+        fun provideMenuRepository(
+            realRepository: Provider<RealMenuRepository>,
+            mockRepository: Provider<MockMenuRepository>,
+        ): MenuRepository =
+            selectMenuRepository(
+                baseUrl = com.cafeminsu.BuildConfig.BASE_URL,
+                realFactory = { realRepository.get() },
+                mockFactory = { mockRepository.get() },
+            )
+
+        @Provides
+        @Singleton
+        fun provideStoreRepository(
+            realRepository: Provider<RealStoreRepository>,
+            mockRepository: Provider<MockStoreRepository>,
+        ): StoreRepository =
+            selectStoreRepository(
+                baseUrl = com.cafeminsu.BuildConfig.BASE_URL,
+                realFactory = { realRepository.get() },
+                mockFactory = { mockRepository.get() },
+            )
+
         @Provides
         @Singleton
         fun provideSessionRepository(
@@ -106,6 +124,28 @@ internal fun selectSessionRepository(
     realFactory: () -> SessionRepository,
     mockFactory: () -> SessionRepository,
 ): SessionRepository =
+    if (baseUrl.isNotBlank()) {
+        realFactory()
+    } else {
+        mockFactory()
+    }
+
+internal fun selectStoreRepository(
+    baseUrl: String,
+    realFactory: () -> StoreRepository,
+    mockFactory: () -> StoreRepository,
+): StoreRepository =
+    if (baseUrl.isNotBlank()) {
+        realFactory()
+    } else {
+        mockFactory()
+    }
+
+internal fun selectMenuRepository(
+    baseUrl: String,
+    realFactory: () -> MenuRepository,
+    mockFactory: () -> MenuRepository,
+): MenuRepository =
     if (baseUrl.isNotBlank()) {
         realFactory()
     } else {
