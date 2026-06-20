@@ -2,6 +2,7 @@ package com.cafeminsu.ui.feature.payment
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
@@ -33,6 +34,7 @@ import com.cafeminsu.ui.components.CafeCardType
 import com.cafeminsu.ui.components.CafeTopBar
 import com.cafeminsu.ui.components.ErrorView
 import com.cafeminsu.ui.components.LoadingView
+import com.cafeminsu.ui.feature.order.OrderFailureDialog
 import com.cafeminsu.ui.theme.CafeTheme
 import java.text.NumberFormat
 import java.util.Locale
@@ -40,7 +42,6 @@ import java.util.Locale
 @Composable
 fun PaymentRoute(
     onPaymentApproved: (String) -> Unit,
-    onPaymentFailed: () -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PaymentViewModel = hiltViewModel(),
@@ -51,7 +52,7 @@ fun PaymentRoute(
         viewModel.events.collect { event ->
             when (event) {
                 is PaymentEvent.PaymentApproved -> onPaymentApproved(event.orderId)
-                is PaymentEvent.PaymentFailed -> onPaymentFailed()
+                is PaymentEvent.PaymentFailed -> Unit
             }
         }
     }
@@ -62,6 +63,8 @@ fun PaymentRoute(
         onSelectMethod = viewModel::onSelectMethod,
         onPaymentSuccess = viewModel::onPaySuccess,
         onPaymentFailure = viewModel::onPayFailure,
+        onRetryFailure = viewModel::onRetryFailure,
+        onDismissFailure = viewModel::onDismissFailure,
         onRetry = viewModel::retry,
         modifier = modifier,
     )
@@ -74,58 +77,71 @@ fun PaymentScreen(
     onSelectMethod: (String) -> Unit,
     onPaymentSuccess: () -> Unit,
     onPaymentFailure: () -> Unit,
+    onRetryFailure: () -> Unit,
+    onDismissFailure: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = CafeTheme.colors
+    val failure = (state as? PaymentUiState.Content)?.paymentState as? PaymentProgress.Failed
 
-    Scaffold(
-        modifier = modifier.fillMaxSize(),
-        containerColor = colors.canvas,
-        topBar = {
-            CafeTopBar(
-                title = "결제",
-                navigationIcon = {
-                    Text(
-                        text = "‹",
-                        style = CafeTheme.typography.h2,
-                        color = colors.ink,
+    Box(modifier = modifier.fillMaxSize()) {
+        Scaffold(
+            modifier = Modifier.fillMaxSize(),
+            containerColor = colors.canvas,
+            topBar = {
+                CafeTopBar(
+                    title = "결제",
+                    navigationIcon = {
+                        Text(
+                            text = "‹",
+                            style = CafeTheme.typography.h2,
+                            color = colors.ink,
+                        )
+                    },
+                    onNavigationClick = onBackClick,
+                )
+            },
+            bottomBar = {
+                if (state is PaymentUiState.Content) {
+                    PaymentActionBar(
+                        state = state,
+                        onPaymentSuccess = onPaymentSuccess,
+                        onPaymentFailure = onPaymentFailure,
                     )
-                },
-                onNavigationClick = onBackClick,
-            )
-        },
-        bottomBar = {
-            if (state is PaymentUiState.Content) {
-                PaymentActionBar(
-                    state = state,
-                    onPaymentSuccess = onPaymentSuccess,
-                    onPaymentFailure = onPaymentFailure,
-                )
-            }
-        },
-    ) { innerPadding ->
-        Surface(
-            modifier = Modifier
-                .fillMaxSize()
-                .padding(innerPadding),
-            color = colors.canvas,
-            contentColor = colors.body,
-        ) {
-            when (state) {
-                PaymentUiState.Loading -> LoadingView(modifier = Modifier.padding(screenPadding()))
-                is PaymentUiState.Content -> PaymentContent(
-                    state = state,
-                    onSelectMethod = onSelectMethod,
-                )
+                }
+            },
+        ) { innerPadding ->
+            Surface(
+                modifier = Modifier
+                    .fillMaxSize()
+                    .padding(innerPadding),
+                color = colors.canvas,
+                contentColor = colors.body,
+            ) {
+                when (state) {
+                    PaymentUiState.Loading -> LoadingView(modifier = Modifier.padding(screenPadding()))
+                    is PaymentUiState.Content -> PaymentContent(
+                        state = state,
+                        onSelectMethod = onSelectMethod,
+                    )
 
-                is PaymentUiState.Error -> ErrorView(
-                    modifier = Modifier.padding(screenPadding()),
-                    message = state.message,
-                    retryable = state.retryable,
-                    onRetry = onRetry,
-                )
+                    is PaymentUiState.Error -> ErrorView(
+                        modifier = Modifier.padding(screenPadding()),
+                        message = state.message,
+                        retryable = state.retryable,
+                        onRetry = onRetry,
+                    )
+                }
             }
+        }
+
+        if (failure != null) {
+            OrderFailureDialog(
+                failure = failure.failure,
+                onCancel = onDismissFailure,
+                onRetry = onRetryFailure,
+            )
         }
     }
 }
@@ -350,11 +366,7 @@ private fun PaymentProgressMessage(progress: PaymentProgress) {
             tone = PaymentMessageTone.Success,
         )
 
-        is PaymentProgress.Failed -> PaymentStateCard(
-            title = "결제를 완료하지 못했어요",
-            message = progress.message,
-            tone = PaymentMessageTone.Error,
-        )
+        is PaymentProgress.Failed -> Unit
 
         is PaymentProgress.NeedsConfirmation -> PaymentStateCard(
             title = "결제 상태 확인 필요",

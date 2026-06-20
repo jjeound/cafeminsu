@@ -28,6 +28,8 @@ class PaymentScreenTest {
                     onSelectMethod = {},
                     onPaymentSuccess = {},
                     onPaymentFailure = {},
+                    onRetryFailure = {},
+                    onDismissFailure = {},
                     onRetry = {},
                 )
             }
@@ -62,6 +64,8 @@ class PaymentScreenTest {
                     onSelectMethod = {},
                     onPaymentSuccess = { successClicks += 1 },
                     onPaymentFailure = { failureClicks += 1 },
+                    onRetryFailure = {},
+                    onDismissFailure = {},
                     onRetry = {},
                 )
             }
@@ -84,6 +88,8 @@ class PaymentScreenTest {
                     onSelectMethod = {},
                     onPaymentSuccess = {},
                     onPaymentFailure = {},
+                    onRetryFailure = {},
+                    onDismissFailure = {},
                     onRetry = {},
                 )
             }
@@ -93,6 +99,39 @@ class PaymentScreenTest {
         composeRule.onNodeWithText("승인 결과를 확인하고 있어요.").assertIsDisplayed()
         composeRule.onNodeWithText("결제 실패").assertIsNotEnabled()
         composeRule.onNodeWithText("결제 성공").assertIsNotEnabled()
+    }
+
+    @Test
+    fun failedStateShowsOrderFailDialogAndActions() {
+        var retryClicks = 0
+        var cancelClicks = 0
+
+        composeRule.setContent {
+            CafeTheme {
+                PaymentScreen(
+                    state = contentState(
+                        paymentState = PaymentProgress.Failed(
+                            paymentFailureUiModel(PaymentFailureReason.LimitExceeded),
+                        ),
+                    ),
+                    onBackClick = {},
+                    onSelectMethod = {},
+                    onPaymentSuccess = {},
+                    onPaymentFailure = {},
+                    onRetryFailure = { retryClicks += 1 },
+                    onDismissFailure = { cancelClicks += 1 },
+                    onRetry = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("결제에 실패했어요").assertIsDisplayed()
+        composeRule.onNodeWithText("ERR_PAY_LIMIT_EX").assertIsDisplayed()
+        composeRule.onNodeWithText("취소").performClick()
+        composeRule.onNodeWithText("다시 시도").performClick()
+
+        assertEquals(1, cancelClicks)
+        assertEquals(1, retryClicks)
     }
 
     private fun contentState(

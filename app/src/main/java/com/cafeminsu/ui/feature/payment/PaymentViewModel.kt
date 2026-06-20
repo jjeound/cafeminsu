@@ -73,6 +73,17 @@ class PaymentViewModel @Inject constructor(
         payWithMockOutcome(MockPaymentOutcome.Failure)
     }
 
+    fun onRetryFailure() {
+        payWithMockOutcome(MockPaymentOutcome.Success)
+    }
+
+    fun onDismissFailure() {
+        val content = _uiState.value as? PaymentUiState.Content ?: return
+        if (content.paymentState is PaymentProgress.Failed) {
+            _uiState.value = content.copy(paymentState = PaymentProgress.Idle)
+        }
+    }
+
     private fun payWithMockOutcome(outcome: MockPaymentOutcome) {
         if (paymentInProgress) {
             return
@@ -157,7 +168,7 @@ class PaymentViewModel @Inject constructor(
         if (error.needsStatusConfirmation()) {
             confirmPaymentStatus(request)
         } else {
-            finishPayment(PaymentProgress.Failed(error.toPaymentFailureMessage()))
+            finishPayment(PaymentProgress.Failed(paymentFailureUiModel(error.toPaymentFailureReason())))
         }
     }
 
@@ -177,12 +188,12 @@ class PaymentViewModel @Inject constructor(
             PaymentStatus.Approved -> approvePayment(request.orderId)
             PaymentStatus.Failed -> failPayment(
                 orderId = request.orderId,
-                progress = PaymentProgress.Failed("결제가 승인되지 않았어요. 다른 결제수단으로 다시 시도해 주세요"),
+                progress = PaymentProgress.Failed(paymentFailureUiModel(PaymentFailureReason.LimitExceeded)),
             )
 
             PaymentStatus.Cancelled -> failPayment(
                 orderId = request.orderId,
-                progress = PaymentProgress.Failed("결제가 취소됐어요. 다시 시도해 주세요"),
+                progress = PaymentProgress.Failed(paymentFailureUiModel(PaymentFailureReason.Cancelled)),
             )
 
             PaymentStatus.Pending,
@@ -287,16 +298,20 @@ class PaymentViewModel @Inject constructor(
             DomainError.Unknown -> "결제 화면을 불러오지 못했어요"
         }
 
-    private fun DomainError.toPaymentFailureMessage(): String =
+    private fun DomainError.toPaymentFailureReason(): PaymentFailureReason =
         when (this) {
-            DomainError.Unauthorized -> "로그인이 만료됐어요. 다시 로그인해 주세요"
-            DomainError.NotFound -> "주문을 찾지 못했어요"
-            is DomainError.Validation -> "주문 금액을 확인해 주세요"
-            is DomainError.Payment -> "결제수단을 확인하고 다시 시도해 주세요"
             DomainError.Network,
             DomainError.Timeout,
+            -> PaymentFailureReason.Network
+
+            is DomainError.Payment,
+            is DomainError.Validation,
+            -> PaymentFailureReason.InvalidPaymentInfo
+
+            DomainError.Unauthorized,
+            DomainError.NotFound,
             DomainError.Unknown,
-            -> "결제를 완료하지 못했어요. 다시 시도해 주세요"
+            -> PaymentFailureReason.Unknown
         }
 
     private fun DomainError.toPaymentConfirmationMessage(): String =

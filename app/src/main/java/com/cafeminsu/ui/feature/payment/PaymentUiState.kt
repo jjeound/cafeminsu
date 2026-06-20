@@ -1,6 +1,7 @@
 package com.cafeminsu.ui.feature.payment
 
 import com.cafeminsu.domain.model.CartItem
+import com.cafeminsu.ui.feature.order.OrderFailureUiModel
 
 sealed interface PaymentUiState {
     data object Loading : PaymentUiState
@@ -39,7 +40,9 @@ sealed interface PaymentProgress {
     data object Idle : PaymentProgress
     data object Processing : PaymentProgress
     data object Approved : PaymentProgress
-    data class Failed(val message: String) : PaymentProgress
+    data class Failed(val failure: OrderFailureUiModel) : PaymentProgress {
+        val message: String = failure.message
+    }
     data class NeedsConfirmation(val message: String) : PaymentProgress
 }
 
@@ -63,3 +66,44 @@ fun defaultPaymentMethods(): List<PaymentMethodUiModel> =
             label = "쿠폰",
         ),
     )
+
+enum class PaymentFailureReason {
+    LimitExceeded,
+    Cancelled,
+    InvalidPaymentInfo,
+    Network,
+    Unknown,
+}
+
+fun paymentFailureUiModel(reason: PaymentFailureReason): OrderFailureUiModel =
+    when (reason) {
+        PaymentFailureReason.LimitExceeded -> OrderFailureUiModel(
+            title = "결제에 실패했어요",
+            message = "카드 한도 초과 또는 정보 오류로\n결제가 처리되지 않았어요.",
+            errorCode = "ERR_PAY_LIMIT_EX",
+        )
+
+        PaymentFailureReason.Cancelled -> OrderFailureUiModel(
+            title = "결제에 실패했어요",
+            message = "결제가 취소됐어요.\n다시 시도해 주세요.",
+            errorCode = "ERR_PAY_CANCELLED",
+        )
+
+        PaymentFailureReason.InvalidPaymentInfo -> OrderFailureUiModel(
+            title = "결제에 실패했어요",
+            message = "결제수단 정보가 올바르지 않아요.\n다른 수단으로 다시 시도해 주세요.",
+            errorCode = "ERR_PAY_METHOD_INVALID",
+        )
+
+        PaymentFailureReason.Network -> OrderFailureUiModel(
+            title = "결제에 실패했어요",
+            message = "네트워크 연결 때문에 결제가 완료되지 않았어요.\n다시 시도해 주세요.",
+            errorCode = "ERR_PAY_NETWORK",
+        )
+
+        PaymentFailureReason.Unknown -> OrderFailureUiModel(
+            title = "결제에 실패했어요",
+            message = "결제가 처리되지 않았어요.\n잠시 후 다시 시도해 주세요.",
+            errorCode = "ERR_PAY_UNKNOWN",
+        )
+    }

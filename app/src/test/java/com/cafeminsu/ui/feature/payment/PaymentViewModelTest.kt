@@ -258,6 +258,40 @@ class PaymentViewModelTest {
     }
 
     @Test
+    fun retryFromFailureDialogReusesIdempotencyKey() = runTest {
+        val paymentRepository = FakePaymentRepository(
+            payResults = mutableListOf(
+                AppResult.Success(paymentResult(status = PaymentStatus.Failed)),
+                AppResult.Success(paymentResult(status = PaymentStatus.Approved)),
+            ),
+        )
+        val viewModel = viewModel(paymentRepository = paymentRepository)
+
+        viewModel.uiState.test {
+            awaitContent()
+
+            viewModel.events.test {
+                viewModel.onPayFailure()
+                awaitContentWithProgress<PaymentProgress.Failed>()
+                assertEquals(PaymentEvent.PaymentFailed("order-1"), awaitItem())
+
+                viewModel.onRetryFailure()
+                assertEquals(PaymentEvent.PaymentApproved("order-1"), awaitItem())
+
+                assertEquals(2, paymentRepository.payRequests.size)
+                assertEquals(
+                    paymentRepository.payRequests.first().idempotencyKey,
+                    paymentRepository.payRequests.last().idempotencyKey,
+                )
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun payWhileProcessingIgnoresDuplicateTap() = runTest {
         val payGate = CompletableDeferred<Unit>()
         val paymentRepository = FakePaymentRepository(

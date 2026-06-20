@@ -47,13 +47,17 @@ import com.cafeminsu.ui.feature.menu.MenuDetailRoute
 import com.cafeminsu.ui.feature.menu.MenuRoute
 import com.cafeminsu.ui.feature.my.MyRoute
 import com.cafeminsu.ui.feature.notification.NotiRoute
+import com.cafeminsu.ui.feature.order.OrderFailureDialog
+import com.cafeminsu.ui.feature.order.OrderResultRoute
 import com.cafeminsu.ui.feature.order.OrderStatusRoute
 import com.cafeminsu.ui.feature.owner.home.OwnerHomeRoute
 import com.cafeminsu.ui.feature.owner.login.OwnerLoginRoute
 import com.cafeminsu.ui.feature.owner.menu.OwnerMenuRoute
 import com.cafeminsu.ui.feature.owner.orders.OwnerOrdersRoute
 import com.cafeminsu.ui.feature.owner.sales.OwnerSalesRoute
+import com.cafeminsu.ui.feature.payment.PaymentFailureReason
 import com.cafeminsu.ui.feature.payment.PaymentRoute
+import com.cafeminsu.ui.feature.payment.paymentFailureUiModel
 import com.cafeminsu.ui.feature.splash.SplashScreen
 import com.cafeminsu.ui.feature.stamp.StampRoute
 import com.cafeminsu.ui.feature.store.StoreRoute
@@ -258,11 +262,6 @@ fun AppNavHost(
                             launchSingleTop = true
                         }
                     },
-                    onPaymentFailed = {
-                        navController.navigate(Routes.ORDER_FAIL) {
-                            launchSingleTop = true
-                        }
-                    },
                     onBackClick = { navController.popBackStack() },
                 )
             }
@@ -274,10 +273,32 @@ fun AppNavHost(
                     },
                 ),
             ) {
-                PlaceholderScreen(title = "주문 완료")
+                OrderResultRoute(
+                    onCloseClick = {
+                        navController.navigate(Routes.HOME) {
+                            popUpTo(Routes.HOME)
+                            launchSingleTop = true
+                        }
+                    },
+                    onStatusClick = { orderId ->
+                        navController.navigate(Routes.history(orderId)) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onHomeClick = {
+                        navController.navigate(Routes.HOME) {
+                            popUpTo(Routes.HOME)
+                            launchSingleTop = true
+                        }
+                    },
+                )
             }
             composable(Routes.ORDER_FAIL) {
-                PlaceholderScreen(title = "주문 실패")
+                OrderFailureDialog(
+                    failure = paymentFailureUiModel(PaymentFailureReason.LimitExceeded),
+                    onCancel = { navController.popBackStack() },
+                    onRetry = { navController.popBackStack() },
+                )
             }
             composable(Routes.MY) {
                 MyRoute(

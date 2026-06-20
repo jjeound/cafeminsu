@@ -27,11 +27,14 @@
     {
       "step": 2,
       "name": "order-result-redesign",
-      "status": "pending",
+      "status": "completed",
+      "summary": "ORDER_OK 전용 성공 화면과 ORDER_FAIL 결제 실패 다이얼로그를 재설계하고 성공/실패 매핑 및 멱등 재시도 테스트를 추가함.",
       "images": [
         "docs/screens/주문 - 08 (주문 성공).png",
         "docs/screens/주문 - 09 (주문 실패).png"
-      ]
+      ],
+      "started_at": "2026-06-20T14:23:07+0900",
+      "completed_at": "2026-06-20T14:34:00+0900"
     }
   ],
   "created_at": "2026-06-20T00:04:04+0900"
