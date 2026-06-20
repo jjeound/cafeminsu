@@ -14,6 +14,7 @@ import com.cafeminsu.data.repository.MockSalesRepository
 import com.cafeminsu.data.repository.MockSessionRepository
 import com.cafeminsu.data.repository.MockStoreRepository
 import com.cafeminsu.data.repository.RealMenuRepository
+import com.cafeminsu.data.repository.RealOrderRepository
 import com.cafeminsu.data.repository.RealSessionRepository
 import com.cafeminsu.data.repository.RealStoreRepository
 import com.cafeminsu.domain.repository.CartRepository
@@ -43,10 +44,6 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindCartRepository(repository: MockCartRepository): CartRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindOrderRepository(repository: MockOrderRepository): OrderRepository
 
     @Binds
     @Singleton
@@ -107,6 +104,18 @@ abstract class RepositoryModule {
 
         @Provides
         @Singleton
+        fun provideOrderRepository(
+            realRepository: Provider<RealOrderRepository>,
+            mockRepository: Provider<MockOrderRepository>,
+        ): OrderRepository =
+            selectOrderRepository(
+                baseUrl = com.cafeminsu.BuildConfig.BASE_URL,
+                realFactory = { realRepository.get() },
+                mockFactory = { mockRepository.get() },
+            )
+
+        @Provides
+        @Singleton
         fun provideSessionRepository(
             realRepository: Provider<RealSessionRepository>,
             mockRepository: Provider<MockSessionRepository>,
@@ -146,6 +155,17 @@ internal fun selectMenuRepository(
     realFactory: () -> MenuRepository,
     mockFactory: () -> MenuRepository,
 ): MenuRepository =
+    if (baseUrl.isNotBlank()) {
+        realFactory()
+    } else {
+        mockFactory()
+    }
+
+internal fun selectOrderRepository(
+    baseUrl: String,
+    realFactory: () -> OrderRepository,
+    mockFactory: () -> OrderRepository,
+): OrderRepository =
     if (baseUrl.isNotBlank()) {
         realFactory()
     } else {

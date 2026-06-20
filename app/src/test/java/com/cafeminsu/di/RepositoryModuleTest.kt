@@ -33,7 +33,6 @@ class RepositoryModuleTest {
     @Test
     fun repositoryModuleBindsUnchangedRepositoryContractsToMockSingletons() {
         assertBinding("bindCartRepository", CartRepository::class.java, MockCartRepository::class.java)
-        assertBinding("bindOrderRepository", OrderRepository::class.java, MockOrderRepository::class.java)
         assertBinding(
             "bindOwnerOrderRepository",
             OwnerOrderRepository::class.java,
@@ -75,6 +74,34 @@ class RepositoryModuleTest {
         val mockRepository = FakeSessionRepository()
 
         val selected = selectSessionRepository(
+            baseUrl = "https://cafeminsu.example/",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(realRepository, selected)
+    }
+
+    @Test
+    fun blankBaseUrlSelectsMockOrderRepositoryFallback() {
+        val realRepository = FakeOrderRepository()
+        val mockRepository = FakeOrderRepository()
+
+        val selected = selectOrderRepository(
+            baseUrl = "",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(mockRepository, selected)
+    }
+
+    @Test
+    fun configuredBaseUrlSelectsRealOrderRepository() {
+        val realRepository = FakeOrderRepository()
+        val mockRepository = FakeOrderRepository()
+
+        val selected = selectOrderRepository(
             baseUrl = "https://cafeminsu.example/",
             realFactory = { realRepository },
             mockFactory = { mockRepository },
@@ -195,4 +222,20 @@ private class FakeMenuRepository : MenuRepository {
 
     override suspend fun refreshMenus(): com.cafeminsu.core.AppResult<Unit> =
         com.cafeminsu.core.AppResult.Success(Unit)
+}
+
+private class FakeOrderRepository : OrderRepository {
+    override suspend fun createOrderFromCart(
+        cart: com.cafeminsu.domain.model.Cart,
+    ): com.cafeminsu.core.AppResult<com.cafeminsu.domain.model.Order> =
+        com.cafeminsu.core.AppResult.Failure(com.cafeminsu.core.DomainError.Unknown)
+
+    override fun observeOrder(
+        orderId: String,
+    ): kotlinx.coroutines.flow.Flow<com.cafeminsu.core.AppResult<com.cafeminsu.domain.model.Order>> =
+        kotlinx.coroutines.flow.flowOf(com.cafeminsu.core.AppResult.Failure(com.cafeminsu.core.DomainError.NotFound))
+
+    override fun observeOrderHistory():
+        kotlinx.coroutines.flow.Flow<com.cafeminsu.core.AppResult<List<com.cafeminsu.domain.model.Order>>> =
+        kotlinx.coroutines.flow.flowOf(com.cafeminsu.core.AppResult.Success(emptyList()))
 }

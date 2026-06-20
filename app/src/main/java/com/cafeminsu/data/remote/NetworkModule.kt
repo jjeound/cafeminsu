@@ -83,6 +83,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideOrderApi(retrofit: Retrofit): OrderApi =
+        retrofit.create(OrderApi::class.java)
+
+    @Provides
+    @Singleton
     @Unauthenticated
     fun provideStoreApi(
         @Unauthenticated retrofit: Retrofit,
