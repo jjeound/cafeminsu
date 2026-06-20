@@ -22,6 +22,18 @@ class MockPaymentRepositoryTest {
     }
 
     @Test
+    fun payFailsForMockFailureToken() = runBlocking {
+        val repository = MockPaymentRepository()
+
+        val result = repository.pay(
+            paymentRequest(paymentMethodToken = "tok_mock_fail"),
+        ).successData()
+
+        assertEquals(PaymentStatus.Failed, result.status)
+        assertEquals(null, result.approvedAtMillis)
+    }
+
+    @Test
     fun repeatedPayWithSameIdempotencyKeyReturnsSameResult() = runBlocking {
         val repository = MockPaymentRepository()
         val request = paymentRequest()
@@ -34,11 +46,13 @@ class MockPaymentRepositoryTest {
         assertEquals(first, status)
     }
 
-    private fun paymentRequest(): PaymentRequest =
+    private fun paymentRequest(
+        paymentMethodToken: String = "pg-token-1",
+    ): PaymentRequest =
         PaymentRequest(
             orderId = "order-1",
             amount = 12_000,
-            paymentMethodToken = "pg-token-1",
+            paymentMethodToken = paymentMethodToken,
             idempotencyKey = "idem-1",
         )
 

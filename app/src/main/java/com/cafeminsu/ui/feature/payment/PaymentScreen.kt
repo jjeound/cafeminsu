@@ -8,11 +8,10 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
-import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
@@ -23,6 +22,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cafeminsu.domain.model.CartItem
 import com.cafeminsu.domain.model.SelectedOption
@@ -30,7 +30,7 @@ import com.cafeminsu.ui.components.CafeButton
 import com.cafeminsu.ui.components.CafeButtonVariant
 import com.cafeminsu.ui.components.CafeCard
 import com.cafeminsu.ui.components.CafeCardType
-import com.cafeminsu.ui.components.CafeChip
+import com.cafeminsu.ui.components.CafeTopBar
 import com.cafeminsu.ui.components.ErrorView
 import com.cafeminsu.ui.components.LoadingView
 import com.cafeminsu.ui.theme.CafeTheme
@@ -40,6 +40,8 @@ import java.util.Locale
 @Composable
 fun PaymentRoute(
     onPaymentApproved: (String) -> Unit,
+    onPaymentFailed: () -> Unit,
+    onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: PaymentViewModel = hiltViewModel(),
 ) {
@@ -49,14 +51,17 @@ fun PaymentRoute(
         viewModel.events.collect { event ->
             when (event) {
                 is PaymentEvent.PaymentApproved -> onPaymentApproved(event.orderId)
+                is PaymentEvent.PaymentFailed -> onPaymentFailed()
             }
         }
     }
 
     PaymentScreen(
         state = state,
+        onBackClick = onBackClick,
         onSelectMethod = viewModel::onSelectMethod,
-        onPay = viewModel::onPay,
+        onPaymentSuccess = viewModel::onPaySuccess,
+        onPaymentFailure = viewModel::onPayFailure,
         onRetry = viewModel::retry,
         modifier = modifier,
     )
@@ -65,19 +70,37 @@ fun PaymentRoute(
 @Composable
 fun PaymentScreen(
     state: PaymentUiState,
+    onBackClick: () -> Unit,
     onSelectMethod: (String) -> Unit,
-    onPay: () -> Unit,
+    onPaymentSuccess: () -> Unit,
+    onPaymentFailure: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
+    val colors = CafeTheme.colors
+
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = CafeTheme.colors.canvas,
+        containerColor = colors.canvas,
+        topBar = {
+            CafeTopBar(
+                title = "결제",
+                navigationIcon = {
+                    Text(
+                        text = "‹",
+                        style = CafeTheme.typography.h2,
+                        color = colors.ink,
+                    )
+                },
+                onNavigationClick = onBackClick,
+            )
+        },
         bottomBar = {
             if (state is PaymentUiState.Content) {
                 PaymentActionBar(
                     state = state,
-                    onPay = onPay,
+                    onPaymentSuccess = onPaymentSuccess,
+                    onPaymentFailure = onPaymentFailure,
                 )
             }
         },
@@ -86,35 +109,22 @@ fun PaymentScreen(
             modifier = Modifier
                 .fillMaxSize()
                 .padding(innerPadding),
-            color = CafeTheme.colors.canvas,
-            contentColor = CafeTheme.colors.body,
+            color = colors.canvas,
+            contentColor = colors.body,
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(screenPadding()),
-                verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space5),
-            ) {
-                Text(
-                    text = "결제",
-                    style = CafeTheme.typography.h1,
-                    color = CafeTheme.colors.ink,
+            when (state) {
+                PaymentUiState.Loading -> LoadingView(modifier = Modifier.padding(screenPadding()))
+                is PaymentUiState.Content -> PaymentContent(
+                    state = state,
+                    onSelectMethod = onSelectMethod,
                 )
 
-                when (state) {
-                    PaymentUiState.Loading -> LoadingView()
-                    is PaymentUiState.Content -> PaymentContent(
-                        state = state,
-                        onSelectMethod = onSelectMethod,
-                        modifier = Modifier.weight(ContentWeight),
-                    )
-
-                    is PaymentUiState.Error -> ErrorView(
-                        message = state.message,
-                        retryable = state.retryable,
-                        onRetry = onRetry,
-                    )
-                }
+                is PaymentUiState.Error -> ErrorView(
+                    modifier = Modifier.padding(screenPadding()),
+                    message = state.message,
+                    retryable = state.retryable,
+                    onRetry = onRetry,
+                )
             }
         }
     }
@@ -124,28 +134,136 @@ fun PaymentScreen(
 private fun PaymentContent(
     state: PaymentUiState.Content,
     onSelectMethod: (String) -> Unit,
-    modifier: Modifier = Modifier,
 ) {
     LazyColumn(
-        modifier = modifier.fillMaxWidth(),
-        contentPadding = PaddingValues(bottom = CafeTheme.spacing.space6),
-        verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space5),
+        modifier = Modifier.fillMaxSize(),
+        contentPadding = contentPadding(),
+        verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space4),
     ) {
         item {
-            OrderSummaryCard(state = state)
+            PaymentInfoBanner()
         }
 
         item {
-            PaymentMethodCard(
-                methods = state.methods,
-                selectedMethodId = state.selectedMethodId,
-                enabled = state.paymentState !is PaymentProgress.Processing,
-                onSelectMethod = onSelectMethod,
-            )
+            Column(verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space3)) {
+                SectionLabel(text = "결제 수단")
+                PaymentMethodSegments(
+                    methods = state.methods,
+                    selectedMethodId = state.selectedMethodId,
+                    enabled = state.paymentState !is PaymentProgress.Processing,
+                    onSelectMethod = onSelectMethod,
+                )
+            }
+        }
+
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space3)) {
+                SectionLabel(text = "주문 요약")
+                OrderSummaryCard(state = state)
+            }
         }
 
         item {
             PaymentProgressMessage(progress = state.paymentState)
+        }
+    }
+}
+
+@Composable
+private fun PaymentInfoBanner() {
+    val colors = CafeTheme.colors
+    val spacing = CafeTheme.spacing
+
+    Surface(
+        modifier = Modifier.fillMaxWidth(),
+        shape = CafeTheme.shapes.radiusMd,
+        color = colors.accentSoft,
+        contentColor = colors.muted,
+    ) {
+        Text(
+            modifier = Modifier.padding(
+                horizontal = spacing.space3,
+                vertical = spacing.space2,
+            ),
+            text = "ⓘ PG 미연동 — Mock 성공/실패 분기로 대체",
+            style = CafeTheme.typography.caption,
+            color = colors.muted,
+        )
+    }
+}
+
+@Composable
+private fun SectionLabel(text: String) {
+    Text(
+        text = text,
+        style = CafeTheme.typography.caption,
+        color = CafeTheme.colors.muted,
+    )
+}
+
+@Composable
+private fun PaymentMethodSegments(
+    methods: List<PaymentMethodUiModel>,
+    selectedMethodId: String,
+    enabled: Boolean,
+    onSelectMethod: (String) -> Unit,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space2),
+    ) {
+        methods.forEach { method ->
+            PaymentMethodSegment(
+                text = method.label,
+                selected = method.id == selectedMethodId,
+                enabled = enabled,
+                onClick = { onSelectMethod(method.id) },
+                modifier = Modifier.weight(SegmentWeight),
+            )
+        }
+    }
+}
+
+@Composable
+private fun PaymentMethodSegment(
+    text: String,
+    selected: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    val colors = CafeTheme.colors
+    val spacing = CafeTheme.spacing
+
+    Surface(
+        onClick = onClick,
+        modifier = modifier.height(spacing.space10),
+        enabled = enabled,
+        shape = CafeTheme.shapes.radiusMd,
+        color = if (selected) colors.surfaceDark else colors.canvas,
+        contentColor = if (selected) colors.onDark else colors.ink,
+        border = if (selected) {
+            null
+        } else {
+            BorderStroke(spacing.space1 / BorderWidthDivider, colors.hairline)
+        },
+    ) {
+        Row(
+            modifier = Modifier.padding(horizontal = spacing.space2),
+            horizontalArrangement = Arrangement.Center,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = text,
+                style = CafeTheme.typography.caption,
+                color = when {
+                    !enabled -> colors.muted
+                    selected -> colors.onDark
+                    else -> colors.ink
+                },
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
         }
     }
 }
@@ -159,38 +277,28 @@ private fun OrderSummaryCard(state: PaymentUiState.Content) {
         modifier = Modifier.fillMaxWidth(),
         type = CafeCardType.Default,
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(spacing.space4)) {
+        Column(verticalArrangement = Arrangement.spacedBy(spacing.space3)) {
+            state.items.forEach { item ->
+                OrderItemRow(item = item)
+            }
+
+            HorizontalDivider(color = colors.hairline)
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Column(verticalArrangement = Arrangement.spacedBy(spacing.space1)) {
-                    Text(
-                        text = "주문번호",
-                        style = CafeTheme.typography.caption,
-                        color = colors.muted,
-                    )
-                    Text(
-                        text = state.orderNumber,
-                        style = CafeTheme.typography.h3,
-                        color = colors.ink,
-                    )
-                }
-
+                Text(
+                    text = "총 결제 금액",
+                    style = CafeTheme.typography.bodyL,
+                    color = colors.ink,
+                )
                 Text(
                     text = formatWon(state.totalAmount),
-                    style = CafeTheme.typography.h2,
-                    color = colors.primary,
+                    style = CafeTheme.typography.h3,
+                    color = colors.ink,
                 )
-            }
-
-            HorizontalDivider(color = colors.hairline)
-
-            Column(verticalArrangement = Arrangement.spacedBy(spacing.space3)) {
-                state.items.forEach { item ->
-                    OrderItemRow(item = item)
-                }
             }
         }
     }
@@ -206,67 +314,23 @@ private fun OrderItemRow(item: CartItem) {
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.Top,
     ) {
-        Column(
+        Text(
+            text = item.paymentLineText(),
             modifier = Modifier.weight(ItemTextWeight),
-            verticalArrangement = Arrangement.spacedBy(spacing.space1),
-        ) {
-            Text(
-                text = "${item.name} ${item.quantity}개",
-                style = CafeTheme.typography.bodyL,
-                color = colors.ink,
-            )
-            Text(
-                text = item.selectedOptions.summaryText(),
-                style = CafeTheme.typography.caption,
-                color = colors.muted,
-            )
-        }
+            style = CafeTheme.typography.body,
+            color = colors.body,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+        )
 
         Spacer(modifier = Modifier.width(spacing.space3))
 
         Text(
             text = formatWon(item.unitPrice * item.quantity),
             style = CafeTheme.typography.bodyL,
-            color = colors.body,
+            color = colors.ink,
+            maxLines = 1,
         )
-    }
-}
-
-@Composable
-private fun PaymentMethodCard(
-    methods: List<PaymentMethodUiModel>,
-    selectedMethodId: String,
-    enabled: Boolean,
-    onSelectMethod: (String) -> Unit,
-) {
-    val colors = CafeTheme.colors
-    val spacing = CafeTheme.spacing
-
-    CafeCard(
-        modifier = Modifier.fillMaxWidth(),
-        type = CafeCardType.Info,
-    ) {
-        Column(verticalArrangement = Arrangement.spacedBy(spacing.space4)) {
-            Text(
-                text = "결제수단",
-                style = CafeTheme.typography.h3,
-                color = colors.ink,
-            )
-
-            Row(
-                horizontalArrangement = Arrangement.spacedBy(spacing.space2),
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                methods.forEach { method ->
-                    CafeChip(
-                        text = method.label,
-                        selected = method.id == selectedMethodId,
-                        onClick = { onSelectMethod(method.id) },
-                        enabled = enabled,
-                    )
-                }
-            }
-        }
     }
 }
 
@@ -322,7 +386,7 @@ private fun PaymentStateCard(
         border = BorderStroke(spacing.space1 / BorderWidthDivider, borderColor),
     ) {
         Column(
-            modifier = Modifier.padding(spacing.space5),
+            modifier = Modifier.padding(spacing.space4),
             verticalArrangement = Arrangement.spacedBy(spacing.space2),
         ) {
             Text(
@@ -342,79 +406,73 @@ private fun PaymentStateCard(
 @Composable
 private fun PaymentActionBar(
     state: PaymentUiState.Content,
-    onPay: () -> Unit,
+    onPaymentSuccess: () -> Unit,
+    onPaymentFailure: () -> Unit,
 ) {
     val colors = CafeTheme.colors
     val spacing = CafeTheme.spacing
-    val processing = state.paymentState is PaymentProgress.Processing
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = colors.canvas,
         contentColor = colors.body,
-        border = BorderStroke(spacing.space1 / BorderWidthDivider, colors.hairline),
     ) {
-        Column(
+        Row(
             modifier = Modifier.padding(
                 horizontal = spacing.space5,
                 vertical = spacing.space4,
             ),
-            verticalArrangement = Arrangement.spacedBy(spacing.space3),
+            horizontalArrangement = Arrangement.spacedBy(spacing.space2),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                Text(
-                    text = "결제 금액",
-                    style = CafeTheme.typography.caption,
-                    color = colors.muted,
-                )
-                Text(
-                    text = formatWon(state.totalAmount),
-                    style = CafeTheme.typography.h3,
-                    color = colors.primary,
-                )
-            }
-
             CafeButton(
-                text = if (processing) "결제 처리 중" else "${formatWon(state.totalAmount)} 결제",
-                onClick = onPay,
-                modifier = Modifier.fillMaxWidth(),
+                text = "결제 실패",
+                onClick = onPaymentFailure,
+                modifier = Modifier.weight(ActionButtonWeight),
+                variant = CafeButtonVariant.Secondary,
+                enabled = state.isPayEnabled,
+            )
+            CafeButton(
+                text = "결제 성공",
+                onClick = onPaymentSuccess,
+                modifier = Modifier.weight(ActionButtonWeight),
                 variant = CafeButtonVariant.Primary,
                 enabled = state.isPayEnabled,
-                icon = if (processing) {
-                    {
-                        CircularProgressIndicator(
-                            modifier = Modifier.size(spacing.space5),
-                            color = colors.muted,
-                            strokeWidth = spacing.space1 / ProgressStrokeDivider,
-                        )
-                    }
-                } else {
-                    null
-                },
             )
         }
     }
 }
 
 @Composable
+private fun contentPadding(): PaddingValues =
+    PaddingValues(
+        start = CafeTheme.spacing.space5,
+        top = CafeTheme.spacing.space5,
+        end = CafeTheme.spacing.space5,
+        bottom = CafeTheme.spacing.space8,
+    )
+
+@Composable
 private fun screenPadding(): PaddingValues =
     PaddingValues(
         start = CafeTheme.spacing.space5,
-        top = CafeTheme.spacing.space6,
+        top = CafeTheme.spacing.space5,
         end = CafeTheme.spacing.space5,
         bottom = CafeTheme.spacing.space6,
     )
 
-private fun List<SelectedOption>.summaryText(): String =
-    if (isEmpty()) {
-        "기본 옵션"
+private fun CartItem.paymentLineText(): String {
+    val options = selectedOptions.paymentSummary()
+    val nameWithOptions = if (options.isBlank()) {
+        name
     } else {
-        joinToString(separator = ", ") { option -> option.name }
+        "$name ($options)"
     }
+    return "$nameWithOptions ✕ $quantity"
+}
+
+private fun List<SelectedOption>.paymentSummary(): String =
+    joinToString(separator = "/") { option -> option.name }
 
 private fun formatWon(amount: Int): String =
     "${NumberFormat.getNumberInstance(Locale.KOREA).format(amount)}원"
@@ -425,7 +483,7 @@ private enum class PaymentMessageTone {
     Error,
 }
 
+private const val ActionButtonWeight = 1f
 private const val BorderWidthDivider = 4
-private const val ProgressStrokeDivider = 2
-private const val ContentWeight = 1f
 private const val ItemTextWeight = 1f
+private const val SegmentWeight = 1f

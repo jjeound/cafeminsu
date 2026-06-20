@@ -45,16 +45,21 @@ sealed interface PaymentProgress {
 
 sealed interface PaymentEvent {
     data class PaymentApproved(val orderId: String) : PaymentEvent
+    data class PaymentFailed(val orderId: String) : PaymentEvent
 }
 
 fun defaultPaymentMethods(): List<PaymentMethodUiModel> =
     listOf(
         PaymentMethodUiModel(
-            id = "minsupay",
-            label = "민수페이",
+            id = "credit-card",
+            label = "신용카드",
         ),
         PaymentMethodUiModel(
-            id = "registered-card",
-            label = "카드(등록됨)",
+            id = "simple-pay",
+            label = "간편결제",
+        ),
+        PaymentMethodUiModel(
+            id = "coupon",
+            label = "쿠폰",
         ),
     )

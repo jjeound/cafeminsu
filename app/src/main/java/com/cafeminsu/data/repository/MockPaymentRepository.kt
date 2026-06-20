@@ -32,11 +32,12 @@ class MockPaymentRepository(
             }
         }
 
+        val isMockFailure = request.paymentMethodToken == MockFailureToken
         val payment = PaymentResult(
             orderId = request.orderId,
             paymentId = "payment-${paymentsByIdempotencyKey.size + 1}",
-            status = PaymentStatus.Approved,
-            approvedAtMillis = nowMillis(),
+            status = if (isMockFailure) PaymentStatus.Failed else PaymentStatus.Approved,
+            approvedAtMillis = if (isMockFailure) null else nowMillis(),
         )
         paymentsByIdempotencyKey[request.idempotencyKey] = payment
         return AppResult.Success(payment)
@@ -62,4 +63,8 @@ class MockPaymentRepository(
             request.idempotencyKey.isBlank() -> DomainError.Validation("idempotencyKey")
             else -> null
         }
+
+    private companion object {
+        const val MockFailureToken = "tok_mock_fail"
+    }
 }

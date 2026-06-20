@@ -16,10 +16,13 @@
     {
       "step": 1,
       "name": "pay-redesign",
-      "status": "pending",
+      "status": "completed",
+      "summary": "PAY 화면을 정보 배너, 결제수단 3분할, 주문 요약, Mock 성공/실패 버튼 구조로 재설계하고 결제 실패 라우팅을 연결함.",
       "images": [
         "docs/screens/주문 - 07(결제).png"
-      ]
+      ],
+      "started_at": "2026-06-20T14:15:50+0900",
+      "completed_at": "2026-06-20T14:22:14+0900"
     },
     {
       "step": 2,

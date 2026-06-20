@@ -166,24 +166,29 @@ class PaymentViewModelTest {
     }
 
     @Test
-    fun failedPaymentDoesNotEmitSuccessEvent() = runTest {
+    fun failedPaymentEmitsFailureEventWithoutStampGrant() = runTest {
+        val rewardRepository = FakePaymentRewardRepository()
         val paymentRepository = FakePaymentRepository(
             payResults = mutableListOf(
                 AppResult.Success(paymentResult(status = PaymentStatus.Failed)),
             ),
         )
-        val viewModel = viewModel(paymentRepository = paymentRepository)
+        val viewModel = viewModel(
+            paymentRepository = paymentRepository,
+            rewardRepository = rewardRepository,
+        )
 
         viewModel.uiState.test {
             awaitContent()
 
             viewModel.events.test {
-                viewModel.onPay()
+                viewModel.onPayFailure()
 
                 val failed = awaitContentWithProgress<PaymentProgress.Failed>()
                 val progress = failed.paymentState as PaymentProgress.Failed
                 assertTrue(progress.message.isNotBlank())
-                expectNoEvents()
+                assertEquals(PaymentEvent.PaymentFailed("order-1"), awaitItem())
+                assertTrue(rewardRepository.grantOrderIds.isEmpty())
 
                 cancelAndIgnoreRemainingEvents()
             }

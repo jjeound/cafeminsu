@@ -2,12 +2,15 @@ package com.cafeminsu.ui.feature.payment
 
 import androidx.compose.ui.test.assertCountEquals
 import androidx.compose.ui.test.assertIsDisplayed
+import androidx.compose.ui.test.assertIsNotEnabled
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import com.cafeminsu.domain.model.CartItem
 import com.cafeminsu.domain.model.SelectedOption
 import com.cafeminsu.ui.theme.CafeTheme
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
@@ -16,42 +19,80 @@ class PaymentScreenTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun showsOrderAmountAndPaymentMethodsWithoutTokenText() {
+    fun showsPayRedesignContentWithoutTokenText() {
         composeRule.setContent {
             CafeTheme {
                 PaymentScreen(
                     state = contentState(),
+                    onBackClick = {},
                     onSelectMethod = {},
-                    onPay = {},
+                    onPaymentSuccess = {},
+                    onPaymentFailure = {},
                     onRetry = {},
                 )
             }
         }
 
         composeRule.onNodeWithText("결제").assertIsDisplayed()
-        composeRule.onNodeWithText("M001").assertIsDisplayed()
-        composeRule.onNodeWithText("12,000원 결제").assertIsDisplayed()
-        composeRule.onNodeWithText("민수페이").assertIsDisplayed()
-        composeRule.onNodeWithText("카드(등록됨)").assertIsDisplayed()
-        composeRule.onAllNodesWithText("tok_minsupay").assertCountEquals(0)
-        composeRule.onAllNodesWithText("tok_card_demo").assertCountEquals(0)
+        composeRule.onNodeWithText("ⓘ PG 미연동 — Mock 성공/실패 분기로 대체").assertIsDisplayed()
+        composeRule.onNodeWithText("결제 수단").assertIsDisplayed()
+        composeRule.onNodeWithText("신용카드").assertIsDisplayed()
+        composeRule.onNodeWithText("간편결제").assertIsDisplayed()
+        composeRule.onNodeWithText("쿠폰").assertIsDisplayed()
+        composeRule.onNodeWithText("주문 요약").assertIsDisplayed()
+        composeRule.onNodeWithText("민수 라떼 (ICE/Reg) ✕ 2").assertIsDisplayed()
+        composeRule.onNodeWithText("총 결제 금액").assertIsDisplayed()
+        composeRule.onAllNodesWithText("12,000원").assertCountEquals(2)
+        composeRule.onNodeWithText("결제 실패").assertIsDisplayed()
+        composeRule.onNodeWithText("결제 성공").assertIsDisplayed()
+        composeRule.onAllNodesWithText("tok_credit_card_mock").assertCountEquals(0)
+        composeRule.onAllNodesWithText("tok_simple_pay_mock").assertCountEquals(0)
     }
 
     @Test
-    fun showsProcessingCopyAndDisablesOptimisticSuccess() {
+    fun bottomMockButtonsInvokeSeparatePaymentBranches() {
+        var successClicks = 0
+        var failureClicks = 0
+
         composeRule.setContent {
             CafeTheme {
                 PaymentScreen(
-                    state = contentState(paymentState = PaymentProgress.Processing),
+                    state = contentState(),
+                    onBackClick = {},
                     onSelectMethod = {},
-                    onPay = {},
+                    onPaymentSuccess = { successClicks += 1 },
+                    onPaymentFailure = { failureClicks += 1 },
                     onRetry = {},
                 )
             }
         }
 
-        composeRule.onAllNodesWithText("결제 처리 중").assertCountEquals(2)
+        composeRule.onNodeWithText("결제 실패").performClick()
+        composeRule.onNodeWithText("결제 성공").performClick()
+
+        assertEquals(1, failureClicks)
+        assertEquals(1, successClicks)
+    }
+
+    @Test
+    fun showsProcessingCopyAndDisablesMockBranches() {
+        composeRule.setContent {
+            CafeTheme {
+                PaymentScreen(
+                    state = contentState(paymentState = PaymentProgress.Processing),
+                    onBackClick = {},
+                    onSelectMethod = {},
+                    onPaymentSuccess = {},
+                    onPaymentFailure = {},
+                    onRetry = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("결제 처리 중").assertIsDisplayed()
         composeRule.onNodeWithText("승인 결과를 확인하고 있어요.").assertIsDisplayed()
+        composeRule.onNodeWithText("결제 실패").assertIsNotEnabled()
+        composeRule.onNodeWithText("결제 성공").assertIsNotEnabled()
     }
 
     private fun contentState(
@@ -68,9 +109,15 @@ class PaymentScreenTest {
                     unitPrice = 6_000,
                     selectedOptions = listOf(
                         SelectedOption(
+                            groupId = "temperature",
+                            optionId = "ice",
+                            name = "ICE",
+                            extraPrice = 0,
+                        ),
+                        SelectedOption(
                             groupId = "size",
-                            optionId = "size-large",
-                            name = "라지",
+                            optionId = "regular",
+                            name = "Reg",
                             extraPrice = 0,
                         ),
                     ),

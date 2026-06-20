@@ -258,6 +258,12 @@ fun AppNavHost(
                             launchSingleTop = true
                         }
                     },
+                    onPaymentFailed = {
+                        navController.navigate(Routes.ORDER_FAIL) {
+                            launchSingleTop = true
+                        }
+                    },
+                    onBackClick = { navController.popBackStack() },
                 )
             }
             composable(

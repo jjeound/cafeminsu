@@ -62,6 +62,18 @@ class PaymentViewModel @Inject constructor(
     }
 
     fun onPay() {
+        onPaySuccess()
+    }
+
+    fun onPaySuccess() {
+        payWithMockOutcome(MockPaymentOutcome.Success)
+    }
+
+    fun onPayFailure() {
+        payWithMockOutcome(MockPaymentOutcome.Failure)
+    }
+
+    private fun payWithMockOutcome(outcome: MockPaymentOutcome) {
         if (paymentInProgress) {
             return
         }
@@ -80,7 +92,10 @@ class PaymentViewModel @Inject constructor(
             val request = PaymentRequest(
                 orderId = content.orderId,
                 amount = content.totalAmount,
-                paymentMethodToken = method.token,
+                paymentMethodToken = when (outcome) {
+                    MockPaymentOutcome.Success -> method.token
+                    MockPaymentOutcome.Failure -> MockFailureToken
+                },
                 idempotencyKey = key,
             )
 
@@ -160,12 +175,14 @@ class PaymentViewModel @Inject constructor(
 
         when (result.status) {
             PaymentStatus.Approved -> approvePayment(request.orderId)
-            PaymentStatus.Failed -> finishPayment(
-                PaymentProgress.Failed("결제가 승인되지 않았어요. 다른 결제수단으로 다시 시도해 주세요"),
+            PaymentStatus.Failed -> failPayment(
+                orderId = request.orderId,
+                progress = PaymentProgress.Failed("결제가 승인되지 않았어요. 다른 결제수단으로 다시 시도해 주세요"),
             )
 
-            PaymentStatus.Cancelled -> finishPayment(
-                PaymentProgress.Failed("결제가 취소됐어요. 다시 시도해 주세요"),
+            PaymentStatus.Cancelled -> failPayment(
+                orderId = request.orderId,
+                progress = PaymentProgress.Failed("결제가 취소됐어요. 다시 시도해 주세요"),
             )
 
             PaymentStatus.Pending,
@@ -209,6 +226,14 @@ class PaymentViewModel @Inject constructor(
         finishPayment(PaymentProgress.Approved)
         grantStampForApprovedOrder(approvedOrderId)
         _events.emit(PaymentEvent.PaymentApproved(approvedOrderId))
+    }
+
+    private suspend fun failPayment(
+        orderId: String,
+        progress: PaymentProgress.Failed,
+    ) {
+        finishPayment(progress)
+        _events.emit(PaymentEvent.PaymentFailed(orderId))
     }
 
     private suspend fun grantStampForApprovedOrder(orderId: String) {
@@ -323,13 +348,24 @@ private data class PaymentMethod(
     val token: String,
 )
 
+private enum class MockPaymentOutcome {
+    Success,
+    Failure,
+}
+
 private val paymentMethods = listOf(
     PaymentMethod(
-        id = "minsupay",
-        token = "tok_minsupay",
+        id = "credit-card",
+        token = "tok_credit_card_mock",
     ),
     PaymentMethod(
-        id = "registered-card",
-        token = "tok_card_demo",
+        id = "simple-pay",
+        token = "tok_simple_pay_mock",
+    ),
+    PaymentMethod(
+        id = "coupon",
+        token = "tok_coupon_mock",
     ),
 )
+
+private const val MockFailureToken = "tok_mock_fail"
