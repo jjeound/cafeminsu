@@ -23,7 +23,7 @@
         "docs/screens/logout confrim dialog.png"
       ],
       "started_at": "2026-06-20T19:28:53+0900",
-      "completed_at": "2026-06-20T19:37:09+0900",
+      "completed_at": "2026-06-20T19:38:08+0900",
       "summary": "Loading/Error 공통 상태 화면과 로그아웃 확인 다이얼로그를 ST_LOADING/ST_NETERR/ST_LOGOUT 디자인에 맞춰 정렬"
     }
   ],
