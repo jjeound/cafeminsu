@@ -95,8 +95,9 @@
     {
       "dir": "13-redesign-cart-pay",
       "name": "redesign-cart-pay",
-      "status": "pending",
-      "summary": "고객 화면 재설계 — 장바구니(CART) + 결제(PAY) + 주문 성공/실패(ORDER_OK/ORDER_FAIL)"
+      "status": "completed",
+      "summary": "고객 화면 재설계 — 장바구니(CART) + 결제(PAY) + 주문 성공/실패(ORDER_OK/ORDER_FAIL)",
+      "completed_at": "2026-06-20T14:36:03+0900"
     },
     {
       "dir": "14-redesign-my",
