@@ -40,7 +40,7 @@
       "status": "completed",
       "started_at": "2026-06-20T21:47:14+0900",
       "summary": "PaymentApi·PgClient·RealPaymentRepository를 추가해 prepare→Mock PG authorize→verify와 payment detail 상태확정, merchantUid 멱등 캐시, BASE_URL Mock 폴백을 구현했다.",
-      "completed_at": "2026-06-20T21:54:50+0900"
+      "completed_at": "2026-06-20T21:55:59+0900"
     }
   ],
   "created_at": "2026-06-20T21:05:05+0900"
