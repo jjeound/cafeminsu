@@ -23,6 +23,8 @@ sealed interface VoiceUiState {
         override val transcript: String,
         val items: List<ParsedOrderItem>,
         val unmatched: List<String>,
+        val estimatedTotalAmount: Int = 0,
+        val confidencePercent: Int = 0,
     ) : VoiceUiState
 
     data class AddedToCart(

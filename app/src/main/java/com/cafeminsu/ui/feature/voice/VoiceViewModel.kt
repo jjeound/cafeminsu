@@ -5,9 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.Cart
+import com.cafeminsu.domain.model.MenuItem
 import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.MenuRepository
 import com.cafeminsu.domain.voice.ParseVoiceOrderUseCase
+import com.cafeminsu.domain.voice.ParsedOrder
 import com.cafeminsu.domain.voice.ParsedOrderItem
 import com.cafeminsu.domain.voice.VoiceRecognitionError
 import com.cafeminsu.domain.voice.VoiceRecognitionEvent
@@ -141,6 +143,8 @@ class VoiceViewModel @Inject constructor(
                     transcript = transcript,
                     items = parsed.items,
                     unmatched = parsed.unmatched,
+                    estimatedTotalAmount = parsed.items.estimatedTotalAmount(menusResult.data),
+                    confidencePercent = parsed.confidencePercent(),
                 )
             }
 
@@ -209,6 +213,23 @@ class VoiceViewModel @Inject constructor(
             -> "음성 인식 중 문제가 생겼어요. 다시 시도해 주세요"
         }
 
+    private fun List<ParsedOrderItem>.estimatedTotalAmount(menu: List<MenuItem>): Int {
+        val menuById = menu.associateBy { item -> item.id }
+
+        return sumOf { item ->
+            val menuItem = menuById[item.menuItemId] ?: return@sumOf 0
+            val selectedExtraPrice = item.selectedOptions.sumOf { option -> option.extraPrice }
+            (menuItem.basePrice + selectedExtraPrice) * item.quantity
+        }
+    }
+
+    private fun ParsedOrder.confidencePercent(): Int =
+        when {
+            items.isEmpty() -> EmptyConfidencePercent
+            unmatched.isEmpty() -> FullConfidencePercent
+            else -> PartialConfidencePercent
+        }
+
     override fun onCleared() {
         voiceRecognizer.destroy()
         super.onCleared()
@@ -216,5 +237,8 @@ class VoiceViewModel @Inject constructor(
 
     private companion object {
         const val EventBufferCapacity = 1
+        const val EmptyConfidencePercent = 0
+        const val PartialConfidencePercent = 82
+        const val FullConfidencePercent = 97
     }
 }

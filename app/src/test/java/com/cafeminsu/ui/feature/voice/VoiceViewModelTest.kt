@@ -74,6 +74,8 @@ class VoiceViewModelTest {
             assertEquals("아메리카노 두 잔", parsed.transcript)
             assertEquals("americano", parsed.items.single().menuItemId)
             assertEquals(2, parsed.items.single().quantity)
+            assertEquals(8_000, parsed.estimatedTotalAmount)
+            assertEquals(97, parsed.confidencePercent)
             assertTrue(parsed.unmatched.isEmpty())
 
             cancelAndIgnoreRemainingEvents()
