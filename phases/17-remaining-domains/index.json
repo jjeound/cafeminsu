@@ -13,7 +13,10 @@
     {
       "step": 1,
       "name": "gift-real",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-06-21T15:12:46+0900",
+      "summary": "기프티콘 구매→공유 링크 발급 RealGiftRepository와 BASE_URL Mock 폴백 DI를 추가했다.",
+      "completed_at": "2026-06-21T15:17:58+0900"
     },
     {
       "step": 2,

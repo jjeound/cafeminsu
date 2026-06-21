@@ -50,4 +50,38 @@ class GifticonApiTest {
         assertEquals(0, response.balanceAfter)
         assertEquals("USED", response.status)
     }
+
+    @Test
+    fun gifticonPurchaseDtoKeepsOpenApiRequestAndResponseFields() {
+        val request = GifticonPurchaseReq(
+            amount = 10_000,
+            receiverId = 42,
+            receiverPhone = null,
+            message = "고마워",
+        )
+        val response = GifticonPurchaseRes(
+            gifticonId = 55,
+            qrCode = "qr-value",
+            merchantUid = "merchant-1",
+        )
+
+        assertEquals(10_000, request.amount)
+        assertEquals(42L, request.receiverId)
+        assertEquals(null, request.receiverPhone)
+        assertEquals("고마워", request.message)
+        assertEquals(55L, response.gifticonId)
+        assertEquals("qr-value", response.qrCode)
+        assertEquals("merchant-1", response.merchantUid)
+    }
+
+    @Test
+    fun gifticonShareDtoKeepsOpenApiResultFields() {
+        val response = GifticonShareRes(
+            shareLink = "https://cafeminsu.example/gift/secret",
+            deepLink = "cafeminsu://gift/secret",
+        )
+
+        assertEquals("https://cafeminsu.example/gift/secret", response.shareLink)
+        assertEquals("cafeminsu://gift/secret", response.deepLink)
+    }
 }

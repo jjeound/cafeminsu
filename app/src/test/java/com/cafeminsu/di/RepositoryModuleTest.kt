@@ -10,6 +10,7 @@ import com.cafeminsu.data.repository.MockOwnerMenuRepository
 import com.cafeminsu.data.repository.MockOwnerOrderRepository
 import com.cafeminsu.data.repository.MockSessionRepository
 import com.cafeminsu.data.repository.MockStoreRepository
+import com.cafeminsu.data.repository.RealGiftRepository
 import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.CouponRepository
 import com.cafeminsu.domain.repository.GiftRepository
@@ -42,7 +43,6 @@ class RepositoryModuleTest {
             MockOwnerMenuRepository::class.java,
         )
         assertBinding("bindCouponRepository", CouponRepository::class.java, MockCouponRepository::class.java)
-        assertBinding("bindGiftRepository", GiftRepository::class.java, MockGiftRepository::class.java)
         assertBinding(
             "bindNotificationRepository",
             NotificationRepository::class.java,
@@ -163,6 +163,47 @@ class RepositoryModuleTest {
     }
 
     @Test
+    fun blankBaseUrlSelectsMockGiftRepositoryFallback() {
+        val realRepository = FakeGiftRepository()
+        val mockRepository = FakeGiftRepository()
+
+        val selected = selectGiftRepository(
+            baseUrl = "",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(mockRepository, selected)
+    }
+
+    @Test
+    fun configuredBaseUrlSelectsRealGiftRepository() {
+        val realRepository = FakeGiftRepository()
+        val mockRepository = FakeGiftRepository()
+
+        val selected = selectGiftRepository(
+            baseUrl = "https://cafeminsu.example/",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(realRepository, selected)
+    }
+
+    @Test
+    fun repositoryModuleProvidesGiftRepositoryWithRealAndMockProviders() {
+        val method = RepositoryModule.Companion::class.java.getDeclaredMethod(
+            "provideGiftRepository",
+            javax.inject.Provider::class.java,
+            javax.inject.Provider::class.java,
+        )
+
+        assertEquals(GiftRepository::class.java, method.returnType)
+        assertEquals(RealGiftRepository::class.java, method.genericParameterTypes.first().providerArgument())
+        assertEquals(MockGiftRepository::class.java, method.genericParameterTypes.last().providerArgument())
+    }
+
+    @Test
     fun blankBaseUrlSelectsMockStoreRepositoryFallback() {
         val realRepository = FakeStoreRepository()
         val mockRepository = FakeStoreRepository()
@@ -228,6 +269,9 @@ class RepositoryModuleTest {
         assertTrue(Modifier.isAbstract(method.modifiers))
         assertEquals(repositoryType, method.returnType)
     }
+
+    private fun java.lang.reflect.Type.providerArgument(): Class<*> =
+        (this as java.lang.reflect.ParameterizedType).actualTypeArguments.single() as Class<*>
 }
 
 private class FakeSessionRepository : SessionRepository {
@@ -344,4 +388,16 @@ private class FakeRewardRepository : RewardRepository {
         id: String,
     ): com.cafeminsu.core.AppResult<com.cafeminsu.domain.model.Gifticon> =
         com.cafeminsu.core.AppResult.Failure(com.cafeminsu.core.DomainError.NotFound)
+}
+
+private class FakeGiftRepository : GiftRepository {
+    override suspend fun sendGift(
+        request: com.cafeminsu.domain.model.GiftSendRequest,
+    ): com.cafeminsu.core.AppResult<com.cafeminsu.domain.model.GiftSendResult> =
+        com.cafeminsu.core.AppResult.Success(
+            com.cafeminsu.domain.model.GiftSendResult(
+                giftId = "gift",
+                sentAtMillis = 0L,
+            ),
+        )
 }

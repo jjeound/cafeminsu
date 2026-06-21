@@ -15,6 +15,7 @@ import com.cafeminsu.data.repository.MockRewardRepository
 import com.cafeminsu.data.repository.MockSalesRepository
 import com.cafeminsu.data.repository.MockSessionRepository
 import com.cafeminsu.data.repository.MockStoreRepository
+import com.cafeminsu.data.repository.RealGiftRepository
 import com.cafeminsu.data.repository.RealMenuRepository
 import com.cafeminsu.data.repository.RealOrderRepository
 import com.cafeminsu.data.repository.RealPaymentRepository
@@ -71,13 +72,21 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindGiftRepository(repository: MockGiftRepository): GiftRepository
-
-    @Binds
-    @Singleton
     abstract fun bindNotificationRepository(repository: MockNotificationRepository): NotificationRepository
 
     companion object {
+        @Provides
+        @Singleton
+        fun provideGiftRepository(
+            realRepository: Provider<RealGiftRepository>,
+            mockRepository: Provider<MockGiftRepository>,
+        ): GiftRepository =
+            selectGiftRepository(
+                baseUrl = com.cafeminsu.BuildConfig.BASE_URL,
+                realFactory = { realRepository.get() },
+                mockFactory = { mockRepository.get() },
+            )
+
         @Provides
         @Singleton
         fun provideMenuRepository(
@@ -212,6 +221,17 @@ internal fun selectRewardRepository(
     realFactory: () -> RewardRepository,
     mockFactory: () -> RewardRepository,
 ): RewardRepository =
+    if (baseUrl.isNotBlank()) {
+        realFactory()
+    } else {
+        mockFactory()
+    }
+
+internal fun selectGiftRepository(
+    baseUrl: String,
+    realFactory: () -> GiftRepository,
+    mockFactory: () -> GiftRepository,
+): GiftRepository =
     if (baseUrl.isNotBlank()) {
         realFactory()
     } else {
