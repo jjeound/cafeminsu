@@ -57,6 +57,7 @@ import com.cafeminsu.ui.feature.order.OrderFailureDialog
 import com.cafeminsu.ui.feature.order.OrderResultRoute
 import com.cafeminsu.ui.feature.owner.home.OwnerHomeRoute
 import com.cafeminsu.ui.feature.owner.login.OwnerLoginRoute
+import com.cafeminsu.ui.feature.owner.menu.OwnerMenuAddRoute
 import com.cafeminsu.ui.feature.owner.menu.OwnerMenuRoute
 import com.cafeminsu.ui.feature.owner.orders.OwnerOrdersRoute
 import com.cafeminsu.ui.feature.owner.sales.OwnerSalesRoute
@@ -214,7 +215,15 @@ fun AppNavHost(
                 OwnerOrdersRoute()
             }
             composable(Routes.OWNER_MENU) {
-                OwnerMenuRoute()
+                OwnerMenuRoute(
+                    onAddMenuClick = { navController.navigate(Routes.OWNER_MENU_ADD) },
+                )
+            }
+            composable(Routes.OWNER_MENU_ADD) {
+                OwnerMenuAddRoute(
+                    onSaved = { navController.popBackStack() },
+                    onBack = { navController.popBackStack() },
+                )
             }
             composable(Routes.OWNER_SALES) {
                 OwnerSalesRoute()

@@ -3,6 +3,7 @@ package com.cafeminsu.domain.repository
 import app.cash.turbine.test
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.domain.model.MenuItem
+import com.cafeminsu.domain.model.NewMenuDraft
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
@@ -49,6 +50,31 @@ class OwnerMenuRepositoryTest {
         }
     }
 
+    @Test
+    fun ownerMenuRepositoryContractAddsMenu() = runBlocking {
+        val repository = FakeOwnerMenuRepository(initialMenus = emptyList())
+
+        repository.observeManagedMenus("coffee").test {
+            assertTrue(awaitItem().successData().isEmpty())
+
+            val created = repository.addMenu(
+                NewMenuDraft(
+                    name = "콜드브루",
+                    categoryId = "coffee",
+                    basePrice = 5_500,
+                    description = "",
+                    imageUrl = null,
+                    isSoldOut = false,
+                ),
+            ).successData()
+
+            assertEquals("콜드브루", created.name)
+            assertEquals(listOf("콜드브루"), awaitItem().successData().map { it.name })
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     @Suppress("UNCHECKED_CAST")
     private fun <T> AppResult<T>.successData(): T {
         assertTrue(this is AppResult.Success<*>)
@@ -84,6 +110,22 @@ private class FakeOwnerMenuRepository(
             if (menu.id == menuItemId) updated else menu
         }
         return AppResult.Success(updated)
+    }
+
+    override suspend fun addMenu(draft: NewMenuDraft): AppResult<MenuItem> {
+        val created = MenuItem(
+            id = "menu-${menus.value.size}",
+            categoryId = draft.categoryId,
+            name = draft.name,
+            description = draft.description,
+            basePrice = draft.basePrice,
+            imageUrl = draft.imageUrl,
+            isSoldOut = draft.isSoldOut,
+            options = emptyList(),
+            isVisible = true,
+        )
+        menus.value = menus.value + created
+        return AppResult.Success(created)
     }
 }
 

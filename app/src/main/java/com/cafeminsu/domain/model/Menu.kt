@@ -33,3 +33,12 @@ data class MenuOption(
     val extraPrice: Int,
     val isAvailable: Boolean,
 )
+
+data class NewMenuDraft(
+    val name: String,
+    val categoryId: String,
+    val basePrice: Int,
+    val description: String,
+    val imageUrl: String?,
+    val isSoldOut: Boolean,
+)

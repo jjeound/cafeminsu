@@ -31,6 +31,7 @@ object Routes {
     const val OWNER_HOME = "owner_home"
     const val OWNER_ORDERS = "owner_orders"
     const val OWNER_MENU = "owner_menu"
+    const val OWNER_MENU_ADD = "owner_menu_add"
     const val OWNER_SALES = "owner_sales"
 
     const val PAYMENT_ORDER_ID = PAY_ORDER_ID

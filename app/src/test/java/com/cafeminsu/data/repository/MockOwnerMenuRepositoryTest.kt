@@ -4,9 +4,11 @@ import app.cash.turbine.test
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.MenuItem
+import com.cafeminsu.domain.model.NewMenuDraft
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
+import org.junit.Assert.assertNotNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -78,6 +80,60 @@ class MockOwnerMenuRepositoryTest {
 
         assertEquals(AppResult.Failure(DomainError.NotFound), soldOutResult)
         assertEquals(AppResult.Failure(DomainError.NotFound), visibleResult)
+    }
+
+    @Test
+    fun addMenuInsertsVisibleMenuIntoObservedMenus() = runBlocking {
+        val repository = MockOwnerMenuRepository(menuItems = emptyList())
+
+        repository.observeManagedMenus("dessert").test {
+            assertTrue(awaitItem().successData().isEmpty())
+
+            val result = repository.addMenu(
+                NewMenuDraft(
+                    name = "티라미수",
+                    categoryId = "dessert",
+                    basePrice = 6_500,
+                    description = "마스카포네 듬뿍",
+                    imageUrl = "content://img/1",
+                    isSoldOut = false,
+                ),
+            )
+
+            val created = result.successData()
+            assertNotNull(created.id)
+            assertTrue(created.id.isNotBlank())
+            assertEquals("티라미수", created.name)
+            assertEquals("dessert", created.categoryId)
+            assertEquals(6_500, created.basePrice)
+            assertEquals("마스카포네 듬뿍", created.description)
+            assertEquals("content://img/1", created.imageUrl)
+            assertFalse(created.isSoldOut)
+            assertTrue(created.isVisible)
+
+            assertEquals(listOf("티라미수"), awaitItem().successData().map { it.name })
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun addMenuRespectsSoldOutDraft() = runBlocking {
+        val repository = MockOwnerMenuRepository(menuItems = emptyList())
+
+        val created = repository.addMenu(
+            NewMenuDraft(
+                name = "콜드브루",
+                categoryId = "coffee",
+                basePrice = 5_500,
+                description = "",
+                imageUrl = null,
+                isSoldOut = true,
+            ),
+        ).successData()
+
+        assertTrue(created.isSoldOut)
+        assertTrue(created.options.isEmpty())
     }
 
     @Suppress("UNCHECKED_CAST")

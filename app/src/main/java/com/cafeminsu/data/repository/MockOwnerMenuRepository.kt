@@ -3,7 +3,9 @@ package com.cafeminsu.data.repository
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.MenuItem
+import com.cafeminsu.domain.model.NewMenuDraft
 import com.cafeminsu.domain.repository.OwnerMenuRepository
+import java.util.UUID
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.flow.Flow
@@ -46,6 +48,22 @@ class MockOwnerMenuRepository(
             if (current.id == menuItemId) updated else current
         }
         return AppResult.Success(updated)
+    }
+
+    override suspend fun addMenu(draft: NewMenuDraft): AppResult<MenuItem> {
+        val created = MenuItem(
+            id = "menu-${UUID.randomUUID()}",
+            categoryId = draft.categoryId,
+            name = draft.name,
+            description = draft.description,
+            basePrice = draft.basePrice,
+            imageUrl = draft.imageUrl,
+            isSoldOut = draft.isSoldOut,
+            options = emptyList(),
+            isVisible = true,
+        )
+        menuState.value = menuState.value + created
+        return AppResult.Success(created)
     }
 }
 

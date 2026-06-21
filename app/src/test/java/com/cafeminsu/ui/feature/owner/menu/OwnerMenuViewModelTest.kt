@@ -5,6 +5,7 @@ import app.cash.turbine.test
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.MenuItem
+import com.cafeminsu.domain.model.NewMenuDraft
 import com.cafeminsu.domain.repository.OwnerMenuRepository
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -268,6 +269,9 @@ private class FakeOwnerMenuRepository(
         )
         return AppResult.Success(updatedMenu)
     }
+
+    override suspend fun addMenu(draft: NewMenuDraft): AppResult<MenuItem> =
+        AppResult.Failure(DomainError.Unknown)
 }
 
 private fun sampleMenus(): List<MenuItem> =

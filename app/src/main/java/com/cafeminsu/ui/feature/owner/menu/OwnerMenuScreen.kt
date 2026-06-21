@@ -25,7 +25,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
-import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -41,16 +40,15 @@ import com.cafeminsu.ui.components.LoadingView
 import com.cafeminsu.ui.theme.CafeTheme
 import java.text.NumberFormat
 import java.util.Locale
-import kotlinx.coroutines.launch
 
 @Composable
 fun OwnerMenuRoute(
+    onAddMenuClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: OwnerMenuViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
     val snackbarHostState = remember { SnackbarHostState() }
-    val scope = rememberCoroutineScope()
 
     Scaffold(
         modifier = modifier.fillMaxSize(),
@@ -71,11 +69,7 @@ fun OwnerMenuRoute(
             state = state,
             onFilterSelected = viewModel::selectFilter,
             onSoldOutClick = viewModel::setSoldOut,
-            onAddMenuClick = {
-                scope.launch {
-                    snackbarHostState.showSnackbar("준비 중")
-                }
-            },
+            onAddMenuClick = onAddMenuClick,
             onRetry = viewModel::retry,
             modifier = Modifier.padding(innerPadding),
         )
