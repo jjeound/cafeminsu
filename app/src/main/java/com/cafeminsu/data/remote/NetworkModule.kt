@@ -103,6 +103,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideNotificationApi(retrofit: Retrofit): NotificationApi =
+        retrofit.create(NotificationApi::class.java)
+
+    @Provides
+    @Singleton
     @Unauthenticated
     fun provideStoreApi(
         @Unauthenticated retrofit: Retrofit,

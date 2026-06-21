@@ -17,6 +17,7 @@ import com.cafeminsu.data.repository.MockSessionRepository
 import com.cafeminsu.data.repository.MockStoreRepository
 import com.cafeminsu.data.repository.RealGiftRepository
 import com.cafeminsu.data.repository.RealMenuRepository
+import com.cafeminsu.data.repository.RealNotificationRepository
 import com.cafeminsu.data.repository.RealOrderRepository
 import com.cafeminsu.data.repository.RealPaymentRepository
 import com.cafeminsu.data.repository.RealRewardRepository
@@ -70,11 +71,19 @@ abstract class RepositoryModule {
     @Singleton
     abstract fun bindCouponRepository(repository: MockCouponRepository): CouponRepository
 
-    @Binds
-    @Singleton
-    abstract fun bindNotificationRepository(repository: MockNotificationRepository): NotificationRepository
-
     companion object {
+        @Provides
+        @Singleton
+        fun provideNotificationRepository(
+            realRepository: Provider<RealNotificationRepository>,
+            mockRepository: Provider<MockNotificationRepository>,
+        ): NotificationRepository =
+            selectNotificationRepository(
+                baseUrl = com.cafeminsu.BuildConfig.BASE_URL,
+                realFactory = { realRepository.get() },
+                mockFactory = { mockRepository.get() },
+            )
+
         @Provides
         @Singleton
         fun provideGiftRepository(
@@ -232,6 +241,17 @@ internal fun selectGiftRepository(
     realFactory: () -> GiftRepository,
     mockFactory: () -> GiftRepository,
 ): GiftRepository =
+    if (baseUrl.isNotBlank()) {
+        realFactory()
+    } else {
+        mockFactory()
+    }
+
+internal fun selectNotificationRepository(
+    baseUrl: String,
+    realFactory: () -> NotificationRepository,
+    mockFactory: () -> NotificationRepository,
+): NotificationRepository =
     if (baseUrl.isNotBlank()) {
         realFactory()
     } else {

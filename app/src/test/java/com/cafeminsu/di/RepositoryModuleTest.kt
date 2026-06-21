@@ -11,6 +11,7 @@ import com.cafeminsu.data.repository.MockOwnerOrderRepository
 import com.cafeminsu.data.repository.MockSessionRepository
 import com.cafeminsu.data.repository.MockStoreRepository
 import com.cafeminsu.data.repository.RealGiftRepository
+import com.cafeminsu.data.repository.RealNotificationRepository
 import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.CouponRepository
 import com.cafeminsu.domain.repository.GiftRepository
@@ -43,11 +44,6 @@ class RepositoryModuleTest {
             MockOwnerMenuRepository::class.java,
         )
         assertBinding("bindCouponRepository", CouponRepository::class.java, MockCouponRepository::class.java)
-        assertBinding(
-            "bindNotificationRepository",
-            NotificationRepository::class.java,
-            MockNotificationRepository::class.java,
-        )
     }
 
     @Test
@@ -201,6 +197,47 @@ class RepositoryModuleTest {
         assertEquals(GiftRepository::class.java, method.returnType)
         assertEquals(RealGiftRepository::class.java, method.genericParameterTypes.first().providerArgument())
         assertEquals(MockGiftRepository::class.java, method.genericParameterTypes.last().providerArgument())
+    }
+
+    @Test
+    fun blankBaseUrlSelectsMockNotificationRepositoryFallback() {
+        val realRepository = FakeNotificationRepository()
+        val mockRepository = FakeNotificationRepository()
+
+        val selected = selectNotificationRepository(
+            baseUrl = "",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(mockRepository, selected)
+    }
+
+    @Test
+    fun configuredBaseUrlSelectsRealNotificationRepository() {
+        val realRepository = FakeNotificationRepository()
+        val mockRepository = FakeNotificationRepository()
+
+        val selected = selectNotificationRepository(
+            baseUrl = "https://cafeminsu.example/",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(realRepository, selected)
+    }
+
+    @Test
+    fun repositoryModuleProvidesNotificationRepositoryWithRealAndMockProviders() {
+        val method = RepositoryModule.Companion::class.java.getDeclaredMethod(
+            "provideNotificationRepository",
+            javax.inject.Provider::class.java,
+            javax.inject.Provider::class.java,
+        )
+
+        assertEquals(NotificationRepository::class.java, method.returnType)
+        assertEquals(RealNotificationRepository::class.java, method.genericParameterTypes.first().providerArgument())
+        assertEquals(MockNotificationRepository::class.java, method.genericParameterTypes.last().providerArgument())
     }
 
     @Test
@@ -400,4 +437,13 @@ private class FakeGiftRepository : GiftRepository {
                 sentAtMillis = 0L,
             ),
         )
+}
+
+private class FakeNotificationRepository : NotificationRepository {
+    override fun observeNotifications():
+        kotlinx.coroutines.flow.Flow<com.cafeminsu.core.AppResult<List<com.cafeminsu.domain.model.AppNotification>>> =
+        kotlinx.coroutines.flow.flowOf(com.cafeminsu.core.AppResult.Success(emptyList()))
+
+    override suspend fun markAllRead(): com.cafeminsu.core.AppResult<Unit> =
+        com.cafeminsu.core.AppResult.Success(Unit)
 }

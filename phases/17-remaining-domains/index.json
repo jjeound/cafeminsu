@@ -21,7 +21,10 @@
     {
       "step": 2,
       "name": "notification-real",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-06-21T15:19:25+0900",
+      "summary": "알림 목록·전체 읽음 실서버 API/매퍼/RealNotificationRepository와 BASE_URL Mock 폴백 DI를 추가했다.",
+      "completed_at": "2026-06-21T15:24:34+0900"
     }
   ],
   "created_at": "2026-06-21T00:00:00+0900"
