@@ -27,6 +27,8 @@ data class StoreUiModel(
     val distanceLabel: String,
     val status: StoreStatusUiModel,
     val statusLabel: String,
+    val latitude: Double,
+    val longitude: Double,
 )
 
 data class StoreDetailUiModel(

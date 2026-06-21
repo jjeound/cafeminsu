@@ -1,5 +1,8 @@
 package com.cafeminsu.ui.feature.store
 
+import android.Manifest
+import androidx.activity.compose.rememberLauncherForActivityResult
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
@@ -26,10 +29,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -51,6 +54,23 @@ fun StoreRoute(
     viewModel: StoreViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+    val context = LocalContext.current
+
+    // 매장 선택 화면 진입 시 위치 권한을 1회 요청한다(이미 허용돼 있으면 생략). 허용되면 지도가 내 위치로 이동.
+    val locationPermissionLauncher = rememberLauncherForActivityResult(
+        ActivityResultContracts.RequestMultiplePermissions(),
+    ) { /* 결과는 다음 지도 렌더에서 hasLocationPermission으로 반영된다. */ }
+
+    LaunchedEffect(Unit) {
+        if (!hasLocationPermission(context)) {
+            locationPermissionLauncher.launch(
+                arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                ),
+            )
+        }
+    }
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
@@ -80,8 +100,10 @@ fun StoreScreen(
     onStartOrder: (String) -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
+    mapContent: @Composable (List<StoreMapMarker>) -> Unit = { markers -> StoreMapView(markers) },
 ) {
     val selectedStore = (state as? StoreUiState.Content)?.selectedStore
+    val mapMarkers = (state as? StoreUiState.Content)?.stores?.map { it.toMapMarker() }.orEmpty()
     val query = when (state) {
         is StoreUiState.Content -> state.query
         is StoreUiState.Empty -> state.query
@@ -110,7 +132,7 @@ fun StoreScreen(
             ) {
                 StoreHeader()
                 StoreSearchField(query = query, onQueryChange = onQueryChange)
-                StoreMap()
+                mapContent(mapMarkers)
                 NearbyStoresHeader()
 
                 when (state) {
@@ -193,88 +215,13 @@ private fun StoreSearchField(
     )
 }
 
-@Composable
-private fun StoreMap(
-    modifier: Modifier = Modifier,
-) {
-    val colors = CafeTheme.colors
-    val spacing = CafeTheme.spacing
-
-    Surface(
-        modifier = modifier
-            .fillMaxWidth()
-            .height(spacing.space18 * MapHeightMultiplier + spacing.space3),
-        shape = CafeTheme.shapes.radiusXl,
-        color = colors.surfaceCard,
-        contentColor = colors.ink,
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .drawBehind {
-                    val verticalGap = size.width / MapGridLineCount
-                    val horizontalGap = size.height / MapGridLineCount
-                    repeat(MapGridLineCount + 1) { index ->
-                        drawLine(
-                            color = colors.hairline,
-                            start = Offset(x = verticalGap * index, y = 0f),
-                            end = Offset(x = verticalGap * index, y = size.height),
-                        )
-                        drawLine(
-                            color = colors.hairline,
-                            start = Offset(x = 0f, y = horizontalGap * index),
-                            end = Offset(x = size.width, y = horizontalGap * index),
-                        )
-                    }
-                }
-                .padding(spacing.space5),
-        ) {
-            Surface(
-                shape = CafeTheme.shapes.radiusPill,
-                color = colors.canvas,
-                contentColor = colors.ink,
-            ) {
-                Text(
-                    modifier = Modifier.padding(
-                        horizontal = spacing.space4,
-                        vertical = spacing.space2,
-                    ),
-                    text = "내 주변 지도",
-                    style = CafeTheme.typography.caption,
-                    color = colors.ink,
-                )
-            }
-
-            MapMarker(modifier = Modifier.align(Alignment.Center))
-        }
-    }
-}
-
-@Composable
-private fun MapMarker(
-    modifier: Modifier = Modifier,
-) {
-    val colors = CafeTheme.colors
-
-    Box(
-        modifier = modifier
-            .size(CafeTheme.spacing.space10)
-            .background(
-                color = colors.primary,
-                shape = CafeTheme.shapes.radiusPill,
-            ),
-        contentAlignment = Alignment.Center,
-    ) {
-        Box(
-            modifier = Modifier
-                .size(CafeTheme.spacing.space2)
-                .background(
-                    color = colors.onPrimary,
-                    shape = CafeTheme.shapes.radiusPill,
-                ),
-        )
-    }
-}
+private fun StoreUiModel.toMapMarker(): StoreMapMarker =
+    StoreMapMarker(
+        id = id,
+        name = name,
+        latitude = latitude,
+        longitude = longitude,
+    )
 
 @Composable
 private fun NearbyStoresHeader() {
@@ -632,8 +579,6 @@ private fun LocationPinIcon(
     }
 }
 
-private const val MapHeightMultiplier = 2
-private const val MapGridLineCount = 4
 private const val SelectedStoreCardIndex = 0
 private const val StoreTextWeight = 1f
 private const val StoreNameMaxLines = 1

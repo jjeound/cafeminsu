@@ -78,6 +78,7 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kakao.user)
+    implementation(libs.kakao.map)
     implementation(libs.hilt.android)
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.moshi)

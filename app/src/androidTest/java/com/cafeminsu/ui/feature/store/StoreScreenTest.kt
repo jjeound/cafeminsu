@@ -17,6 +17,7 @@ class StoreScreenTest {
     fun showsStoreContentAndBottomSheetDetail() {
         var detailRequestedStoreId: String? = null
         var startRequestedStoreId: String? = null
+        var mapMarkers: List<StoreMapMarker> = emptyList()
 
         composeRule.setContent {
             CafeTheme {
@@ -27,6 +28,8 @@ class StoreScreenTest {
                     onDismissStoreDetail = {},
                     onStartOrder = { startRequestedStoreId = it },
                     onRetry = {},
+                    // 실 MapView(GL/SDK) 인스턴스화를 피하려고 지도 슬롯을 스텁으로 주입.
+                    mapContent = { markers -> mapMarkers = markers },
                 )
             }
         }
@@ -34,7 +37,6 @@ class StoreScreenTest {
         composeRule.onNodeWithText("매장 선택").assertIsDisplayed()
         composeRule.onNodeWithText("오늘 어디서 한 잔 하실까요?").assertIsDisplayed()
         composeRule.onNodeWithText("현재 위치 또는 매장명 검색").assertIsDisplayed()
-        composeRule.onNodeWithText("내 주변 지도").assertIsDisplayed()
         composeRule.onNodeWithText("가까운 매장").assertIsDisplayed()
         composeRule.onNodeWithText("카페민수 역삼점").assertIsDisplayed()
         composeRule.onNodeWithText("이 매장에서 주문하기").assertIsDisplayed()
@@ -45,6 +47,7 @@ class StoreScreenTest {
         composeRule.runOnIdle {
             assertEquals("yeoksam", detailRequestedStoreId)
             assertEquals("gangnam", startRequestedStoreId)
+            assertEquals(listOf("gangnam", "yeoksam"), mapMarkers.map { it.id })
         }
     }
 
@@ -59,6 +62,8 @@ class StoreScreenTest {
                     distanceLabel = "120m",
                     status = StoreStatusUiModel.Open,
                     statusLabel = "영업중",
+                    latitude = 37.498,
+                    longitude = 127.028,
                 ),
                 StoreUiModel(
                     id = "yeoksam",
@@ -67,6 +72,8 @@ class StoreScreenTest {
                     distanceLabel = "340m",
                     status = StoreStatusUiModel.Open,
                     statusLabel = "영업중",
+                    latitude = 37.500,
+                    longitude = 127.036,
                 ),
             ),
             selectedStore = selectedStore,

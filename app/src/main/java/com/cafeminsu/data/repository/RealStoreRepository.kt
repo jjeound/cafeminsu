@@ -16,6 +16,9 @@ import com.cafeminsu.domain.repository.StoreRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -30,7 +33,16 @@ class RealStoreRepository @Inject constructor(
 ) : StoreRepository {
     override fun observeNearbyStores(query: String?): Flow<AppResult<List<Store>>> =
         flow {
-            emit(fetchStores(query))
+            val result = fetchStores(query)
+            emit(result)
+            // 목록 API는 좌표를 주지 않아 지도 마커가 안 찍힌다 → 좌표 없는 매장만 상세에서 받아
+            // 채운 목록을 한 번 더 emit한다(좌표가 실제로 바뀐 경우에만).
+            if (result is AppResult.Success && result.data.any { !it.hasCoordinate() }) {
+                val located = result.data.withCoordinates()
+                if (located != result.data) {
+                    emit(AppResult.Success(located))
+                }
+            }
         }.flowOn(ioDispatcher)
 
     override suspend fun getStore(storeId: String): AppResult<Store> =
@@ -74,6 +86,33 @@ class RealStoreRepository @Inject constructor(
             is AppResult.Failure -> response
         }
 
+    // 좌표 없는 매장은 상세 API로 좌표만 보강한다. 매장 수가 적어 병렬 조회, 실패한 건은 원본 유지.
+    private suspend fun List<Store>.withCoordinates(): List<Store> = coroutineScope {
+        map { store ->
+            async {
+                if (store.hasCoordinate()) {
+                    store
+                } else {
+                    when (val detail = getStore(store.id)) {
+                        is AppResult.Success -> store.copy(
+                            latitude = detail.data.latitude,
+                            longitude = detail.data.longitude,
+                        )
+
+                        is AppResult.Failure -> store
+                    }
+                }
+            }
+        }.awaitAll()
+    }
+
+    private fun Store.hasCoordinate(): Boolean =
+        latitude != UnknownCoordinate || longitude != UnknownCoordinate
+
     private fun String?.normalizedQuery(): String? =
         this?.trim()?.takeIf { it.isNotEmpty() }
+
+    private companion object {
+        const val UnknownCoordinate = 0.0
+    }
 }

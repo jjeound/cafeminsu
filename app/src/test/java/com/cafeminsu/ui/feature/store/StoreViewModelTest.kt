@@ -50,6 +50,8 @@ class StoreViewModelTest {
             assertEquals(listOf("gangnam", "yeoksam"), content.stores.map { it.id })
             assertEquals("120m", content.stores.first().distanceLabel)
             assertEquals("영업중", content.stores.first().statusLabel)
+            assertEquals(37.498, content.stores.first().latitude, 0.0)
+            assertEquals(127.028, content.stores.first().longitude, 0.0)
 
             cancelAndIgnoreRemainingEvents()
         }

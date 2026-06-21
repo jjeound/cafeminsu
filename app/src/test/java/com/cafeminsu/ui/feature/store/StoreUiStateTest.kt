@@ -14,6 +14,8 @@ class StoreUiStateTest {
             distanceLabel = "120m",
             status = StoreStatusUiModel.Open,
             statusLabel = "영업중",
+            latitude = 37.498,
+            longitude = 127.028,
         )
         val detail = StoreDetailUiModel(
             id = "gangnam",

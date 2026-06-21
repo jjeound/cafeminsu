@@ -18,6 +18,7 @@ coil = "2.7.0"
 mediapipeTasksGenai = "0.10.27"
 datastore = "1.1.1"
 securityCrypto = "1.1.0-alpha06"
+kakaoMap = "2.12.19"
 junit = "4.13.2"
 mockk = "1.13.13"
 turbine = "1.1.0"
@@ -60,6 +61,7 @@ junit = { group = "junit", name = "junit", version.ref = "junit" }
 mockk = { group = "io.mockk", name = "mockk", version.ref = "mockk" }
 turbine = { group = "app.cash.turbine", name = "turbine", version.ref = "turbine" }
 kakao-user = { group = "com.kakao.sdk", name = "v2-user", version.ref = "kakao" }
+kakao-map = { group = "com.kakao.maps.open", name = "android", version.ref = "kakaoMap" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

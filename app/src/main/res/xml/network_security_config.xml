@@ -1,4 +1,14 @@
 <?xml version="1.0" encoding="utf-8"?>
 <network-security-config>
+    <!-- 기본은 cleartext 차단(HTTPS 강제). 앱 API 등 모든 통신은 이 정책을 따른다. -->
     <base-config cleartextTrafficPermitted="false" />
+    <!--
+      예외: 카카오맵 v2 SDK는 지도 타일 이미지를 HTTP(maps.daum-img.net)로 받아온다.
+      이 호스트만 cleartext 허용하지 않으면 지도가 회색으로 비어 보인다(타일 로드 차단).
+      앱 자체 트래픽은 여전히 HTTPS 강제(SECURITY.md §2).
+    -->
+    <domain-config cleartextTrafficPermitted="true">
+        <domain includeSubdomains="true">daumcdn.net</domain>
+        <domain includeSubdomains="true">daum-img.net</domain>
+    </domain-config>
 </network-security-config>

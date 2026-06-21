@@ -125,6 +125,8 @@ class StoreViewModel @Inject constructor(
             distanceLabel = distanceMeters.toDistanceLabel(),
             status = status.toUiModel(),
             statusLabel = status.toListStatusLabel(closingTimeLabel),
+            latitude = latitude,
+            longitude = longitude,
         )
 
     private fun Store.toDetailUiModel(): StoreDetailUiModel =
