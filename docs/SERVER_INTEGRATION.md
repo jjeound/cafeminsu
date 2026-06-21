@@ -67,7 +67,32 @@
 - ⚠ **PG 제공자 SDK·키 부재 시 결제 step은 `blocked`** 또는 PG 호출부를 인터페이스 뒤로 추상화해 Mock
   impUid로 테스트만 통과시키고 실 PG는 후속으로 둔다(이 phase의 결제 접근은 step4 참고).
 
-## 범위 밖 (이번 phase에서 Mock 유지)
-점주(stores/my, orders 점주, 매장 결제내역), 스탬프(`api/stamps`), 기프티콘(`api/gifticons/*`),
-알림(`api/notifications/*`), 추천(`recommendations/today`), 음성 주문 파싱(`api/orders/voice`)은
-엔드포인트는 있으나 이번 슬라이스에서 **연동하지 않는다**(기존 Mock 유지). 후속 phase 대상.
+## 리워드 / 선물 / 알림 (phase 17 — 나머지 도메인 연동)
+phase 16(인증·매장/메뉴·주문·결제)에 이어, **고객 측 리워드 도메인**을 실서버에 붙인다. 모두 기존
+카카오 Bearer JWT(인터셉터 자동 부착)로 동작하며 `userId` 등 식별 파라미터는 보내지 않는다. DI 는
+`BASE_URL` 키 게이트(`select*Repository`) 폴백을 따른다.
+
+- **리워드(`RewardRepository`)**: `GET api/stamps`(내 스탬프) / `GET api/stamps/{storeId}`(매장 스탬프) →
+  `StampCard`. 서버 스탬프는 **매장별**일 수 있으므로 선택 매장(`SelectedStoreHolder`) 있으면 그 매장,
+  없으면 목록 대표(합산/첫 매장)로 매핑. `grantStampsForPaidOrder` 는 **서버 자동 적립**이라 별도 grant
+  호출 없이 스탬프 **재조회**로 갱신. 기프티콘은 `GET api/gifticons/my`·`/{id}`·`POST /{id}/use`.
+  ⚠ 바코드/QR 등 민감값 **미로깅·미복사**(`SECURITY.md §3`).
+- **선물(`GiftRepository.sendGift`)**: `POST api/gifticons`(구매) → `POST api/gifticons/{id}/share`(선물 링크)
+  2단계. 중간 실패 시 다음 단계 진행 금지(낙관 금지). 채널/수신자/메시지는 공유 스키마에 맞게 매핑.
+- **알림(`NotificationRepository`)**: `GET api/notifications` → `List<AppNotification>`,
+  `PATCH api/notifications/read-all` → 전체 읽음. 타입 문자열 → `NotificationType` 매핑, 불가 타입은 흡수/제외.
+  도메인 계약에 없는 `unread-count`/개별 읽음(`{id}/read`)은 구현하지 않음.
+
+## 범위 밖 (Mock 유지 — 사유 명시)
+다음은 엔드포인트 유무·구조 차이로 이번 슬라이스에서 **연동하지 않고 기존 Mock 을 유지**한다(별도 결정/phase 대상):
+- **점주(owner) 전체**(`OwnerOrderRepository`/`OwnerMenuRepository` 메뉴 노출·`stores/my`·`orders` 점주):
+  앱의 점주 로그인은 **아이디/비번 Mock**(`OwnerAuthProvider`)인데 서버에는 아이디/비번 점주 로그인이 없고
+  점주 식별은 **카카오 JWT `role=OWNER` + `api/user/become-owner` + `api/stores/my`** 다. 연동하려면 점주
+  인증을 카카오 역할 기반으로 **재설계**해야 하므로(서버 영향 포함) 별도 결정 필요. 또한 메뉴 가시성(`setVisible`)은
+  서버 엔드포인트 없음(판매토글 `PATCH api/menus/{menuId}/availability` 만 존재).
+- **매출/정산(`SalesRepository`)**: 도메인 `SalesSummary`(합계·요일별·인기메뉴·정산)는 집계가 필요하나 서버는
+  원시 결제 목록(`GET api/stores/{storeId}/payments`)만 제공 — 집계 엔드포인트 없음 → 과도한 클라 집계 회피 위해 Mock 유지.
+- **쿠폰(`CouponRepository`)**: 서버에 쿠폰 엔드포인트 **자체가 없음** → Mock 유지.
+- **추천(`api/stores/{storeId}/recommendations/today`)**: 홈의 "오늘의 추천"은 현재 메뉴 목록에서 **클라 파생**이고
+  전용 Repository 가 없다. 연동 시 신규 Repository + UI 배선이 필요(기능 추가)하므로 repo 교체 슬라이스 범위 밖.
+- **음성 주문 파싱(`api/orders/voice`)**: 온디바이스 규칙 파서 유지(클라우드 STT/LLM 미착수).
