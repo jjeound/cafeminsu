@@ -27,6 +27,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -46,6 +47,7 @@ import java.util.Locale
 fun MenuRoute(
     onMenuClick: (String) -> Unit,
     onVoiceClick: () -> Unit,
+    onCartClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: MenuViewModel = hiltViewModel(),
 ) {
@@ -56,6 +58,7 @@ fun MenuRoute(
         onCategorySelect = viewModel::onCategorySelect,
         onMenuClick = onMenuClick,
         onVoiceClick = onVoiceClick,
+        onCartClick = onCartClick,
         onRetry = viewModel::retry,
         modifier = modifier,
     )
@@ -67,6 +70,7 @@ fun MenuScreen(
     onCategorySelect: (String) -> Unit,
     onMenuClick: (String) -> Unit,
     onVoiceClick: () -> Unit,
+    onCartClick: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -85,7 +89,10 @@ fun MenuScreen(
                         end = CafeTheme.spacing.space5,
                     ),
             ) {
-                MenuHeader(storeName = state.storeName)
+                MenuHeader(
+                    storeName = state.storeName,
+                    onVoiceClick = onVoiceClick,
+                )
 
                 Spacer(modifier = Modifier.height(CafeTheme.spacing.space3))
 
@@ -113,8 +120,8 @@ fun MenuScreen(
                 }
             }
 
-            VoiceFloatingButton(
-                onClick = onVoiceClick,
+            CartFloatingButton(
+                onClick = onCartClick,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(
@@ -129,6 +136,7 @@ fun MenuScreen(
 @Composable
 private fun MenuHeader(
     storeName: String,
+    onVoiceClick: () -> Unit,
 ) {
     Row(
         modifier = Modifier.fillMaxWidth(),
@@ -156,10 +164,12 @@ private fun MenuHeader(
         Box(
             modifier = Modifier
                 .size(CafeTheme.spacing.space10)
-                .semantics { contentDescription = "검색" },
+                .clip(CafeTheme.shapes.radiusPill)
+                .clickable(onClick = onVoiceClick)
+                .semantics { contentDescription = "음성 주문" },
             contentAlignment = Alignment.Center,
         ) {
-            SearchIcon(modifier = Modifier.size(CafeTheme.spacing.space6))
+            MicIcon(modifier = Modifier.size(CafeTheme.spacing.space6))
         }
     }
 }
@@ -358,7 +368,7 @@ private fun SoldOutBadge() {
 }
 
 @Composable
-private fun VoiceFloatingButton(
+private fun CartFloatingButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -366,7 +376,7 @@ private fun VoiceFloatingButton(
         onClick = onClick,
         modifier = modifier
             .size(CafeTheme.spacing.space10)
-            .semantics { contentDescription = "음성 주문" },
+            .semantics { contentDescription = "장바구니" },
         shape = CafeTheme.shapes.radiusPill,
         color = CafeTheme.colors.primary,
         contentColor = CafeTheme.colors.onPrimary,
@@ -375,21 +385,9 @@ private fun VoiceFloatingButton(
             modifier = Modifier.fillMaxSize(),
             contentAlignment = Alignment.Center,
         ) {
-            MicIcon(modifier = Modifier.size(CafeTheme.spacing.space5))
+            CartIcon(modifier = Modifier.size(CafeTheme.spacing.space5))
         }
     }
-}
-
-@Composable
-private fun SearchIcon(
-    modifier: Modifier = Modifier,
-) {
-    Icon(
-        painter = painterResource(R.drawable.ic_search),
-        contentDescription = null,
-        tint = CafeTheme.colors.ink,
-        modifier = modifier,
-    )
 }
 
 @Composable
@@ -398,6 +396,18 @@ private fun MicIcon(
 ) {
     Icon(
         painter = painterResource(R.drawable.ic_mic),
+        contentDescription = null,
+        tint = CafeTheme.colors.ink,
+        modifier = modifier,
+    )
+}
+
+@Composable
+private fun CartIcon(
+    modifier: Modifier = Modifier,
+) {
+    Icon(
+        painter = painterResource(R.drawable.ic_cart),
         contentDescription = null,
         tint = CafeTheme.colors.onPrimary,
         modifier = modifier,

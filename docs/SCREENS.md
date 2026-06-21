@@ -68,11 +68,11 @@
 - 하단 폭 꽉 찬 **"이 매장에서 주문하기"** `CafeButton`(primary) → `MENU`(해당 매장 선택).
 
 ## MENU (메뉴 선택) — `주문 - 03 (메뉴 선택).png`
-- 헤더: 매장명 "강남점" `h1`/`ink` + "오늘의 추천 메뉴" `caption`/`muted`. 우상단 검색 아이콘.
+- 헤더: 매장명 "강남점" `h1`/`ink` + "오늘의 추천 메뉴" `caption`/`muted`. 우상단 **음성 주문 아이콘**(마이크 `ink`) → `VOICE`.
 - **카테고리 칩 row**(가로 스크롤, `CafeChip`): 추천(선택) · 커피 · 논커피 · 디저트 · 티. 선택=`primary`.
 - **메뉴 단일 컬럼 리스트**(2열 아님): 행마다 좌측 라운드 썸네일, 메뉴명 `h3`/`ink`(+품절 시 "품절" 태그 `accent-soft`),
   설명 `caption`/`muted`, 가격 `bodyL`/`ink`(또는 `primary`). 행 사이 `hairline` 구분. **품절 행은 비활성/딤 + 담기 불가.**
-- **음성 주문 FAB**: 우하단 원형 `primary` + 마이크 아이콘 `on-primary` → `VOICE`.
+- **장바구니 FAB**: 우하단 원형 `primary` + 장바구니 아이콘 `on-primary` → `CART`.
 - 탭 → `MENU_DETAIL`. 하단 탭바.
 
 ## MENU_DETAIL (메뉴 상세) — `주문 - 04 (메뉴 상세).png`

@@ -17,8 +17,9 @@ class MenuScreenTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun showsRedesignedMenuListAndVoiceFab() {
+    fun showsRedesignedMenuListWithHeaderVoiceAndCartFab() {
         var voiceClicked = false
+        var cartClicked = false
         var clickedMenuId: String? = null
 
         composeRule.setContent {
@@ -28,6 +29,7 @@ class MenuScreenTest {
                     onCategorySelect = {},
                     onMenuClick = { clickedMenuId = it },
                     onVoiceClick = { voiceClicked = true },
+                    onCartClick = { cartClicked = true },
                     onRetry = {},
                 )
             }
@@ -51,6 +53,11 @@ class MenuScreenTest {
         composeRule.onNodeWithContentDescription("음성 주문").performClick()
         composeRule.runOnIdle {
             assertTrue(voiceClicked)
+        }
+
+        composeRule.onNodeWithContentDescription("장바구니").performClick()
+        composeRule.runOnIdle {
+            assertTrue(cartClicked)
         }
     }
 
