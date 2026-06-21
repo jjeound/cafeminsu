@@ -26,5 +26,7 @@ class SessionRepositoryTest {
         assertTrue(repository.login() is AppResult.Success)
         assertTrue(repository.logout() is AppResult.Success)
         assertTrue(repository.clearSession() is AppResult.Success)
+        assertTrue(repository.checkNickname("민수") is AppResult.Failure)
+        assertTrue(repository.completeSignup("민수") is AppResult.Failure)
     }
 }

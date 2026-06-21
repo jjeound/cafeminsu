@@ -6,6 +6,7 @@ sealed interface AuthState {
     data class Authenticated(
         val user: UserProfile,
         val role: UserRole = UserRole.Customer,
+        val isNewUser: Boolean = false,
     ) : AuthState
     data object Expired : AuthState
 }

@@ -19,6 +19,7 @@ class SessionTest {
         assertSame(AuthState.Expired, AuthState.Expired)
         assertEquals(userProfile, (authState as AuthState.Authenticated).user)
         assertEquals(UserRole.Customer, authState.role)
+        assertEquals(false, authState.isNewUser)
     }
 
     @Test
@@ -37,6 +38,24 @@ class SessionTest {
 
         assertEquals(UserRole.Customer, defaultAuthState.role)
         assertEquals(UserRole.Owner, ownerAuthState.role)
+    }
+
+    @Test
+    fun authenticatedStateCanCarryNewUserSignalWithoutNewAuthVariant() {
+        val userProfile = UserProfile(
+            id = "new-user",
+            displayName = "카페민수 사용자",
+            phoneLast4 = null,
+        )
+
+        val authState = AuthState.Authenticated(
+            user = userProfile,
+            isNewUser = true,
+        )
+
+        assertEquals(userProfile, authState.user)
+        assertEquals(UserRole.Customer, authState.role)
+        assertEquals(true, authState.isNewUser)
     }
 
     @Test

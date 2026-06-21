@@ -26,6 +26,23 @@ class AuthApiTest {
         assertEquals(SessionTokens("access-token", "refresh-token"), exchange.tokens)
         assertEquals("지원", exchange.authState.user.displayName)
         assertEquals(UserRole.Customer, exchange.authState.role)
+        assertEquals(false, exchange.authState.isNewUser)
+    }
+
+    @Test
+    fun kakaoLoginResponseCarriesNewUserSignalToAuthenticatedState() {
+        val response = KakaoLoginRes(
+            accessToken = "access-token",
+            refreshToken = "refresh-token",
+            isNewUser = true,
+            nickname = null,
+        )
+
+        val result = response.toLoginExchange()
+
+        assertTrue(result is AppResult.Success)
+        val exchange = (result as AppResult.Success).data
+        assertEquals(true, exchange.authState.isNewUser)
     }
 
     @Test
@@ -42,6 +59,28 @@ class AuthApiTest {
         assertEquals("42", authState.user.id)
         assertEquals("점주", authState.user.displayName)
         assertEquals(UserRole.Owner, authState.role)
+        assertEquals(false, authState.isNewUser)
+    }
+
+    @Test
+    fun nicknameCheckResponseMapsAvailability() {
+        val available = NicknameCheckRes(available = true)
+        val duplicated = NicknameCheckRes(available = false)
+
+        assertEquals(AppResult.Success(true), available.toAvailability())
+        assertEquals(AppResult.Success(false), duplicated.toAvailability())
+    }
+
+    @Test
+    fun signupResponseMapsToCompletedAuthenticatedState() {
+        val response = SignupRes(userId = 77, nickname = "새민수")
+
+        val authState = response.toAuthenticatedState()
+
+        assertEquals("77", authState.user.id)
+        assertEquals("새민수", authState.user.displayName)
+        assertEquals(UserRole.Customer, authState.role)
+        assertEquals(false, authState.isNewUser)
     }
 
     @Test

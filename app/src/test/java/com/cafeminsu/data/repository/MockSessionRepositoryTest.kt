@@ -2,6 +2,7 @@ package com.cafeminsu.data.repository
 
 import app.cash.turbine.test
 import com.cafeminsu.core.AppResult
+import com.cafeminsu.core.DomainError
 import com.cafeminsu.data.auth.MockLoginProvider
 import com.cafeminsu.domain.model.AuthState
 import kotlinx.coroutines.runBlocking
@@ -37,6 +38,49 @@ class MockSessionRepositoryTest {
         val authenticated = authState as AuthState.Authenticated
         assertEquals("demo-user", authenticated.user.id)
         assertEquals("민수", authenticated.user.displayName)
+        assertEquals(false, authenticated.isNewUser)
+    }
+
+    @Test
+    fun checkNicknameReturnsAvailableByDefaultAndDuplicateForReservedNickname() = runBlocking {
+        val repository = mockSessionRepository()
+
+        assertEquals(AppResult.Success(true), repository.checkNickname("새민수"))
+        assertEquals(AppResult.Success(false), repository.checkNickname("이미사용중"))
+    }
+
+    @Test
+    fun checkNicknameRejectsBlankNicknameBeforeMockSuccess() = runBlocking {
+        val repository = mockSessionRepository()
+
+        assertEquals(AppResult.Failure(DomainError.Validation("nickname")), repository.checkNickname("   "))
+    }
+
+    @Test
+    fun completeSignupUpdatesMockSessionDisplayNameAndClearsNewUserSignal() = runBlocking {
+        val repository = mockSessionRepository()
+
+        repository.observeAuthState().test {
+            assertEquals(AuthState.Guest, awaitItem())
+
+            val result = repository.completeSignup("새민수")
+
+            assertTrue(result is AppResult.Success)
+            val authState = (result as AppResult.Success).data
+            assertTrue(authState is AuthState.Authenticated)
+            val authenticated = authState as AuthState.Authenticated
+            assertEquals("새민수", authenticated.user.displayName)
+            assertEquals(false, authenticated.isNewUser)
+            assertEquals(authenticated, awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun completeSignupRejectsBlankNicknameBeforeMockSuccess() = runBlocking {
+        val repository = mockSessionRepository()
+
+        assertEquals(AppResult.Failure(DomainError.Validation("nickname")), repository.completeSignup(" "))
     }
 
     @Test

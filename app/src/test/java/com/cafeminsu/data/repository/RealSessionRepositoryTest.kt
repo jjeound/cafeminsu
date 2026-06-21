@@ -7,6 +7,7 @@ import com.cafeminsu.data.auth.SessionStateHolder
 import com.cafeminsu.data.auth.SessionTokenStore
 import com.cafeminsu.data.auth.SessionTokens
 import com.cafeminsu.data.remote.AuthApi
+import com.cafeminsu.data.remote.AuthorizationInterceptor
 import com.cafeminsu.data.remote.createMoshi
 import com.cafeminsu.data.remote.createOkHttpClient
 import com.cafeminsu.data.remote.createRetrofit
@@ -73,6 +74,7 @@ class RealSessionRepositoryTest {
             val authState = (result as AppResult.Success).data
             assertTrue(authState is AuthState.Authenticated)
             assertEquals("지원", (authState as AuthState.Authenticated).user.displayName)
+            assertEquals(false, authState.isNewUser)
             assertEquals(authState, awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
@@ -81,6 +83,39 @@ class RealSessionRepositoryTest {
         val request = server.takeRequest()
         assertEquals("/api/user/kakao-login", request.path)
         assertEquals("""{"accessToken":"kakao-access-token"}""", request.body.readUtf8())
+    }
+
+    @Test
+    fun loginExchangeCarriesNewUserSignalToAuthenticatedState() = runTest {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody(
+                    """
+                    {
+                      "isSuccess": true,
+                      "code": 200,
+                      "message": "OK",
+                      "result": {
+                        "accessToken": "app-access-token",
+                        "refreshToken": "app-refresh-token",
+                        "isNewUser": true,
+                        "nickname": null
+                      }
+                    }
+                    """.trimIndent(),
+                ),
+        )
+        val stateHolder = SessionStateHolder(AuthState.Guest)
+        val repository = realSessionRepository(stateHolder = stateHolder)
+
+        val result = repository.login()
+
+        assertTrue(result is AppResult.Success)
+        val authState = (result as AppResult.Success).data
+        assertTrue(authState is AuthState.Authenticated)
+        assertEquals(true, (authState as AuthState.Authenticated).isNewUser)
+        assertEquals(authState, stateHolder.authState.value)
     }
 
     @Test
@@ -194,6 +229,146 @@ class RealSessionRepositoryTest {
     }
 
     @Test
+    fun checkNicknameMapsAvailableAndDuplicatedResponsesWithBearerToken() = runTest {
+        server.enqueue(nicknameCheckResponse(available = true))
+        server.enqueue(nicknameCheckResponse(available = false))
+        val repository = realSessionRepository(
+            tokenStore = InMemorySessionTokenStore(SessionTokens("access-token", "refresh-token")),
+            stateHolder = SessionStateHolder(authenticatedState("신규 사용자", isNewUser = true)),
+        )
+
+        assertEquals(AppResult.Success(true), repository.checkNickname("새민수"))
+        assertEquals(AppResult.Success(false), repository.checkNickname("이미사용중"))
+
+        val firstRequest = server.takeRequest()
+        assertEquals("/api/user/nickname/check", firstRequest.requestUrl?.encodedPath)
+        assertEquals("새민수", firstRequest.requestUrl?.queryParameter("nickname"))
+        assertEquals(null, firstRequest.requestUrl?.queryParameter("userId"))
+        assertEquals("Bearer access-token", firstRequest.getHeader("Authorization"))
+
+        val secondRequest = server.takeRequest()
+        assertEquals("이미사용중", secondRequest.requestUrl?.queryParameter("nickname"))
+        assertEquals("Bearer access-token", secondRequest.getHeader("Authorization"))
+    }
+
+    @Test
+    fun checkNicknameValidationAndServerErrorReturnFailure() = runTest {
+        val repository = realSessionRepository(
+            tokenStore = InMemorySessionTokenStore(SessionTokens("access-token", "refresh-token")),
+            stateHolder = SessionStateHolder(authenticatedState("신규 사용자", isNewUser = true)),
+        )
+
+        assertEquals(AppResult.Failure(DomainError.Validation("nickname")), repository.checkNickname("  "))
+        assertEquals(0, server.requestCount)
+
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody(
+                    """
+                    {
+                      "isSuccess": false,
+                      "code": 404,
+                      "message": "not found",
+                      "result": null
+                    }
+                    """.trimIndent(),
+                ),
+        )
+
+        assertEquals(AppResult.Failure(DomainError.NotFound), repository.checkNickname("새민수"))
+        assertEquals(1, server.requestCount)
+    }
+
+    @Test
+    fun completeSignupPostsNicknameAndUpdatesSessionWithoutChangingTokens() = runTest {
+        server.enqueue(signupResponse(userId = 77, nickname = "새민수"))
+        val tokenStore = InMemorySessionTokenStore(SessionTokens("access-token", "refresh-token"))
+        val repository = realSessionRepository(
+            tokenStore = tokenStore,
+            stateHolder = SessionStateHolder(authenticatedState("카카오 사용자", isNewUser = true)),
+        )
+
+        repository.observeAuthState().test {
+            val initial = awaitItem()
+            assertTrue(initial is AuthState.Authenticated)
+            assertEquals(true, (initial as AuthState.Authenticated).isNewUser)
+
+            val result = repository.completeSignup("새민수")
+
+            assertTrue(result is AppResult.Success)
+            val authState = (result as AppResult.Success).data
+            assertTrue(authState is AuthState.Authenticated)
+            val authenticated = authState as AuthState.Authenticated
+            assertEquals("77", authenticated.user.id)
+            assertEquals("새민수", authenticated.user.displayName)
+            assertEquals(false, authenticated.isNewUser)
+            assertEquals(authenticated, awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        assertEquals(SessionTokens("access-token", "refresh-token"), tokenStore.read())
+        val request = server.takeRequest()
+        assertEquals("POST", request.method)
+        assertEquals("/api/user/signup", request.requestUrl?.encodedPath)
+        assertEquals(null, request.requestUrl?.queryParameter("userId"))
+        assertEquals("Bearer access-token", request.getHeader("Authorization"))
+        assertTrue(request.body.readUtf8().contains("\"nickname\":\"새민수\""))
+    }
+
+    @Test
+    fun completeSignupValidationServerErrorAndMissingTokenReturnFailure() = runTest {
+        val authenticatedRepository = realSessionRepository(
+            tokenStore = InMemorySessionTokenStore(SessionTokens("access-token", "refresh-token")),
+            stateHolder = SessionStateHolder(authenticatedState("카카오 사용자", isNewUser = true)),
+        )
+
+        assertEquals(
+            AppResult.Failure(DomainError.Validation("nickname")),
+            authenticatedRepository.completeSignup(" "),
+        )
+        assertEquals(0, server.requestCount)
+
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody(
+                    """
+                    {
+                      "isSuccess": false,
+                      "code": 404,
+                      "message": "signup failed",
+                      "result": null
+                    }
+                    """.trimIndent(),
+                ),
+        )
+
+        assertEquals(AppResult.Failure(DomainError.NotFound), authenticatedRepository.completeSignup("새민수"))
+        assertEquals(1, server.requestCount)
+
+        val missingTokenRepository = realSessionRepository(
+            tokenStore = InMemorySessionTokenStore(),
+            stateHolder = SessionStateHolder(authenticatedState("카카오 사용자", isNewUser = true)),
+        )
+
+        assertEquals(AppResult.Failure(DomainError.Unauthorized), missingTokenRepository.completeSignup("새민수"))
+        assertEquals(1, server.requestCount)
+    }
+
+    @Test
+    fun unauthenticatedStateBlocksSignupCallsBeforeNetwork() = runTest {
+        val repository = realSessionRepository(
+            tokenStore = InMemorySessionTokenStore(SessionTokens("access-token", "refresh-token")),
+            stateHolder = SessionStateHolder(AuthState.Guest),
+        )
+
+        assertEquals(AppResult.Failure(DomainError.Unauthorized), repository.checkNickname("새민수"))
+        assertEquals(AppResult.Failure(DomainError.Unauthorized), repository.completeSignup("새민수"))
+        assertEquals(0, server.requestCount)
+    }
+
+    @Test
     fun logoutWipesTokensImmediatelyAndReturnsGuest() = runTest {
         val tokenStore = InMemorySessionTokenStore(
             SessionTokens("app-access-token", "app-refresh-token"),
@@ -221,17 +396,53 @@ class RealSessionRepositoryTest {
     ): RealSessionRepository =
         RealSessionRepository(
             loginProvider = loginProvider,
-            authApi = authApi(),
+            authApi = authApi(tokenStore),
             tokenStore = tokenStore,
             sessionStateHolder = stateHolder,
         )
 
-    private fun authApi(): AuthApi =
+    private fun authApi(tokenStore: SessionTokenStore): AuthApi =
         createRetrofit(
             baseUrl = server.url("/").toString(),
             moshi = createMoshi(),
-            okHttpClient = createOkHttpClient(debug = false),
+            okHttpClient = createOkHttpClient(
+                debug = false,
+                authorizationInterceptor = AuthorizationInterceptor(tokenStore),
+            ),
         ).create(AuthApi::class.java)
+
+    private fun nicknameCheckResponse(available: Boolean): MockResponse =
+        MockResponse()
+            .setResponseCode(200)
+            .setBody(
+                """
+                {
+                  "isSuccess": true,
+                  "code": 200,
+                  "message": "OK",
+                  "result": {
+                    "available": $available
+                  }
+                }
+                """.trimIndent(),
+            )
+
+    private fun signupResponse(userId: Long, nickname: String): MockResponse =
+        MockResponse()
+            .setResponseCode(200)
+            .setBody(
+                """
+                {
+                  "isSuccess": true,
+                  "code": 200,
+                  "message": "OK",
+                  "result": {
+                    "userId": $userId,
+                    "nickname": "$nickname"
+                  }
+                }
+                """.trimIndent(),
+            )
 }
 
 private class FakeLoginProvider(
@@ -272,11 +483,15 @@ private class InMemorySessionTokenStore(
     }
 }
 
-private fun authenticatedState(displayName: String): AuthState.Authenticated =
+private fun authenticatedState(
+    displayName: String,
+    isNewUser: Boolean = false,
+): AuthState.Authenticated =
     AuthState.Authenticated(
         user = com.cafeminsu.domain.model.UserProfile(
             id = "server-user",
             displayName = displayName,
             phoneLast4 = null,
         ),
+        isNewUser = isNewUser,
     )

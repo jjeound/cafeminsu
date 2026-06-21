@@ -11,6 +11,7 @@ import retrofit2.http.Body
 import retrofit2.http.GET
 import retrofit2.http.Header
 import retrofit2.http.POST
+import retrofit2.http.Query
 
 interface AuthApi {
     @POST("api/user/kakao-login")
@@ -25,6 +26,16 @@ interface AuthApi {
 
     @GET("api/user/profile")
     suspend fun getMyProfile(): BaseResponse<UserProfileRes>
+
+    @GET("api/user/nickname/check")
+    suspend fun checkNickname(
+        @Query("nickname") nickname: String,
+    ): BaseResponse<NicknameCheckRes>
+
+    @POST("api/user/signup")
+    suspend fun signup(
+        @Body request: SignupReq,
+    ): BaseResponse<SignupRes>
 }
 
 @JsonClass(generateAdapter = true)
@@ -59,6 +70,23 @@ data class UserProfileRes(
     val nickname: String?,
     val profileImageUrl: String?,
     val role: String?,
+)
+
+@JsonClass(generateAdapter = true)
+data class NicknameCheckRes(
+    val available: Boolean?,
+)
+
+@JsonClass(generateAdapter = true)
+data class SignupReq(
+    val nickname: String,
+    val profileImageUrl: String? = null,
+)
+
+@JsonClass(generateAdapter = true)
+data class SignupRes(
+    val userId: Long?,
+    val nickname: String?,
 )
 
 data class LoginExchange(
@@ -96,6 +124,7 @@ fun KakaoLoginRes.toLoginExchange(): AppResult<LoginExchange> {
                     phoneLast4 = null,
                 ),
                 role = UserRole.Customer,
+                isNewUser = isNewUser == true,
             ),
         ),
     )
@@ -118,6 +147,23 @@ fun UserProfileRes.toAuthenticatedState(): AuthState.Authenticated =
             "OWNER" -> UserRole.Owner
             else -> UserRole.Customer
         },
+        isNewUser = false,
+    )
+
+fun NicknameCheckRes.toAvailability(): AppResult<Boolean> {
+    val value = available ?: return AppResult.Failure(DomainError.Unknown)
+    return AppResult.Success(value)
+}
+
+fun SignupRes.toAuthenticatedState(): AuthState.Authenticated =
+    AuthState.Authenticated(
+        user = UserProfile(
+            id = userId?.toString() ?: DefaultServerUserId,
+            displayName = nickname.toDisplayName(),
+            phoneLast4 = null,
+        ),
+        role = UserRole.Customer,
+        isNewUser = false,
     )
 
 private fun Int?.toDomainErrorOrUnknown(): DomainError =

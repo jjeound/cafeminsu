@@ -6,8 +6,11 @@ import com.cafeminsu.data.auth.SessionStateHolder
 import com.cafeminsu.data.auth.SessionTokenStore
 import com.cafeminsu.data.remote.AuthApi
 import com.cafeminsu.data.remote.KakaoLoginReq
+import com.cafeminsu.data.remote.SignupReq
 import com.cafeminsu.data.remote.runCatchingToAppResult
 import com.cafeminsu.data.remote.toAccessToken
+import com.cafeminsu.data.remote.toAvailability
+import com.cafeminsu.data.remote.toAuthenticatedState
 import com.cafeminsu.data.remote.toLoginExchange
 import com.cafeminsu.data.remote.unwrap
 import com.cafeminsu.domain.auth.LoginProvider
@@ -51,6 +54,57 @@ class RealSessionRepository @Inject constructor(
             }
 
             is AppResult.Failure -> exchangeResult
+        }
+    }
+
+    override suspend fun checkNickname(nickname: String): AppResult<Boolean> {
+        val normalized = nickname.trim()
+        if (normalized.isBlank()) {
+            return AppResult.Failure(DomainError.Validation("nickname"))
+        }
+        when (val result = ensureAuthenticatedWithToken()) {
+            is AppResult.Success -> Unit
+            is AppResult.Failure -> return result
+        }
+
+        return when (
+            val response = runCatchingToAppResult {
+                authApi.checkNickname(normalized)
+            }
+        ) {
+            is AppResult.Success -> response.data.unwrap { it.toAvailability() }
+            is AppResult.Failure -> response
+        }
+    }
+
+    override suspend fun completeSignup(nickname: String): AppResult<AuthState> {
+        val normalized = nickname.trim()
+        if (normalized.isBlank()) {
+            return AppResult.Failure(DomainError.Validation("nickname"))
+        }
+        when (val result = ensureAuthenticatedWithToken()) {
+            is AppResult.Success -> Unit
+            is AppResult.Failure -> return result
+        }
+
+        val signupResult = when (
+            val response = runCatchingToAppResult {
+                authApi.signup(SignupReq(nickname = normalized))
+            }
+        ) {
+            is AppResult.Success -> response.data.unwrap {
+                AppResult.Success(it.toAuthenticatedState())
+            }
+            is AppResult.Failure -> response
+        }
+
+        return when (signupResult) {
+            is AppResult.Success -> {
+                sessionStateHolder.update(signupResult.data)
+                AppResult.Success(signupResult.data)
+            }
+
+            is AppResult.Failure -> signupResult
         }
     }
 
@@ -105,6 +159,14 @@ class RealSessionRepository @Inject constructor(
     private suspend fun expireSession() {
         tokenStore.clear()
         sessionStateHolder.update(AuthState.Expired)
+    }
+
+    private suspend fun ensureAuthenticatedWithToken(): AppResult<AuthState.Authenticated> {
+        val authState = sessionStateHolder.authState.value
+        if (authState !is AuthState.Authenticated || tokenStore.read() == null) {
+            return AppResult.Failure(DomainError.Unauthorized)
+        }
+        return AppResult.Success(authState)
     }
 
     private fun defaultAuthenticatedState(): AuthState.Authenticated =
