@@ -18,6 +18,7 @@ import com.cafeminsu.data.repository.MockStoreRepository
 import com.cafeminsu.data.repository.RealMenuRepository
 import com.cafeminsu.data.repository.RealOrderRepository
 import com.cafeminsu.data.repository.RealPaymentRepository
+import com.cafeminsu.data.repository.RealRewardRepository
 import com.cafeminsu.data.repository.RealSessionRepository
 import com.cafeminsu.data.repository.RealStoreRepository
 import com.cafeminsu.domain.repository.CartRepository
@@ -63,10 +64,6 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindPgClient(client: MockPgClient): PgClient
-
-    @Binds
-    @Singleton
-    abstract fun bindRewardRepository(repository: MockRewardRepository): RewardRepository
 
     @Binds
     @Singleton
@@ -124,6 +121,18 @@ abstract class RepositoryModule {
             mockRepository: Provider<MockPaymentRepository>,
         ): PaymentRepository =
             selectPaymentRepository(
+                baseUrl = com.cafeminsu.BuildConfig.BASE_URL,
+                realFactory = { realRepository.get() },
+                mockFactory = { mockRepository.get() },
+            )
+
+        @Provides
+        @Singleton
+        fun provideRewardRepository(
+            realRepository: Provider<RealRewardRepository>,
+            mockRepository: Provider<MockRewardRepository>,
+        ): RewardRepository =
+            selectRewardRepository(
                 baseUrl = com.cafeminsu.BuildConfig.BASE_URL,
                 realFactory = { realRepository.get() },
                 mockFactory = { mockRepository.get() },
@@ -192,6 +201,17 @@ internal fun selectPaymentRepository(
     realFactory: () -> PaymentRepository,
     mockFactory: () -> PaymentRepository,
 ): PaymentRepository =
+    if (baseUrl.isNotBlank()) {
+        realFactory()
+    } else {
+        mockFactory()
+    }
+
+internal fun selectRewardRepository(
+    baseUrl: String,
+    realFactory: () -> RewardRepository,
+    mockFactory: () -> RewardRepository,
+): RewardRepository =
     if (baseUrl.isNotBlank()) {
         realFactory()
     } else {

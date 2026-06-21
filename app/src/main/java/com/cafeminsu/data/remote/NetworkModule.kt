@@ -93,6 +93,16 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideStampApi(retrofit: Retrofit): StampApi =
+        retrofit.create(StampApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideGifticonApi(retrofit: Retrofit): GifticonApi =
+        retrofit.create(GifticonApi::class.java)
+
+    @Provides
+    @Singleton
     @Unauthenticated
     fun provideStoreApi(
         @Unauthenticated retrofit: Retrofit,
@@ -171,14 +181,14 @@ private fun String.asRetrofitBaseUrl(): String {
 
 internal fun String.redactSensitiveNetworkValues(): String =
     replace(SensitiveHeaderRegex, "\$1<redacted>")
-        .replace(SensitiveJsonTokenRegex, "\$1<redacted>\$2")
+        .replace(SensitiveJsonValueRegex, "\$1<redacted>\$2")
 
 private val SensitiveHeaderRegex = Regex(
     pattern = "^((?:Authorization|Refresh-Token):\\s*).*$",
     options = setOf(RegexOption.IGNORE_CASE),
 )
 
-private val SensitiveJsonTokenRegex = Regex(
-    pattern = "(\"(?:accessToken|refreshToken)\"\\s*:\\s*\")[^\"]*(\")",
+private val SensitiveJsonValueRegex = Regex(
+    pattern = "(\"(?:accessToken|refreshToken|qrCode|barcodeValue|qrValue)\"\\s*:\\s*\")[^\"]*(\")",
     options = setOf(RegexOption.IGNORE_CASE),
 )

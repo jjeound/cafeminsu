@@ -67,6 +67,15 @@ class NetworkModuleTest {
     }
 
     @Test
+    fun networkLoggerRedactsGifticonCodeJsonFields() {
+        assertEquals(
+            """{"qrCode":"<redacted>","barcodeValue":"<redacted>","qrValue":"<redacted>"}""",
+            """{"qrCode":"secret-qr","barcodeValue":"secret-barcode","qrValue":"secret-qr-value"}"""
+                .redactSensitiveNetworkValues(),
+        )
+    }
+
+    @Test
     fun retrofitUsesConfiguredBaseUrlAndKeepsOpenApiRootPath() = runTest {
         server.enqueue(
             MockResponse()

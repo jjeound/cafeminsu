@@ -8,7 +8,6 @@ import com.cafeminsu.data.repository.MockNotificationRepository
 import com.cafeminsu.data.repository.MockOrderRepository
 import com.cafeminsu.data.repository.MockOwnerMenuRepository
 import com.cafeminsu.data.repository.MockOwnerOrderRepository
-import com.cafeminsu.data.repository.MockRewardRepository
 import com.cafeminsu.data.repository.MockSessionRepository
 import com.cafeminsu.data.repository.MockStoreRepository
 import com.cafeminsu.domain.repository.CartRepository
@@ -42,7 +41,6 @@ class RepositoryModuleTest {
             OwnerMenuRepository::class.java,
             MockOwnerMenuRepository::class.java,
         )
-        assertBinding("bindRewardRepository", RewardRepository::class.java, MockRewardRepository::class.java)
         assertBinding("bindCouponRepository", CouponRepository::class.java, MockCouponRepository::class.java)
         assertBinding("bindGiftRepository", GiftRepository::class.java, MockGiftRepository::class.java)
         assertBinding(
@@ -128,6 +126,34 @@ class RepositoryModuleTest {
         val mockRepository = FakePaymentRepository()
 
         val selected = selectPaymentRepository(
+            baseUrl = "https://cafeminsu.example/",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(realRepository, selected)
+    }
+
+    @Test
+    fun blankBaseUrlSelectsMockRewardRepositoryFallback() {
+        val realRepository = FakeRewardRepository()
+        val mockRepository = FakeRewardRepository()
+
+        val selected = selectRewardRepository(
+            baseUrl = "",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(mockRepository, selected)
+    }
+
+    @Test
+    fun configuredBaseUrlSelectsRealRewardRepository() {
+        val realRepository = FakeRewardRepository()
+        val mockRepository = FakeRewardRepository()
+
+        val selected = selectRewardRepository(
             baseUrl = "https://cafeminsu.example/",
             realFactory = { realRepository },
             mockFactory = { mockRepository },
@@ -276,5 +302,46 @@ private class FakePaymentRepository : PaymentRepository {
         orderId: String,
         idempotencyKey: String,
     ): com.cafeminsu.core.AppResult<com.cafeminsu.domain.model.PaymentResult> =
+        com.cafeminsu.core.AppResult.Failure(com.cafeminsu.core.DomainError.NotFound)
+}
+
+private class FakeRewardRepository : RewardRepository {
+    override fun observeStampCard():
+        kotlinx.coroutines.flow.Flow<com.cafeminsu.core.AppResult<com.cafeminsu.domain.model.StampCard>> =
+        kotlinx.coroutines.flow.flowOf(
+            com.cafeminsu.core.AppResult.Success(
+                com.cafeminsu.domain.model.StampCard(
+                    userId = "user",
+                    currentCount = 0,
+                    goalCount = 10,
+                    history = emptyList(),
+                ),
+            ),
+        )
+
+    override suspend fun grantStampsForPaidOrder(
+        orderId: String,
+    ): com.cafeminsu.core.AppResult<com.cafeminsu.domain.model.StampCard> =
+        com.cafeminsu.core.AppResult.Success(
+            com.cafeminsu.domain.model.StampCard(
+                userId = "user",
+                currentCount = 1,
+                goalCount = 10,
+                history = emptyList(),
+            ),
+        )
+
+    override fun observeGifticons():
+        kotlinx.coroutines.flow.Flow<com.cafeminsu.core.AppResult<List<com.cafeminsu.domain.model.Gifticon>>> =
+        kotlinx.coroutines.flow.flowOf(com.cafeminsu.core.AppResult.Success(emptyList()))
+
+    override suspend fun getGifticon(
+        id: String,
+    ): com.cafeminsu.core.AppResult<com.cafeminsu.domain.model.Gifticon> =
+        com.cafeminsu.core.AppResult.Failure(com.cafeminsu.core.DomainError.NotFound)
+
+    override suspend fun markGifticonUsed(
+        id: String,
+    ): com.cafeminsu.core.AppResult<com.cafeminsu.domain.model.Gifticon> =
         com.cafeminsu.core.AppResult.Failure(com.cafeminsu.core.DomainError.NotFound)
 }

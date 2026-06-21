@@ -5,7 +5,9 @@
     {
       "step": 0,
       "name": "reward-real",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-06-21T15:03:15+0900",
+      "summary": "스탬프/기프티콘 실서버 API·매퍼·RealRewardRepository와 BASE_URL Mock 폴백 DI를 추가했다."
     },
     {
       "step": 1,
