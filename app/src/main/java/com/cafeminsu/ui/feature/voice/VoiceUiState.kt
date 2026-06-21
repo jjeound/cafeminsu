@@ -19,6 +19,10 @@ sealed interface VoiceUiState {
         override val transcript: String = partialText
     }
 
+    data class Interpreting(
+        override val transcript: String,
+    ) : VoiceUiState
+
     data class Parsed(
         override val transcript: String,
         val items: List<ParsedOrderItem>,

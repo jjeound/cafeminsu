@@ -8,9 +8,9 @@ import com.cafeminsu.domain.model.Cart
 import com.cafeminsu.domain.model.MenuItem
 import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.MenuRepository
-import com.cafeminsu.domain.voice.ParseVoiceOrderUseCase
 import com.cafeminsu.domain.voice.ParsedOrder
 import com.cafeminsu.domain.voice.ParsedOrderItem
+import com.cafeminsu.domain.voice.VoiceOrderInterpreter
 import com.cafeminsu.domain.voice.VoiceRecognitionError
 import com.cafeminsu.domain.voice.VoiceRecognitionEvent
 import com.cafeminsu.domain.voice.VoiceRecognizer
@@ -31,7 +31,7 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class VoiceViewModel @Inject constructor(
     private val voiceRecognizer: VoiceRecognizer,
-    private val parseVoiceOrderUseCase: ParseVoiceOrderUseCase,
+    private val voiceOrderInterpreter: VoiceOrderInterpreter,
     private val menuRepository: MenuRepository,
     private val cartRepository: CartRepository,
 ) : ViewModel() {
@@ -133,24 +133,33 @@ class VoiceViewModel @Inject constructor(
     }
 
     private suspend fun parseFinalTranscript(transcript: String) {
-        when (val menusResult = loadMenusSafely()) {
+        _uiState.value = VoiceUiState.Interpreting(transcript)
+
+        val menusResult = loadMenusSafely()
+        if (menusResult is AppResult.Failure) {
+            _uiState.value = VoiceUiState.Error(
+                message = menusResult.error.toVoiceMessage(),
+                transcript = transcript,
+            )
+            return
+        }
+
+        val menus = (menusResult as AppResult.Success).data
+        when (val parsedResult = voiceOrderInterpreter.interpret(transcript, menus)) {
             is AppResult.Success -> {
-                val parsed = parseVoiceOrderUseCase(
-                    transcript = transcript,
-                    menu = menusResult.data,
-                )
+                val parsed = parsedResult.data
                 _uiState.value = VoiceUiState.Parsed(
                     transcript = transcript,
                     items = parsed.items,
                     unmatched = parsed.unmatched,
-                    estimatedTotalAmount = parsed.items.estimatedTotalAmount(menusResult.data),
+                    estimatedTotalAmount = parsed.items.estimatedTotalAmount(menus),
                     confidencePercent = parsed.confidencePercent(),
                 )
             }
 
             is AppResult.Failure -> {
                 _uiState.value = VoiceUiState.Error(
-                    message = menusResult.error.toVoiceMessage(),
+                    message = parsedResult.error.toVoiceMessage(),
                     transcript = transcript,
                 )
             }

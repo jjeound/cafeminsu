@@ -13,6 +13,13 @@ class VoiceUiStateTest {
     }
 
     @Test
+    fun interpretingStateExposesTranscript() {
+        val state = VoiceUiState.Interpreting(transcript = "아메리카노 두 잔")
+
+        assertEquals("아메리카노 두 잔", state.transcript)
+    }
+
+    @Test
     fun parsedStateKeepsFinalTranscriptAndUnmatchedItems() {
         val state = VoiceUiState.Parsed(
             transcript = "아메리카노 두 잔 피자 하나",

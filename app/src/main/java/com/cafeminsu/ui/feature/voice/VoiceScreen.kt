@@ -652,6 +652,7 @@ private fun VoiceUiState.listeningStatusText(): String =
         VoiceUiState.PermissionRequired -> "권한 필요"
         VoiceUiState.Idle -> "대기 중"
         is VoiceUiState.Listening -> "듣는 중"
+        is VoiceUiState.Interpreting -> "이해하는 중"
         is VoiceUiState.Parsed -> "인식 완료"
         is VoiceUiState.AddedToCart -> "장바구니로 이동"
         is VoiceUiState.Error -> "다시 시도 필요"
@@ -663,6 +664,7 @@ private fun VoiceUiState.transcriptDisplayText(): String =
             VoiceUiState.PermissionRequired -> "마이크 권한을 허용하면 주문을 들을 수 있어요"
             VoiceUiState.Idle -> "주문을 말해 주세요"
             is VoiceUiState.Listening -> "듣고 있어요"
+            is VoiceUiState.Interpreting -> "주문을 이해하고 있어요"
             is VoiceUiState.Parsed -> "확인된 발화가 없어요"
             is VoiceUiState.AddedToCart -> "장바구니로 이동합니다"
             is VoiceUiState.Error -> "다시 시도해 주세요"
@@ -674,6 +676,7 @@ private fun VoiceUiState.resultStatusText(): String =
         VoiceUiState.PermissionRequired -> "마이크 권한을 허용하면 인식 결과가 여기에 표시돼요."
         VoiceUiState.Idle -> "메뉴를 말씀하시면 주문 항목과 예상 금액을 확인할게요."
         is VoiceUiState.Listening -> "말씀하신 메뉴를 듣고 있어요."
+        is VoiceUiState.Interpreting -> "말씀하신 주문을 이해하고 있어요…"
         is VoiceUiState.AddedToCart -> "주문 항목을 장바구니에 담았어요."
         is VoiceUiState.Error -> message
         is VoiceUiState.Parsed -> ""

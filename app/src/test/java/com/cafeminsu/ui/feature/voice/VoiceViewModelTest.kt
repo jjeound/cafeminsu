@@ -14,10 +14,13 @@ import com.cafeminsu.domain.model.MenuOptionGroup
 import com.cafeminsu.domain.model.SelectedOption
 import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.MenuRepository
-import com.cafeminsu.domain.voice.ParseVoiceOrderUseCase
+import com.cafeminsu.domain.voice.ParsedOrder
+import com.cafeminsu.domain.voice.ParsedOrderItem
+import com.cafeminsu.domain.voice.VoiceOrderInterpreter
 import com.cafeminsu.domain.voice.VoiceRecognitionError
 import com.cafeminsu.domain.voice.VoiceRecognitionEvent
 import com.cafeminsu.domain.voice.VoiceRecognizer
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -150,22 +153,80 @@ class VoiceViewModelTest {
         }
     }
 
+    @Test
+    fun finalEmitsInterpretingStateWhileLlmRuns() = runTest {
+        val recognizer = FakeVoiceRecognizer()
+        val gate = CompletableDeferred<Unit>()
+        val viewModel = viewModel(
+            recognizer = recognizer,
+            interpreter = FakeVoiceOrderInterpreter(gate = gate),
+        )
+
+        viewModel.uiState.test {
+            assertEquals(VoiceUiState.Idle, awaitItem())
+            viewModel.onPermissionResult(granted = true)
+            assertEquals(VoiceUiState.Listening(partialText = ""), awaitItem())
+
+            recognizer.emit(VoiceRecognitionEvent.Final("아메리카노 두 잔"))
+            assertEquals(VoiceUiState.Interpreting("아메리카노 두 잔"), awaitItem())
+
+            gate.complete(Unit)
+            val parsed = awaitParsed()
+            assertEquals(2, parsed.items.single().quantity)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun interpreterFailureMovesToErrorState() = runTest {
+        val recognizer = FakeVoiceRecognizer()
+        val viewModel = viewModel(
+            recognizer = recognizer,
+            interpreter = FakeVoiceOrderInterpreter(result = AppResult.Failure(DomainError.Unknown)),
+        )
+
+        viewModel.uiState.test {
+            assertEquals(VoiceUiState.Idle, awaitItem())
+            viewModel.onPermissionResult(granted = true)
+            assertEquals(VoiceUiState.Listening(partialText = ""), awaitItem())
+
+            recognizer.emit(VoiceRecognitionEvent.Final("아메리카노 두 잔"))
+
+            var state = awaitItem()
+            while (state is VoiceUiState.Listening || state is VoiceUiState.Interpreting) {
+                state = awaitItem()
+            }
+            assertTrue(state is VoiceUiState.Error)
+            assertEquals("음성 주문을 처리하지 못했어요", (state as VoiceUiState.Error).message)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     private fun viewModel(
         recognizer: FakeVoiceRecognizer = FakeVoiceRecognizer(),
+        interpreter: VoiceOrderInterpreter = FakeVoiceOrderInterpreter(),
         menuRepository: MenuRepository = FakeMenuRepository(AppResult.Success(seedMenu)),
         cartRepository: FakeCartRepository = FakeCartRepository(),
     ): VoiceViewModel =
         VoiceViewModel(
             voiceRecognizer = recognizer,
-            parseVoiceOrderUseCase = ParseVoiceOrderUseCase(),
+            voiceOrderInterpreter = interpreter,
             menuRepository = menuRepository,
             cartRepository = cartRepository,
         )
 
     private suspend fun ReceiveTurbine<VoiceUiState>.awaitParsed(): VoiceUiState.Parsed {
-        val state = awaitItem()
-        assertTrue(state is VoiceUiState.Parsed)
-        return state as VoiceUiState.Parsed
+        while (true) {
+            val state = awaitItem()
+            if (state is VoiceUiState.Parsed) {
+                return state
+            }
+            assertTrue(
+                state is VoiceUiState.Listening || state is VoiceUiState.Interpreting,
+            )
+        }
     }
 
     private companion object {
@@ -205,6 +266,29 @@ class VoiceViewModelTest {
         )
     }
 }
+
+private class FakeVoiceOrderInterpreter(
+    private val result: AppResult<ParsedOrder> = AppResult.Success(americanoTwoOrder()),
+    private val gate: CompletableDeferred<Unit>? = null,
+) : VoiceOrderInterpreter {
+    override suspend fun interpret(transcript: String, menu: List<MenuItem>): AppResult<ParsedOrder> {
+        gate?.await()
+        return result
+    }
+}
+
+private fun americanoTwoOrder(): ParsedOrder =
+    ParsedOrder(
+        items = listOf(
+            ParsedOrderItem(
+                menuItemId = "americano",
+                name = "아메리카노",
+                quantity = 2,
+                selectedOptions = emptyList(),
+            ),
+        ),
+        unmatched = emptyList(),
+    )
 
 private class FakeVoiceRecognizer : VoiceRecognizer {
     private val mutableEvents = MutableSharedFlow<VoiceRecognitionEvent>(
