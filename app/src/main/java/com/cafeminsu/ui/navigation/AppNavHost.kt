@@ -1,5 +1,6 @@
 package com.cafeminsu.ui.navigation
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -12,6 +13,7 @@ import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.selection.selectable
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -24,6 +26,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.unit.dp
 import androidx.navigation.NavHostController
@@ -33,6 +36,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import com.cafeminsu.R
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.domain.auth.OwnerAuthProvider
 import com.cafeminsu.domain.model.AuthState
@@ -422,12 +426,13 @@ private fun PlaceholderScreen(
 private data class BottomTab(
     val route: String,
     val label: String,
+    @DrawableRes val icon: Int? = null,
 )
 
 private val bottomTabs = listOf(
-    BottomTab(Routes.HOME, "홈"),
-    BottomTab(Routes.STORE, "주문"),
-    BottomTab(Routes.MY, "MY"),
+    BottomTab(Routes.HOME, "홈", R.drawable.ic_home),
+    BottomTab(Routes.STORE, "주문", R.drawable.ic_receipt),
+    BottomTab(Routes.MY, "MY", R.drawable.ic_person),
 )
 
 private val ownerBottomTabs = listOf(
@@ -505,11 +510,22 @@ private fun CafeBottomBar(
                         ),
                     contentAlignment = Alignment.Center,
                 ) {
-                    Text(
-                        text = tab.label,
-                        style = CafeTheme.typography.caption,
-                        color = if (selected) colors.primary else colors.muted,
-                    )
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        tab.icon?.let { iconRes ->
+                            Icon(
+                                painter = painterResource(iconRes),
+                                contentDescription = null,
+                                tint = if (selected) colors.primary else colors.muted,
+                                modifier = Modifier.size(spacing.space6),
+                            )
+                            Spacer(modifier = Modifier.height(spacing.space1))
+                        }
+                        Text(
+                            text = tab.label,
+                            style = CafeTheme.typography.caption,
+                            color = if (selected) colors.primary else colors.muted,
+                        )
+                    }
                 }
             }
         }

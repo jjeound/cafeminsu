@@ -17,6 +17,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -29,8 +30,10 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cafeminsu.R
 import com.cafeminsu.ui.components.CafeButton
 import com.cafeminsu.ui.components.CafeCard
 import com.cafeminsu.ui.components.CafeCardType
@@ -594,30 +597,12 @@ private fun SearchIcon(
     color: Color,
     modifier: Modifier = Modifier,
 ) {
-    Canvas(modifier = modifier) {
-        val stroke = Stroke(width = size.minDimension / IconStrokeDivider)
-        drawCircle(
-            color = color,
-            radius = size.minDimension / SearchCircleRadiusDivider,
-            center = Offset(
-                x = size.width / SearchCircleCenterDivider,
-                y = size.height / SearchCircleCenterDivider,
-            ),
-            style = stroke,
-        )
-        drawLine(
-            color = color,
-            start = Offset(
-                x = size.width * SearchHandleStartFraction,
-                y = size.height * SearchHandleStartFraction,
-            ),
-            end = Offset(
-                x = size.width * SearchHandleEndFraction,
-                y = size.height * SearchHandleEndFraction,
-            ),
-            strokeWidth = stroke.width,
-        )
-    }
+    Icon(
+        painter = painterResource(R.drawable.ic_search),
+        contentDescription = null,
+        tint = color,
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -656,10 +641,6 @@ private const val AddressMaxLines = 1
 private const val DividerThicknessDivider = 4
 private const val ScrimAlpha = 0.38f
 private const val IconStrokeDivider = 12f
-private const val SearchCircleRadiusDivider = 3.5f
-private const val SearchCircleCenterDivider = 2.4f
-private const val SearchHandleStartFraction = 0.62f
-private const val SearchHandleEndFraction = 0.88f
 private const val PinCircleRadiusDivider = 3.7f
 private const val PinDotRadiusDivider = 14f
 private const val PinCenterXDivider = 2f

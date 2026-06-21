@@ -15,6 +15,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,9 +24,11 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextAlign
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cafeminsu.R
 import com.cafeminsu.ui.components.CafeButton
 import com.cafeminsu.ui.components.CafeButtonVariant
 import com.cafeminsu.ui.components.CafeCard
@@ -238,11 +241,11 @@ private fun CloseButton(onClick: () -> Unit) {
             .clickable(role = Role.Button, onClick = onClick),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = "×",
-            style = CafeTheme.typography.h1,
-            color = CafeTheme.colors.ink,
-            textAlign = TextAlign.Center,
+        Icon(
+            painter = painterResource(R.drawable.ic_close),
+            contentDescription = null,
+            tint = CafeTheme.colors.ink,
+            modifier = Modifier.size(CafeTheme.spacing.space6),
         )
     }
 }
@@ -256,11 +259,11 @@ private fun SuccessIcon() {
             .background(CafeTheme.colors.primary),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = "✓",
-            style = CafeTheme.typography.display,
-            color = CafeTheme.colors.onPrimary,
-            textAlign = TextAlign.Center,
+        Icon(
+            painter = painterResource(R.drawable.ic_check),
+            contentDescription = null,
+            tint = CafeTheme.colors.onPrimary,
+            modifier = Modifier.size(CafeTheme.spacing.space14),
         )
     }
 }
@@ -274,11 +277,11 @@ private fun FailureIcon() {
             .background(CafeTheme.colors.error.copy(alpha = FailureIconBackgroundAlpha)),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = "×",
-            style = CafeTheme.typography.display,
-            color = CafeTheme.colors.error,
-            textAlign = TextAlign.Center,
+        Icon(
+            painter = painterResource(R.drawable.ic_close),
+            contentDescription = null,
+            tint = CafeTheme.colors.error,
+            modifier = Modifier.size(CafeTheme.spacing.space8),
         )
     }
 }

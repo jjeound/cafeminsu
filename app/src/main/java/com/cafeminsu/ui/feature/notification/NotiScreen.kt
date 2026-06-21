@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -25,7 +26,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cafeminsu.R
 import com.cafeminsu.domain.model.NotificationType
 import com.cafeminsu.ui.components.CafeTopBar
 import com.cafeminsu.ui.components.EmptyView
@@ -69,10 +72,10 @@ fun NotiScreen(
             CafeTopBar(
                 title = "알림",
                 navigationIcon = {
-                    Text(
-                        text = "‹",
-                        style = CafeTheme.typography.h2,
-                        color = CafeTheme.colors.ink,
+                    Icon(
+                        painter = painterResource(R.drawable.ic_chevron_left),
+                        contentDescription = "뒤로",
+                        tint = CafeTheme.colors.ink,
                     )
                 },
                 onNavigationClick = onBackClick,
@@ -223,10 +226,11 @@ private fun NotificationTypeIcon(type: NotificationType) {
         contentColor = colors.onPrimary,
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Text(
-                text = type.iconText(),
-                style = CafeTheme.typography.caption,
-                color = colors.onPrimary,
+            Icon(
+                painter = painterResource(type.iconRes()),
+                contentDescription = null,
+                tint = colors.onPrimary,
+                modifier = Modifier.size(spacing.space5),
             )
         }
     }
@@ -246,15 +250,16 @@ private fun NotificationType.iconContainerColor(): Color {
     }
 }
 
-private fun NotificationType.iconText(): String =
+@androidx.annotation.DrawableRes
+private fun NotificationType.iconRes(): Int =
     when (this) {
         NotificationType.OrderAccepted,
         NotificationType.OrderReady,
         NotificationType.OrderCompleted,
-        -> "☕"
+        -> R.drawable.ic_receipt
 
-        NotificationType.StampEarned -> "✱"
-        NotificationType.GifticonReceived -> "🎁"
+        NotificationType.StampEarned -> R.drawable.ic_star
+        NotificationType.GifticonReceived -> R.drawable.ic_gift
     }
 
 private val DividerHeight = androidx.compose.ui.unit.Dp.Hairline

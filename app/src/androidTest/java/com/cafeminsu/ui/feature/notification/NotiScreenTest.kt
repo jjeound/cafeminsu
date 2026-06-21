@@ -2,6 +2,7 @@ package com.cafeminsu.ui.feature.notification
 
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
+import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.cafeminsu.domain.model.NotificationType
@@ -48,7 +49,7 @@ class NotiScreenTest {
         composeRule.onNodeWithText("오늘").assertIsDisplayed()
         composeRule.onNodeWithText("주문이 준비됐어요").assertIsDisplayed()
         composeRule.onNodeWithText("방금").assertIsDisplayed()
-        composeRule.onNodeWithText("‹").performClick()
+        composeRule.onNodeWithContentDescription("뒤로").performClick()
 
         composeRule.runOnIdle {
             assertEquals(1, backClicks)

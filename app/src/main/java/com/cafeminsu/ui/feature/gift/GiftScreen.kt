@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -23,8 +24,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cafeminsu.R
 import com.cafeminsu.domain.model.GiftChannel
 import com.cafeminsu.ui.components.CafeButton
 import com.cafeminsu.ui.components.CafeButtonVariant
@@ -88,7 +91,13 @@ fun GiftScreen(
         Column(modifier = Modifier.fillMaxSize()) {
             CafeTopBar(
                 title = "선물하기",
-                navigationIcon = { Text(text = "‹") },
+                navigationIcon = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_chevron_left),
+                        contentDescription = null,
+                        tint = CafeTheme.colors.ink,
+                    )
+                },
                 onNavigationClick = onBackClick,
             )
 

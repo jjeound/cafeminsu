@@ -14,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -23,8 +24,10 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cafeminsu.R
 import com.cafeminsu.domain.model.CartItem
 import com.cafeminsu.domain.model.SelectedOption
 import com.cafeminsu.ui.components.CafeButton
@@ -93,10 +96,10 @@ fun PaymentScreen(
                 CafeTopBar(
                     title = "결제",
                     navigationIcon = {
-                        Text(
-                            text = "‹",
-                            style = CafeTheme.typography.h2,
-                            color = colors.ink,
+                        Icon(
+                            painter = painterResource(R.drawable.ic_chevron_left),
+                            contentDescription = null,
+                            tint = colors.ink,
                         )
                     },
                     onNavigationClick = onBackClick,

@@ -1,7 +1,6 @@
 package com.cafeminsu.ui.feature.home
 
 import androidx.compose.foundation.BorderStroke
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -15,6 +14,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -22,16 +22,14 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cafeminsu.R
 import com.cafeminsu.ui.components.CafeButton
 import com.cafeminsu.ui.components.CafeCard
 import com.cafeminsu.ui.components.CafeCardType
@@ -228,49 +226,12 @@ private fun NotificationBellButton(onClick: () -> Unit) {
 
 @Composable
 private fun BellIcon(modifier: Modifier = Modifier) {
-    val color = CafeTheme.colors.ink
-
-    Canvas(modifier = modifier) {
-        val stroke = Stroke(
-            width = BellStrokeWidth.toPx(),
-            cap = StrokeCap.Round,
-        )
-        drawArc(
-            color = color,
-            startAngle = BellArcStartAngle,
-            sweepAngle = BellArcSweepAngle,
-            useCenter = false,
-            topLeft = Offset(size.width * BellArcLeftRatio, size.height * BellArcTopRatio),
-            size = Size(size.width * BellArcWidthRatio, size.height * BellArcHeightRatio),
-            style = stroke,
-        )
-        drawLine(
-            color = color,
-            start = Offset(size.width * BellLeftXRatio, size.height * BellBodyTopRatio),
-            end = Offset(size.width * BellLeftXRatio, size.height * BellBodyBottomRatio),
-            strokeWidth = BellStrokeWidth.toPx(),
-            cap = StrokeCap.Round,
-        )
-        drawLine(
-            color = color,
-            start = Offset(size.width * BellRightXRatio, size.height * BellBodyTopRatio),
-            end = Offset(size.width * BellRightXRatio, size.height * BellBodyBottomRatio),
-            strokeWidth = BellStrokeWidth.toPx(),
-            cap = StrokeCap.Round,
-        )
-        drawLine(
-            color = color,
-            start = Offset(size.width * BellBaseLeftRatio, size.height * BellBodyBottomRatio),
-            end = Offset(size.width * BellBaseRightRatio, size.height * BellBodyBottomRatio),
-            strokeWidth = BellStrokeWidth.toPx(),
-            cap = StrokeCap.Round,
-        )
-        drawCircle(
-            color = color,
-            radius = BellClapperRadius.toPx(),
-            center = Offset(size.width * BellCenterRatio, size.height * BellClapperYRatio),
-        )
-    }
+    Icon(
+        painter = painterResource(R.drawable.ic_bell),
+        contentDescription = null,
+        tint = CafeTheme.colors.ink,
+        modifier = modifier,
+    )
 }
 
 @Composable
@@ -426,10 +387,11 @@ private fun CouponIcon() {
         contentColor = CafeTheme.colors.onPrimary,
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Text(
-                text = "쿠",
-                style = CafeTheme.typography.caption,
-                color = CafeTheme.colors.onPrimary,
+            Icon(
+                painter = painterResource(R.drawable.ic_ticket),
+                contentDescription = null,
+                tint = CafeTheme.colors.onPrimary,
+                modifier = Modifier.size(CafeTheme.spacing.space5),
             )
         }
     }
@@ -610,19 +572,3 @@ private const val FeaturedDescriptionMaxLines = 2
 private const val RecentOrderNameMaxLines = 2
 private const val RecentOrderOptionMaxLines = 1
 private const val ReorderPillMaxLines = 1
-private const val BellArcStartAngle = 200f
-private const val BellArcSweepAngle = 140f
-private const val BellArcLeftRatio = 0.28f
-private const val BellArcTopRatio = 0.12f
-private const val BellArcWidthRatio = 0.44f
-private const val BellArcHeightRatio = 0.34f
-private const val BellLeftXRatio = 0.28f
-private const val BellRightXRatio = 0.72f
-private const val BellBodyTopRatio = 0.32f
-private const val BellBodyBottomRatio = 0.74f
-private const val BellBaseLeftRatio = 0.22f
-private const val BellBaseRightRatio = 0.78f
-private const val BellCenterRatio = 0.5f
-private const val BellClapperYRatio = 0.84f
-private val BellStrokeWidth = 1.5.dp
-private val BellClapperRadius = 1.5.dp

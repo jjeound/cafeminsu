@@ -11,6 +11,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -19,8 +20,10 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cafeminsu.R
 import com.cafeminsu.ui.components.CafeCard
 import com.cafeminsu.ui.components.CafeCardType
 import com.cafeminsu.ui.components.CafeTopBar
@@ -63,7 +66,13 @@ fun CouponScreen(
         Column(modifier = Modifier.fillMaxSize()) {
             CafeTopBar(
                 title = "쿠폰",
-                navigationIcon = { Text(text = "‹") },
+                navigationIcon = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_chevron_left),
+                        contentDescription = null,
+                        tint = CafeTheme.colors.ink,
+                    )
+                },
                 onNavigationClick = onBackClick,
             )
 

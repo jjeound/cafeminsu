@@ -26,6 +26,7 @@ import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.SnackbarResult
 import androidx.compose.material3.SnackbarVisuals
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -38,8 +39,10 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.window.Dialog
+import com.cafeminsu.R
 import com.cafeminsu.core.DataUiState
 import com.cafeminsu.ui.theme.CafeTheme
 
@@ -161,7 +164,13 @@ fun ErrorView(
             if (showTopBar) {
                 CafeTopBar(
                     title = "오류",
-                    navigationIcon = { Text(text = "‹") },
+                    navigationIcon = {
+                        Icon(
+                            painter = painterResource(R.drawable.ic_chevron_left),
+                            contentDescription = null,
+                            tint = CafeTheme.colors.ink,
+                        )
+                    },
                     onNavigationClick = onBackClick,
                 )
             }

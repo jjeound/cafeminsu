@@ -34,6 +34,7 @@ import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -49,6 +50,7 @@ import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -56,6 +58,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.core.content.ContextCompat
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cafeminsu.R
 import com.cafeminsu.domain.model.SelectedOption
 import com.cafeminsu.domain.voice.ParsedOrderItem
 import com.cafeminsu.ui.components.CafeButton
@@ -186,7 +189,7 @@ private fun VoiceTopBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         VoiceTopBarIcon(
-            text = "‹",
+            iconRes = R.drawable.ic_chevron_left,
             contentDescription = "뒤로",
             onClick = onBackClick,
         )
@@ -200,7 +203,7 @@ private fun VoiceTopBar(
             overflow = TextOverflow.Ellipsis,
         )
         VoiceTopBarIcon(
-            text = "×",
+            iconRes = R.drawable.ic_close,
             contentDescription = "닫기",
             onClick = onCloseClick,
         )
@@ -209,7 +212,7 @@ private fun VoiceTopBar(
 
 @Composable
 private fun VoiceTopBarIcon(
-    text: String,
+    @androidx.annotation.DrawableRes iconRes: Int,
     contentDescription: String,
     onClick: () -> Unit,
 ) {
@@ -225,10 +228,11 @@ private fun VoiceTopBarIcon(
             ),
         contentAlignment = Alignment.Center,
     ) {
-        Text(
-            text = text,
-            style = CafeTheme.typography.h2,
-            color = CafeTheme.colors.onDark,
+        Icon(
+            painter = painterResource(iconRes),
+            contentDescription = null,
+            tint = CafeTheme.colors.onDark,
+            modifier = Modifier.size(spacing.space6),
         )
     }
 }

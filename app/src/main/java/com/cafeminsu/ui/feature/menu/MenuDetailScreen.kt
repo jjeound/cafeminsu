@@ -18,6 +18,7 @@ import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.Scaffold
+import androidx.compose.material3.Icon
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -32,8 +33,10 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cafeminsu.R
 import com.cafeminsu.ui.components.CafeButton
 import com.cafeminsu.ui.components.CafeButtonVariant
 import com.cafeminsu.ui.components.CafeSnackbarHost
@@ -103,10 +106,10 @@ fun MenuDetailScreen(
             CafeTopBar(
                 title = "메뉴 상세",
                 navigationIcon = {
-                    Text(
-                        text = "‹",
-                        style = CafeTheme.typography.h2,
-                        color = colors.ink,
+                    Icon(
+                        painter = painterResource(R.drawable.ic_chevron_left),
+                        contentDescription = null,
+                        tint = colors.ink,
                     )
                 },
                 onNavigationClick = onBackClick,

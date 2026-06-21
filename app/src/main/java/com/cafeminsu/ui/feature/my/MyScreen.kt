@@ -1,7 +1,6 @@
 package com.cafeminsu.ui.feature.my
 
 import android.widget.Toast
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -19,6 +18,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -30,18 +30,15 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cafeminsu.R
 import com.cafeminsu.ui.components.CafeCard
 import com.cafeminsu.ui.components.CafeCardType
 import com.cafeminsu.ui.components.EmptyView
@@ -179,10 +176,11 @@ private fun MyHeader() {
                 .semantics { contentDescription = "설정" },
             contentAlignment = Alignment.Center,
         ) {
-            Text(
-                text = "⚙",
-                style = CafeTheme.typography.h2,
-                color = CafeTheme.colors.ink,
+            Icon(
+                painter = painterResource(R.drawable.ic_settings),
+                contentDescription = null,
+                tint = CafeTheme.colors.ink,
+                modifier = Modifier.size(CafeTheme.spacing.space6),
             )
         }
     }
@@ -475,10 +473,11 @@ private fun SettingRow(
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        Text(
-            text = "›",
-            style = CafeTheme.typography.h2,
-            color = colors.muted,
+        Icon(
+            painter = painterResource(R.drawable.ic_chevron_right),
+            contentDescription = null,
+            tint = colors.muted,
+            modifier = Modifier.size(CafeTheme.spacing.space5),
         )
     }
 }
@@ -497,132 +496,18 @@ private fun QuickMenuIcon(
     id: String,
     modifier: Modifier = Modifier,
 ) {
-    val color = CafeTheme.colors.primary
-
-    Canvas(modifier = modifier) {
-        val stroke = Stroke(
-            width = IconStrokeWidth.toPx(),
-            cap = StrokeCap.Round,
-        )
-        when (id) {
-            HistoryQuickMenuId -> {
-                drawRoundRect(
-                    color = color,
-                    topLeft = Offset(size.width * IconInsetRatio, size.height * IconTopRatio),
-                    size = Size(size.width * IconBodyWidthRatio, size.height * IconBodyHeightRatio),
-                    cornerRadius = CornerRadius(IconCornerRadius.toPx()),
-                    style = stroke,
-                )
-                drawLine(
-                    color = color,
-                    start = Offset(size.width * IconLineLeftRatio, size.height * IconLineOneYRatio),
-                    end = Offset(size.width * IconLineRightRatio, size.height * IconLineOneYRatio),
-                    strokeWidth = IconStrokeWidth.toPx(),
-                    cap = StrokeCap.Round,
-                )
-                drawLine(
-                    color = color,
-                    start = Offset(size.width * IconLineLeftRatio, size.height * IconLineTwoYRatio),
-                    end = Offset(size.width * IconLineRightRatio, size.height * IconLineTwoYRatio),
-                    strokeWidth = IconStrokeWidth.toPx(),
-                    cap = StrokeCap.Round,
-                )
-            }
-
-            GiftQuickMenuId -> {
-                drawRoundRect(
-                    color = color,
-                    topLeft = Offset(size.width * IconInsetRatio, size.height * GiftBoxTopRatio),
-                    size = Size(size.width * IconBodyWidthRatio, size.height * GiftBoxHeightRatio),
-                    cornerRadius = CornerRadius(IconCornerRadius.toPx()),
-                    style = stroke,
-                )
-                drawLine(
-                    color = color,
-                    start = Offset(size.width * IconCenterRatio, size.height * GiftBoxTopRatio),
-                    end = Offset(size.width * IconCenterRatio, size.height * GiftBoxBottomRatio),
-                    strokeWidth = IconStrokeWidth.toPx(),
-                    cap = StrokeCap.Round,
-                )
-                drawLine(
-                    color = color,
-                    start = Offset(size.width * IconInsetRatio, size.height * GiftRibbonYRatio),
-                    end = Offset(size.width * IconRightRatio, size.height * GiftRibbonYRatio),
-                    strokeWidth = IconStrokeWidth.toPx(),
-                    cap = StrokeCap.Round,
-                )
-                drawLine(
-                    color = color,
-                    start = Offset(size.width * GiftBowLeftRatio, size.height * GiftBowYRatio),
-                    end = Offset(size.width * IconCenterRatio, size.height * GiftBoxTopRatio),
-                    strokeWidth = IconStrokeWidth.toPx(),
-                    cap = StrokeCap.Round,
-                )
-                drawLine(
-                    color = color,
-                    start = Offset(size.width * GiftBowRightRatio, size.height * GiftBowYRatio),
-                    end = Offset(size.width * IconCenterRatio, size.height * GiftBoxTopRatio),
-                    strokeWidth = IconStrokeWidth.toPx(),
-                    cap = StrokeCap.Round,
-                )
-            }
-
-            CouponQuickMenuId -> {
-                drawRoundRect(
-                    color = color,
-                    topLeft = Offset(size.width * IconInsetRatio, size.height * CouponTopRatio),
-                    size = Size(size.width * IconBodyWidthRatio, size.height * CouponHeightRatio),
-                    cornerRadius = CornerRadius(IconCornerRadius.toPx()),
-                    style = stroke,
-                )
-                drawLine(
-                    color = color,
-                    start = Offset(size.width * CouponFoldRatio, size.height * CouponTopRatio),
-                    end = Offset(size.width * CouponFoldRatio, size.height * CouponBottomRatio),
-                    strokeWidth = IconStrokeWidth.toPx(),
-                    cap = StrokeCap.Round,
-                )
-            }
-
-            else -> {
-                drawArc(
-                    color = color,
-                    startAngle = BellArcStartAngle,
-                    sweepAngle = BellArcSweepAngle,
-                    useCenter = false,
-                    topLeft = Offset(size.width * BellArcLeftRatio, size.height * BellArcTopRatio),
-                    size = Size(size.width * BellArcWidthRatio, size.height * BellArcHeightRatio),
-                    style = stroke,
-                )
-                drawLine(
-                    color = color,
-                    start = Offset(size.width * BellLeftXRatio, size.height * BellBodyTopRatio),
-                    end = Offset(size.width * BellLeftXRatio, size.height * BellBodyBottomRatio),
-                    strokeWidth = IconStrokeWidth.toPx(),
-                    cap = StrokeCap.Round,
-                )
-                drawLine(
-                    color = color,
-                    start = Offset(size.width * BellRightXRatio, size.height * BellBodyTopRatio),
-                    end = Offset(size.width * BellRightXRatio, size.height * BellBodyBottomRatio),
-                    strokeWidth = IconStrokeWidth.toPx(),
-                    cap = StrokeCap.Round,
-                )
-                drawLine(
-                    color = color,
-                    start = Offset(size.width * BellBaseLeftRatio, size.height * BellBodyBottomRatio),
-                    end = Offset(size.width * BellBaseRightRatio, size.height * BellBodyBottomRatio),
-                    strokeWidth = IconStrokeWidth.toPx(),
-                    cap = StrokeCap.Round,
-                )
-                drawCircle(
-                    color = color,
-                    radius = BellClapperRadius.toPx(),
-                    center = Offset(size.width * IconCenterRatio, size.height * BellClapperYRatio),
-                )
-            }
-        }
+    val iconRes = when (id) {
+        HistoryQuickMenuId -> R.drawable.ic_history
+        GiftQuickMenuId -> R.drawable.ic_gift
+        CouponQuickMenuId -> R.drawable.ic_coupon
+        else -> R.drawable.ic_bell
     }
+    Icon(
+        painter = painterResource(iconRes),
+        contentDescription = null,
+        tint = CafeTheme.colors.primary,
+        modifier = modifier,
+    )
 }
 
 private const val HistoryQuickMenuId = "history"
@@ -633,40 +518,3 @@ private const val StatCellWeight = 1f
 private const val QuickMenuTileWeight = 1f
 private const val SettingsLabelWeight = 1f
 private const val DarkDividerAlpha = 0.28f
-private val IconStrokeWidth = 1.5.dp
-private val IconCornerRadius = 4.dp
-private const val IconInsetRatio = 0.18f
-private const val IconRightRatio = 0.82f
-private const val IconTopRatio = 0.14f
-private const val IconBodyWidthRatio = 0.64f
-private const val IconBodyHeightRatio = 0.72f
-private const val IconLineLeftRatio = 0.34f
-private const val IconLineRightRatio = 0.66f
-private const val IconLineOneYRatio = 0.42f
-private const val IconLineTwoYRatio = 0.58f
-private const val IconCenterRatio = 0.5f
-private const val GiftBoxTopRatio = 0.30f
-private const val GiftBoxHeightRatio = 0.54f
-private const val GiftBoxBottomRatio = 0.84f
-private const val GiftRibbonYRatio = 0.48f
-private const val GiftBowLeftRatio = 0.34f
-private const val GiftBowRightRatio = 0.66f
-private const val GiftBowYRatio = 0.16f
-private const val CouponTopRatio = 0.24f
-private const val CouponHeightRatio = 0.52f
-private const val CouponBottomRatio = 0.76f
-private const val CouponFoldRatio = 0.64f
-private const val BellArcStartAngle = 200f
-private const val BellArcSweepAngle = 140f
-private const val BellArcLeftRatio = 0.25f
-private const val BellArcTopRatio = 0.16f
-private const val BellArcWidthRatio = 0.5f
-private const val BellArcHeightRatio = 0.42f
-private const val BellLeftXRatio = 0.28f
-private const val BellRightXRatio = 0.72f
-private const val BellBodyTopRatio = 0.38f
-private const val BellBodyBottomRatio = 0.68f
-private const val BellBaseLeftRatio = 0.22f
-private const val BellBaseRightRatio = 0.78f
-private const val BellClapperYRatio = 0.78f
-private val BellClapperRadius = 1.5.dp

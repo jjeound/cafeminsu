@@ -1,6 +1,5 @@
 package com.cafeminsu.ui.feature.menu
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -19,6 +18,7 @@ import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.material3.HorizontalDivider
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,16 +27,13 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cafeminsu.R
 import com.cafeminsu.ui.components.CafeChip
 import com.cafeminsu.ui.components.EmptyView
 import com.cafeminsu.ui.components.ErrorView
@@ -387,92 +384,24 @@ private fun VoiceFloatingButton(
 private fun SearchIcon(
     modifier: Modifier = Modifier,
 ) {
-    val color = CafeTheme.colors.ink
-    Canvas(modifier = modifier) {
-        val stroke = Stroke(
-            width = IconStrokeWidth.toPx(),
-            cap = StrokeCap.Round,
-        )
-        val radius = size.minDimension / SearchCircleRadiusDivider
-        val center = Offset(
-            x = size.width / SearchCircleCenterDivider,
-            y = size.height / SearchCircleCenterDivider,
-        )
-        drawCircle(
-            color = color,
-            radius = radius,
-            center = center,
-            style = stroke,
-        )
-        drawLine(
-            color = color,
-            start = Offset(
-                x = size.width * SearchHandleStartFraction,
-                y = size.height * SearchHandleStartFraction,
-            ),
-            end = Offset(
-                x = size.width * SearchHandleEndFraction,
-                y = size.height * SearchHandleEndFraction,
-            ),
-            strokeWidth = IconStrokeWidth.toPx(),
-            cap = StrokeCap.Round,
-        )
-    }
+    Icon(
+        painter = painterResource(R.drawable.ic_search),
+        contentDescription = null,
+        tint = CafeTheme.colors.ink,
+        modifier = modifier,
+    )
 }
 
 @Composable
 private fun MicIcon(
     modifier: Modifier = Modifier,
 ) {
-    val color = CafeTheme.colors.onPrimary
-    Canvas(modifier = modifier) {
-        val stroke = Stroke(
-            width = IconStrokeWidth.toPx(),
-            cap = StrokeCap.Round,
-        )
-        val micWidth = size.width * MicWidthFraction
-        val micHeight = size.height * MicHeightFraction
-        val micLeft = (size.width - micWidth) / CenterDivider
-        val micTop = size.height * MicTopFraction
-        val centerX = size.width / CenterDivider
-
-        drawRoundRect(
-            color = color,
-            topLeft = Offset(micLeft, micTop),
-            size = Size(micWidth, micHeight),
-            cornerRadius = CornerRadius(micWidth / CenterDivider),
-            style = stroke,
-        )
-        drawArc(
-            color = color,
-            startAngle = MicArcStartAngle,
-            sweepAngle = MicArcSweepAngle,
-            useCenter = false,
-            topLeft = Offset(
-                x = centerX - size.width * MicArcWidthFraction / CenterDivider,
-                y = size.height * MicArcTopFraction,
-            ),
-            size = Size(
-                width = size.width * MicArcWidthFraction,
-                height = size.height * MicArcHeightFraction,
-            ),
-            style = stroke,
-        )
-        drawLine(
-            color = color,
-            start = Offset(centerX, size.height * MicStemTopFraction),
-            end = Offset(centerX, size.height * MicStemBottomFraction),
-            strokeWidth = IconStrokeWidth.toPx(),
-            cap = StrokeCap.Round,
-        )
-        drawLine(
-            color = color,
-            start = Offset(size.width * MicBaseStartFraction, size.height * MicBaseYFraction),
-            end = Offset(size.width * MicBaseEndFraction, size.height * MicBaseYFraction),
-            strokeWidth = IconStrokeWidth.toPx(),
-            cap = StrokeCap.Round,
-        )
-    }
+    Icon(
+        painter = painterResource(R.drawable.ic_mic),
+        contentDescription = null,
+        tint = CafeTheme.colors.onPrimary,
+        modifier = modifier,
+    )
 }
 
 private val MenuUiState.storeName: String
@@ -494,22 +423,3 @@ private const val EnabledMenuAlpha = 1f
 private const val DisabledMenuAlpha = 0.42f
 private const val MenuNameMaxLines = 1
 private const val MenuDescriptionMaxLines = 1
-private const val SearchCircleRadiusDivider = 3.5f
-private const val SearchCircleCenterDivider = 2.4f
-private const val SearchHandleStartFraction = 0.62f
-private const val SearchHandleEndFraction = 0.88f
-private const val CenterDivider = 2f
-private const val MicWidthFraction = 0.36f
-private const val MicHeightFraction = 0.48f
-private const val MicTopFraction = 0.08f
-private const val MicArcStartAngle = 0f
-private const val MicArcSweepAngle = 180f
-private const val MicArcWidthFraction = 0.68f
-private const val MicArcHeightFraction = 0.52f
-private const val MicArcTopFraction = 0.3f
-private const val MicStemTopFraction = 0.72f
-private const val MicStemBottomFraction = 0.84f
-private const val MicBaseStartFraction = 0.34f
-private const val MicBaseEndFraction = 0.66f
-private const val MicBaseYFraction = 0.88f
-private val IconStrokeWidth = 1.5.dp

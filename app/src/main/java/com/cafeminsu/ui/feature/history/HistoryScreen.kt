@@ -1,6 +1,5 @@
 package com.cafeminsu.ui.feature.history
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -16,6 +15,7 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,17 +24,15 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.StrokeCap
-import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cafeminsu.R
 import com.cafeminsu.ui.components.CafeButton
 import com.cafeminsu.ui.components.CafeButtonVariant
 import com.cafeminsu.ui.components.CafeCard
@@ -86,7 +84,13 @@ fun HistoryScreen(
         Column(modifier = Modifier.fillMaxSize()) {
             CafeTopBar(
                 title = "주문내역",
-                navigationIcon = { Text(text = "‹") },
+                navigationIcon = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_chevron_left),
+                        contentDescription = null,
+                        tint = CafeTheme.colors.ink,
+                    )
+                },
                 onNavigationClick = onBackClick,
             )
 
@@ -412,61 +416,12 @@ private fun ReceiptEmptyIcon() {
         color = colors.accentSoft,
         contentColor = colors.primary,
     ) {
-        Canvas(modifier = Modifier.fillMaxSize()) {
-            val strokeWidth = EmptyIconStrokeWidth.toPx()
-            val receiptWidth = size.width * ReceiptWidthRatio
-            val receiptHeight = size.height * ReceiptHeightRatio
-            val left = (size.width - receiptWidth) / CenterDivider
-            val top = size.height * ReceiptTopRatio
-            val bottom = top + receiptHeight
-            val right = left + receiptWidth
-            val notchY = bottom - size.height * ReceiptNotchHeightRatio
-            val notchWidth = receiptWidth / ReceiptNotchDivider
-            val path = Path().apply {
-                moveTo(left, top)
-                lineTo(right, top)
-                lineTo(right, bottom)
-                lineTo(right - notchWidth, notchY)
-                lineTo(right - notchWidth * ReceiptNotchMiddleMultiplier, bottom)
-                lineTo(left + notchWidth * ReceiptNotchMiddleMultiplier, notchY)
-                lineTo(left + notchWidth, bottom)
-                lineTo(left, notchY)
-                close()
-            }
-
-            drawPath(
-                path = path,
-                color = colors.primary,
-                style = Stroke(
-                    width = strokeWidth,
-                    cap = StrokeCap.Round,
-                ),
-            )
-            drawLine(
-                color = colors.primary,
-                start = Offset(
-                    x = left + receiptWidth * ReceiptLineStartRatio,
-                    y = top + receiptHeight * FirstReceiptLineYRatio,
-                ),
-                end = Offset(
-                    x = right - receiptWidth * ReceiptLineStartRatio,
-                    y = top + receiptHeight * FirstReceiptLineYRatio,
-                ),
-                strokeWidth = strokeWidth,
-                cap = StrokeCap.Round,
-            )
-            drawLine(
-                color = colors.primary,
-                start = Offset(
-                    x = left + receiptWidth * ReceiptLineStartRatio,
-                    y = top + receiptHeight * SecondReceiptLineYRatio,
-                ),
-                end = Offset(
-                    x = right - receiptWidth * ReceiptLineStartRatio,
-                    y = top + receiptHeight * SecondReceiptLineYRatio,
-                ),
-                strokeWidth = strokeWidth,
-                cap = StrokeCap.Round,
+        Box(contentAlignment = Alignment.Center) {
+            Icon(
+                painter = painterResource(R.drawable.ic_receipt),
+                contentDescription = null,
+                tint = colors.primary,
+                modifier = Modifier.size(EmptyIconGlyphSize),
             )
         }
     }
@@ -490,17 +445,6 @@ private const val ConnectorWeight = 1.2f
 private const val UpcomingAlpha = 0.28f
 private const val SummaryMaxLines = 1
 private const val StepLabelMaxLines = 1
-private const val CenterDivider = 2f
-private const val ReceiptWidthRatio = 0.36f
-private const val ReceiptHeightRatio = 0.44f
-private const val ReceiptTopRatio = 0.28f
-private const val ReceiptNotchHeightRatio = 0.08f
-private const val ReceiptNotchDivider = 4f
-private const val ReceiptNotchMiddleMultiplier = 2f
-private const val ReceiptLineStartRatio = 0.28f
-private const val FirstReceiptLineYRatio = 0.3f
-private const val SecondReceiptLineYRatio = 0.5f
-
 private val StepConnectorHeight: Dp = 2.dp
 private val EmptyIconContainerSize: Dp = 140.dp
-private val EmptyIconStrokeWidth: Dp = 3.dp
+private val EmptyIconGlyphSize: Dp = 56.dp
