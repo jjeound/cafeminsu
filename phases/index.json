@@ -126,6 +126,12 @@
       "status": "completed",
       "summary": "리워드(스탬프/기프티콘)·선물·알림 실서버 연동 (점주/매출/쿠폰/추천은 Mock 유지)",
       "completed_at": "2026-06-21T15:25:19+0900"
+    },
+    {
+      "dir": "18-signup-nickname",
+      "name": "signup-nickname",
+      "status": "pending",
+      "summary": "신규 카카오 유저 닉네임/회원가입(SIGNUP) 플로우 — isNewUser 라우팅 + 닉네임 중복확인/가입 실연동"
     }
   ]
 }
