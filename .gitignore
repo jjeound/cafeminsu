@@ -27,3 +27,6 @@ __pycache__/
 # phase execution outputs
 phases/**/phase*-output.json
 phases/**/step*-output.json
+
+# backend-generated API spec dump (백엔드 산출물, 앱 소스 아님 — 로컬 참조용으로만 유지)
+docs/openapi.json
