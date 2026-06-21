@@ -123,8 +123,9 @@
     {
       "dir": "17-remaining-domains",
       "name": "remaining-domains",
-      "status": "pending",
-      "summary": "리워드(스탬프/기프티콘)·선물·알림 실서버 연동 (점주/매출/쿠폰/추천은 Mock 유지)"
+      "status": "completed",
+      "summary": "리워드(스탬프/기프티콘)·선물·알림 실서버 연동 (점주/매출/쿠폰/추천은 Mock 유지)",
+      "completed_at": "2026-06-21T15:25:19+0900"
     }
   ]
 }
