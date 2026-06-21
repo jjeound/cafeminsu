@@ -2,7 +2,13 @@
 """
 Harness Step Executor — phase 내 step을 순차 실행하고 자가 교정한다.
 
-각 step은 `codex exec`(OpenAI Codex CLI)로 비대화형 구현·자가교정·자동커밋된다.
+각 step은 `claude -p`(Claude Code 헤드리스)로 비대화형 구현·자가교정·자동커밋된다.
+(이전엔 `codex exec`를 사용했으나 Claude Code 로 전환.)
+
+환경변수(선택):
+    HARNESS_CLAUDE_BIN      claude 실행 파일 경로 (기본: claude)
+    HARNESS_CLAUDE_MODEL    사용할 모델 별칭/이름 (기본: 미지정 = Claude Code 기본 모델)
+    HARNESS_CLAUDE_TIMEOUT  step 당 타임아웃 초 (기본: 1800)
 
 Usage:
     python3 scripts/execute.py <phase-dir> [--push]
@@ -22,6 +28,11 @@ from pathlib import Path
 from typing import Optional
 
 ROOT = Path(__file__).resolve().parent.parent
+
+# 하네스 에이전트: Claude Code 헤드리스(`claude -p`). 환경변수로 오버라이드 가능.
+CLAUDE_BIN = os.environ.get("HARNESS_CLAUDE_BIN", "claude")
+CLAUDE_MODEL = os.environ.get("HARNESS_CLAUDE_MODEL", "")
+CLAUDE_TIMEOUT = int(os.environ.get("HARNESS_CLAUDE_TIMEOUT", "1800"))
 
 
 @contextlib.contextmanager
@@ -198,10 +209,12 @@ class StepExecutor:
 
     def _load_guardrails(self) -> str:
         sections = []
-        # codex 네이티브 가드레일 파일(AGENTS.md) 우선, 없으면 CLAUDE.md fallback.
-        rules_file = ROOT / "AGENTS.md"
+        # Claude 네이티브 가드레일 파일(CLAUDE.md) 우선, 없으면 AGENTS.md fallback.
+        # (cwd 가 repo 루트라 CLAUDE.md 는 Claude Code 가 자동 로드하지만, docs/*.md 주입과 함께
+        #  프롬프트에 명시해 두면 컨텍스트가 확실하다.)
+        rules_file = ROOT / "CLAUDE.md"
         if not rules_file.exists():
-            rules_file = ROOT / "CLAUDE.md"
+            rules_file = ROOT / "AGENTS.md"
         if rules_file.exists():
             sections.append(f"## 프로젝트 규칙 ({rules_file.name})\n\n{rules_file.read_text()}")
         docs_dir = ROOT / "docs"
@@ -249,9 +262,9 @@ class StepExecutor:
             f"   {commit_example}\n\n---\n\n"
         )
 
-    # --- Codex 호출 ---
+    # --- Claude 호출 ---
 
-    def _invoke_codex(self, step: dict, preamble: str) -> dict:
+    def _invoke_claude(self, step: dict, preamble: str) -> dict:
         step_num, step_name = step["step"], step["name"]
         step_file = self._phase_dir / f"step{step_num}.md"
 
@@ -261,30 +274,39 @@ class StepExecutor:
 
         prompt = preamble + step_file.read_text()
 
-        # step index 의 "images" 에 적힌 디자인 PNG 를 codex 에 첨부해, 화면을 직접 보고 따라 그리게 한다.
-        # (codex exec 의 -i/--image 지원). 누락된 파일은 건너뛴다. 프롬프트는 위치 인자로 두고 이미지 플래그를
-        # 뒤에 붙여, 이미지가 없을 때 명령이 기존과 동일하도록 유지한다(회귀 방지).
-        image_args = []
+        # step index 의 "images" 에 적힌 디자인 PNG 경로를 프롬프트에 명시해, Claude 가 Read 도구로
+        # 직접 열어 화면을 보고 따라 그리게 한다(codex 의 --image 플래그 대체). 누락 파일은 건너뛴다.
+        images = []
         for img in step.get("images", []):
-            img_path = Path(self._root) / img
-            if img_path.exists():
-                image_args += ["--image", str(img_path)]
+            if (Path(self._root) / img).exists():
+                images.append(img)
             else:
                 print(f"\n  WARN: step {step_num} 디자인 이미지 누락(첨부 건너뜀): {img}")
+        if images:
+            listing = "\n".join(f"- {img}" for img in images)
+            prompt += (
+                "\n\n## 첨부 디자인 이미지\n"
+                "아래 PNG 파일을 **Read 도구로 직접 열어** 화면을 보고 정확히 따라 구현하라:\n"
+                f"{listing}\n"
+            )
 
-        # --dangerously-bypass-hook-trust: 자동화가 검증한 훅(.codex/hooks.json)을 신뢰 프롬프트
-        # 없이 실행하도록 한다. 단 Codex 0.140.0 기준 PreToolUse 훅은 대화형 TUI에서만 발화되고
-        # `codex exec`(헤드리스)에서는 발화되지 않으므로, 현재 하네스에서 TDD 가드는 동작하지 않는다.
-        # (가드는 대화형 Codex 세션용. 플래그는 exec 훅 지원 시를 대비한 forward-compat.)
+        # Claude Code 헤드리스 모드:
+        #   -p/--print: 비대화형 1회 실행. --dangerously-skip-permissions: 도구(편집/Bash) 자동 승인.
+        #   --output-format stream-json --verbose: 이벤트 스트림(디버그용, step 출력 파일에 저장).
+        # cwd 가 repo 루트라 CLAUDE.md 와 .claude 훅(TDD 가드 등)이 자동 적용된다(codex exec 와 달리
+        # PreToolUse 훅이 실제로 발화됨).
+        cmd = [CLAUDE_BIN, "-p", "--dangerously-skip-permissions",
+               "--output-format", "stream-json", "--verbose"]
+        if CLAUDE_MODEL:
+            cmd += ["--model", CLAUDE_MODEL]
+        cmd.append(prompt)
+
         result = subprocess.run(
-            ["codex", "exec", "--dangerously-bypass-approvals-and-sandbox",
-             "--dangerously-bypass-hook-trust", "--skip-git-repo-check", "--json", prompt]
-            + image_args,
-            cwd=self._root, capture_output=True, text=True, timeout=1800,
+            cmd, cwd=self._root, capture_output=True, text=True, timeout=CLAUDE_TIMEOUT,
         )
 
         if result.returncode != 0:
-            print(f"\n  WARN: Codex가 비정상 종료됨 (code {result.returncode})")
+            print(f"\n  WARN: Claude가 비정상 종료됨 (code {result.returncode})")
             if result.stderr:
                 print(f"  stderr: {result.stderr[:500]}")
 
@@ -349,7 +371,7 @@ class StepExecutor:
                 tag += f" [retry {attempt}/{self.MAX_RETRIES}]"
 
             with progress_indicator(tag) as pi:
-                self._invoke_codex(step, preamble)
+                self._invoke_claude(step, preamble)
             # pi.elapsed 는 progress_indicator 의 finally 에서 설정되므로 with 블록 종료 후 읽는다.
             elapsed = int(pi.elapsed)
 

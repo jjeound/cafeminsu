@@ -471,24 +471,25 @@ class TestCommitStep:
 
 
 # ---------------------------------------------------------------------------
-# _invoke_codex (mocked)
+# _invoke_claude (mocked)
 # ---------------------------------------------------------------------------
 
-class TestInvokeCodex:
-    def test_invokes_codex_with_correct_args(self, executor):
+class TestInvokeClaude:
+    def test_invokes_claude_with_correct_args(self, executor):
         mock_result = MagicMock(returncode=0, stdout='{"result": "ok"}', stderr="")
         step = {"step": 2, "name": "ui"}
         preamble = "PREAMBLE\n"
 
         with patch("subprocess.run", return_value=mock_result) as mock_run:
-            output = executor._invoke_codex(step, preamble)
+            output = executor._invoke_claude(step, preamble)
 
         cmd = mock_run.call_args[0][0]
-        assert cmd[0] == "codex"
-        assert "exec" in cmd
-        assert "--dangerously-bypass-approvals-and-sandbox" in cmd
-        assert "--dangerously-bypass-hook-trust" in cmd
-        assert "--json" in cmd
+        assert cmd[0] == "claude"
+        assert "-p" in cmd
+        assert "--dangerously-skip-permissions" in cmd
+        assert "--output-format" in cmd
+        assert "stream-json" in cmd
+        assert "--verbose" in cmd
         assert "PREAMBLE" in cmd[-1]
         assert "UI를 구현하세요" in cmd[-1]
 
@@ -497,7 +498,7 @@ class TestInvokeCodex:
         step = {"step": 2, "name": "ui"}
 
         with patch("subprocess.run", return_value=mock_result):
-            executor._invoke_codex(step, "preamble")
+            executor._invoke_claude(step, "preamble")
 
         output_file = executor._phase_dir / "step2-output.json"
         assert output_file.exists()
@@ -509,7 +510,7 @@ class TestInvokeCodex:
     def test_nonexistent_step_file_exits(self, executor):
         step = {"step": 99, "name": "nonexistent"}
         with pytest.raises(SystemExit) as exc_info:
-            executor._invoke_codex(step, "preamble")
+            executor._invoke_claude(step, "preamble")
         assert exc_info.value.code == 1
 
     def test_timeout_is_1800(self, executor):
@@ -517,24 +518,24 @@ class TestInvokeCodex:
         step = {"step": 2, "name": "ui"}
 
         with patch("subprocess.run", return_value=mock_result) as mock_run:
-            executor._invoke_codex(step, "preamble")
+            executor._invoke_claude(step, "preamble")
 
         assert mock_run.call_args[1]["timeout"] == 1800
 
-    def test_no_images_keeps_prompt_last(self, executor):
-        """images 키가 없으면 명령은 기존과 동일(prompt 가 마지막) 해야 한다."""
+    def test_prompt_is_last_arg(self, executor):
+        """프롬프트(preamble+step)는 항상 명령의 마지막 인자다."""
         mock_result = MagicMock(returncode=0, stdout="{}", stderr="")
         step = {"step": 2, "name": "ui"}
 
         with patch("subprocess.run", return_value=mock_result) as mock_run:
-            executor._invoke_codex(step, "preamble")
+            executor._invoke_claude(step, "preamble")
 
         cmd = mock_run.call_args[0][0]
         assert "--image" not in cmd
         assert "preamble" in cmd[-1]
 
-    def test_attaches_existing_images(self, executor):
-        """step.images 의 실재 파일은 --image <abs path> 로 첨부된다."""
+    def test_existing_images_referenced_in_prompt(self, executor):
+        """step.images 의 실재 파일 경로는 프롬프트에 명시돼 Read 로 열도록 안내된다."""
         img = Path(executor._root) / "docs" / "screens" / "홈.png"
         img.parent.mkdir(parents=True, exist_ok=True)
         img.write_bytes(b"\x89PNG\r\n")
@@ -542,22 +543,23 @@ class TestInvokeCodex:
         mock_result = MagicMock(returncode=0, stdout="{}", stderr="")
 
         with patch("subprocess.run", return_value=mock_result) as mock_run:
-            executor._invoke_codex(step, "preamble")
+            executor._invoke_claude(step, "preamble")
 
         cmd = mock_run.call_args[0][0]
-        assert "--image" in cmd
-        assert str(img) in cmd
+        assert "--image" not in cmd
+        assert "docs/screens/홈.png" in cmd[-1]
+        assert "Read" in cmd[-1]
 
     def test_skips_missing_images(self, executor):
-        """존재하지 않는 이미지는 첨부하지 않고 건너뛴다(크래시 없음)."""
+        """존재하지 않는 이미지는 프롬프트에 넣지 않고 건너뛴다(크래시 없음)."""
         step = {"step": 2, "name": "ui", "images": ["docs/screens/없는파일.png"]}
         mock_result = MagicMock(returncode=0, stdout="{}", stderr="")
 
         with patch("subprocess.run", return_value=mock_result) as mock_run:
-            executor._invoke_codex(step, "preamble")
+            executor._invoke_claude(step, "preamble")
 
         cmd = mock_run.call_args[0][0]
-        assert "--image" not in cmd
+        assert "없는파일.png" not in cmd[-1]
 
 
 # ---------------------------------------------------------------------------
