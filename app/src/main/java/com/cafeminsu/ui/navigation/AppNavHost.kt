@@ -63,6 +63,7 @@ import com.cafeminsu.ui.feature.owner.sales.OwnerSalesRoute
 import com.cafeminsu.ui.feature.payment.PaymentFailureReason
 import com.cafeminsu.ui.feature.payment.PaymentRoute
 import com.cafeminsu.ui.feature.payment.paymentFailureUiModel
+import com.cafeminsu.ui.feature.signup.SignupRoute
 import com.cafeminsu.ui.feature.splash.SplashScreen
 import com.cafeminsu.ui.feature.store.StoreRoute
 import com.cafeminsu.ui.feature.voice.VoiceRoute
@@ -158,7 +159,36 @@ fun AppNavHost(
                             launchSingleTop = true
                         }
                     },
+                    onNewUser = {
+                        navController.navigate(Routes.SIGNUP) {
+                            popUpTo(Routes.LOGIN) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
+                    },
                     onOwnerLoginClick = { navController.navigate(Routes.OWNER_LOGIN) },
+                )
+            }
+            composable(Routes.SIGNUP) {
+                SignupRoute(
+                    sessionRepository = sessionRepository,
+                    onSignupComplete = {
+                        navController.navigate(Routes.HOME) {
+                            popUpTo(Routes.SIGNUP) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
+                    },
+                    onBack = {
+                        navController.navigate(Routes.LOGIN) {
+                            popUpTo(Routes.SIGNUP) {
+                                inclusive = true
+                            }
+                            launchSingleTop = true
+                        }
+                    },
                 )
             }
             composable(Routes.OWNER_LOGIN) {

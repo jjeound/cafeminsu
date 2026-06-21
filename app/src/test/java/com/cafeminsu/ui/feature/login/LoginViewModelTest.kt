@@ -69,6 +69,23 @@ class LoginViewModelTest {
     }
 
     @Test
+    fun newUserLoginProducesNavigateSignupEvent() = runTest {
+        val viewModel = LoginViewModel(
+            sessionRepository = FakeLoginSessionRepository(
+                loginResult = AppResult.Success(newUser()),
+            ),
+        )
+
+        viewModel.events.test {
+            viewModel.onKakaoLoginClick()
+
+            assertEquals(LoginEvent.NavigateSignup, awaitItem())
+            assertTrue(viewModel.uiState.value.isAuthenticated)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun loginClickCallsSessionLoginOnce() = runTest {
         val sessionRepository = FakeLoginSessionRepository(
             loginResult = AppResult.Success(authenticatedUser()),
@@ -87,6 +104,16 @@ class LoginViewModelTest {
                 displayName = "민수",
                 phoneLast4 = "1234",
             ),
+        )
+
+    private fun newUser(): AuthState =
+        AuthState.Authenticated(
+            user = UserProfile(
+                id = "user-2",
+                displayName = "카페민수 사용자",
+                phoneLast4 = null,
+            ),
+            isNewUser = true,
         )
 }
 

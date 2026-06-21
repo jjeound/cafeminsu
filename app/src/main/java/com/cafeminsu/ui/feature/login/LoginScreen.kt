@@ -48,6 +48,7 @@ import com.cafeminsu.ui.theme.CafeTheme
 fun LoginRoute(
     sessionRepository: SessionRepository,
     onLoginSuccess: () -> Unit,
+    onNewUser: () -> Unit,
     onOwnerLoginClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: LoginViewModel = viewModel(
@@ -61,6 +62,7 @@ fun LoginRoute(
         viewModel.events.collect { event ->
             when (event) {
                 LoginEvent.NavigateHome -> onLoginSuccess()
+                LoginEvent.NavigateSignup -> onNewUser()
                 is LoginEvent.ShowSnackbar -> snackbarHostState.showSnackbar(event.message)
             }
         }

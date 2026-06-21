@@ -8,5 +8,6 @@ data class LoginUiState(
 
 sealed interface LoginEvent {
     data object NavigateHome : LoginEvent
+    data object NavigateSignup : LoginEvent
     data class ShowSnackbar(val message: String) : LoginEvent
 }

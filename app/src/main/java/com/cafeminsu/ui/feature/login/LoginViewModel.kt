@@ -39,7 +39,11 @@ class LoginViewModel(
     private suspend fun handleLoginSuccess(authState: AuthState) {
         if (authState is AuthState.Authenticated) {
             _uiState.value = LoginUiState(isAuthenticated = true)
-            _events.emit(LoginEvent.NavigateHome)
+            if (authState.isNewUser) {
+                _events.emit(LoginEvent.NavigateSignup)
+            } else {
+                _events.emit(LoginEvent.NavigateHome)
+            }
         } else {
             handleLoginFailure(DomainError.Unauthorized)
         }
