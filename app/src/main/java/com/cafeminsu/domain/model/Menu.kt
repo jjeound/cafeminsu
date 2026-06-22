@@ -1,5 +1,7 @@
 package com.cafeminsu.domain.model
 
+import com.squareup.moshi.JsonClass
+
 data class MenuCategory(
     val id: String,
     val name: String,
@@ -18,6 +20,8 @@ data class MenuItem(
     val isVisible: Boolean = true,
 )
 
+// 메뉴 옵션은 캐시 시 한 컬럼에 Moshi JSON 으로 직렬화하므로 codegen 어댑터를 생성한다(Store 와 동일 패턴).
+@JsonClass(generateAdapter = true)
 data class MenuOptionGroup(
     val id: String,
     val name: String,
@@ -27,6 +31,7 @@ data class MenuOptionGroup(
     val options: List<MenuOption>,
 )
 
+@JsonClass(generateAdapter = true)
 data class MenuOption(
     val id: String,
     val name: String,

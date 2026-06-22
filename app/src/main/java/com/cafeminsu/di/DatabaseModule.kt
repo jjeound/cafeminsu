@@ -3,9 +3,13 @@ package com.cafeminsu.di
 import android.content.Context
 import androidx.room.Room
 import com.cafeminsu.data.local.db.CafeDatabase
+import com.cafeminsu.data.local.menu.MenuDao
+import com.cafeminsu.data.local.menu.MenuLocalDataSource
+import com.cafeminsu.data.local.menu.RoomMenuLocalDataSource
 import com.cafeminsu.data.local.store.RoomStoreLocalDataSource
 import com.cafeminsu.data.local.store.StoreDao
 import com.cafeminsu.data.local.store.StoreLocalDataSource
+import com.squareup.moshi.Moshi
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -34,6 +38,15 @@ object DatabaseModule {
     @Singleton
     fun provideStoreLocalDataSource(storeDao: StoreDao): StoreLocalDataSource =
         RoomStoreLocalDataSource(storeDao)
+
+    @Provides
+    @Singleton
+    fun provideMenuDao(database: CafeDatabase): MenuDao = database.menuDao()
+
+    @Provides
+    @Singleton
+    fun provideMenuLocalDataSource(menuDao: MenuDao, moshi: Moshi): MenuLocalDataSource =
+        RoomMenuLocalDataSource(menuDao, moshi)
 }
 
 private const val CacheDatabaseName = "cafeminsu-cache.db"

@@ -12,7 +12,18 @@ import com.cafeminsu.domain.model.MenuOptionGroup
 
 fun List<MenuListItemRes>.toMenuCategories(): List<MenuCategory> =
     mapNotNull { it.category.normalizedCategory() }
-        .distinct()
+        .toMenuCategoriesByFirstAppearance()
+
+/**
+ * 오프라인 폴백 시 캐시된 도메인 메뉴에서 카테고리를 도출한다.
+ * 라이브 목록([toMenuCategories]) 과 동일하게 등장 순서·distinct·빈 카테고리 제외 규칙을 따른다.
+ */
+fun List<MenuItem>.toMenuCategoriesFromCache(): List<MenuCategory> =
+    mapNotNull { it.categoryId.normalizedCategory() }
+        .toMenuCategoriesByFirstAppearance()
+
+private fun List<String>.toMenuCategoriesByFirstAppearance(): List<MenuCategory> =
+    distinct()
         .mapIndexed { index, category ->
             MenuCategory(
                 id = category,
