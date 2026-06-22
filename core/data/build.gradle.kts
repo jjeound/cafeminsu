@@ -1,0 +1,28 @@
+plugins {
+    alias(libs.plugins.cafeminsu.android.library)
+    alias(libs.plugins.cafeminsu.android.hilt)
+}
+
+android {
+    namespace = "com.ssafy.cafeminsu.core.data"
+}
+
+dependencies {
+    // core modules
+    api(projects.core.model)
+    implementation(projects.core.network)
+    implementation(projects.core.database)
+    implementation(projects.core.datastore)
+
+    // kotlinx
+    api(libs.kotlinx.immutable.collection)
+
+    // coroutines
+    implementation(libs.kotlinx.coroutines.android)
+    testImplementation(libs.kotlinx.coroutines.test)
+
+
+    // unit test
+    testImplementation(libs.junit)
+    testImplementation(libs.protobuf.kotlin.lite)
+}
