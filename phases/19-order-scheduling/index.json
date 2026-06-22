@@ -1,0 +1,22 @@
+{
+  "project": "CafeMinsu",
+  "phase": "order-scheduling",
+  "steps": [
+    {
+      "step": 0,
+      "name": "scheduling-core",
+      "status": "pending"
+    },
+    {
+      "step": 1,
+      "name": "beacon-proximity",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "ai-prediction",
+      "status": "pending"
+    }
+  ],
+  "created_at": "2026-06-22T00:00:00+0900"
+}
