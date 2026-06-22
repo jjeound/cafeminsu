@@ -18,30 +18,30 @@ interface AuthApi {
     @POST("api/user/kakao-login")
     suspend fun kakaoLogin(
         @Body request: KakaoLoginReq,
-    ): BaseResponse<KakaoLoginRes>
+    ): KakaoLoginRes
 
     @POST("api/user/owner-login")
     suspend fun ownerLogin(
         @Body request: OwnerLoginReq,
-    ): BaseResponse<OwnerLoginRes>
+    ): OwnerLoginRes
 
     @POST("api/user/refresh")
     suspend fun refresh(
         @Header("Refresh-Token") refreshToken: String,
-    ): BaseResponse<RefreshRes>
+    ): RefreshRes
 
     @GET("api/user/profile")
-    suspend fun getMyProfile(): BaseResponse<UserProfileRes>
+    suspend fun getMyProfile(): UserProfileRes
 
     @GET("api/user/nickname/check")
     suspend fun checkNickname(
         @Query("nickname") nickname: String,
-    ): BaseResponse<NicknameCheckRes>
+    ): NicknameCheckRes
 
     @POST("api/user/signup")
     suspend fun signup(
         @Body request: SignupReq,
-    ): BaseResponse<SignupRes>
+    ): SignupRes
 }
 
 @JsonClass(generateAdapter = true)

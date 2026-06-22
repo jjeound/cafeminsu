@@ -11,7 +11,6 @@ import com.cafeminsu.data.remote.PaymentApi
 import com.cafeminsu.data.remote.PaymentPrepareReq
 import com.cafeminsu.data.remote.PaymentVerifyReq
 import com.cafeminsu.data.remote.runCatchingToAppResult
-import com.cafeminsu.data.remote.unwrap
 import com.cafeminsu.di.IoDispatcher
 import com.cafeminsu.domain.model.AuthState
 import com.cafeminsu.domain.model.PaymentRequest
@@ -67,7 +66,7 @@ class RealPaymentRepository @Inject constructor(
                 }
             ) {
                 is AppResult.Success -> {
-                    val mapped = response.data.unwrap { it.toPaymentResult(orderId = request.orderId) }
+                    val mapped = response.data.toPaymentResult(orderId = request.orderId)
                     if (mapped is AppResult.Success) {
                         mapped.data.paymentId.toLongOrNull()?.let { paymentId ->
                             paymentIdsByKey[request.idempotencyKey] = paymentId
@@ -105,7 +104,7 @@ class RealPaymentRepository @Inject constructor(
                 }
             ) {
                 is AppResult.Success -> {
-                    when (val mapped = response.data.unwrap { it.toPaymentResult() }) {
+                    when (val mapped = response.data.toPaymentResult()) {
                         is AppResult.Success -> {
                             if (mapped.data.orderId == orderId) {
                                 mapped
@@ -145,7 +144,7 @@ class RealPaymentRepository @Inject constructor(
             }
         ) {
             is AppResult.Success -> {
-                val mapped = response.data.unwrap { it.toPreparedPayment(orderId = request.orderId) }
+                val mapped = response.data.toPreparedPayment(orderId = request.orderId)
                 if (mapped is AppResult.Success) {
                     preparedPaymentsByKey[request.idempotencyKey] = mapped.data
                 }

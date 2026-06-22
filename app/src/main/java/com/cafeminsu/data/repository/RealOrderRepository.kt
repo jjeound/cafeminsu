@@ -11,7 +11,6 @@ import com.cafeminsu.data.remote.DefaultOrderPage
 import com.cafeminsu.data.remote.DefaultOrderPageSize
 import com.cafeminsu.data.remote.OrderApi
 import com.cafeminsu.data.remote.runCatchingToAppResult
-import com.cafeminsu.data.remote.unwrap
 import com.cafeminsu.di.IoDispatcher
 import com.cafeminsu.domain.model.AuthState
 import com.cafeminsu.domain.model.Cart
@@ -58,12 +57,10 @@ class RealOrderRepository @Inject constructor(
                     orderApi.createOrder(request = request)
                 }
             ) {
-                is AppResult.Success -> response.data.unwrap {
-                    it.toOrder(
-                        cartItems = cart.items,
-                        createdAtMillis = System.currentTimeMillis(),
-                    )
-                }
+                is AppResult.Success -> response.data.toOrder(
+                    cartItems = cart.items,
+                    createdAtMillis = System.currentTimeMillis(),
+                )
 
                 is AppResult.Failure -> response
             }
@@ -91,7 +88,7 @@ class RealOrderRepository @Inject constructor(
                         orderApi.getOrder(orderId = serverOrderId)
                     }
                 ) {
-                    is AppResult.Success -> response.data.unwrap { it.toOrder() }
+                    is AppResult.Success -> response.data.toOrder()
                     is AppResult.Failure -> response
                 },
             )
@@ -118,7 +115,7 @@ class RealOrderRepository @Inject constructor(
                     }
                 ) {
                     is AppResult.Success ->
-                        when (val mapped = response.data.unwrap { it.toOrders() }) {
+                        when (val mapped = response.data.toOrders()) {
                             is AppResult.Success -> {
                                 // 성공 시 write-through 후 그대로 방출.
                                 localDataSource.replaceHistory(mapped.data)

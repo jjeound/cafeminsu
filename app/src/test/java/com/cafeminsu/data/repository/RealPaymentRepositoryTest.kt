@@ -194,13 +194,8 @@ class RealPaymentRepositoryTest {
             .setBody(
                 """
                 {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": {
-                    "merchantUid": "$merchantUid",
-                    "amount": $amount
-                  }
+                  "merchantUid": "$merchantUid",
+                  "amount": $amount
                 }
                 """.trimIndent(),
             )
@@ -214,13 +209,8 @@ class RealPaymentRepositoryTest {
             .setBody(
                 """
                 {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": {
-                    "paymentId": $paymentId,
-                    "status": "$status"
-                  }
+                  "paymentId": $paymentId,
+                  "status": "$status"
                 }
                 """.trimIndent(),
             )
@@ -234,17 +224,12 @@ class RealPaymentRepositoryTest {
             .setBody(
                 """
                 {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": {
-                    "paymentId": $paymentId,
-                    "orderId": 77,
-                    "method": "CARD",
-                    "amount": 10000,
-                    "status": "$status",
-                    "paidAt": "2026-06-20T01:15:30Z"
-                  }
+                  "paymentId": $paymentId,
+                  "orderId": 77,
+                  "method": "CARD",
+                  "amount": 10000,
+                  "status": "$status",
+                  "paidAt": "2026-06-20T01:15:30Z"
                 }
                 """.trimIndent(),
             )

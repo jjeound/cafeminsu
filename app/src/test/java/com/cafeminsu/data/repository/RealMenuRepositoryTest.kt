@@ -87,12 +87,7 @@ class RealMenuRepositoryTest {
                 .setResponseCode(200)
                 .setBody(
                     """
-                    {
-                      "isSuccess": true,
-                      "code": 200,
-                      "message": "OK",
-                      "result": []
-                    }
+                    []
                     """.trimIndent(),
                 ),
         )
@@ -209,41 +204,36 @@ class RealMenuRepositoryTest {
                 .setBody(
                     """
                     {
-                      "isSuccess": true,
-                      "code": 200,
-                      "message": "OK",
-                      "result": {
-                        "id": 101,
-                        "name": "바닐라라떼",
-                        "description": "부드러운 라떼",
-                        "price": 5500,
-                        "category": "커피",
-                        "imageUrl": "https://cdn.example/latte.png",
-                        "isAvailable": true,
-                        "options": [
-                          {
-                            "id": 1,
-                            "group": "온도",
-                            "name": "HOT",
-                            "additionalPrice": 0,
-                            "isDefault": true
-                          },
-                          {
-                            "id": 2,
-                            "group": "온도",
-                            "name": "ICE",
-                            "additionalPrice": 0,
-                            "isDefault": false
-                          },
-                          {
-                            "id": 3,
-                            "group": "샷 추가",
-                            "name": "+1샷",
-                            "additionalPrice": 500,
-                            "isDefault": false
-                          }
-                        ]
-                      }
+                      "id": 101,
+                      "name": "바닐라라떼",
+                      "description": "부드러운 라떼",
+                      "price": 5500,
+                      "category": "커피",
+                      "imageUrl": "https://cdn.example/latte.png",
+                      "isAvailable": true,
+                      "options": [
+                        {
+                          "id": 1,
+                          "group": "온도",
+                          "name": "HOT",
+                          "additionalPrice": 0,
+                          "isDefault": true
+                        },
+                        {
+                          "id": 2,
+                          "group": "온도",
+                          "name": "ICE",
+                          "additionalPrice": 0,
+                          "isDefault": false
+                        },
+                        {
+                          "id": 3,
+                          "group": "샷 추가",
+                          "name": "+1샷",
+                          "additionalPrice": 500,
+                          "isDefault": false
+                        }
+                      ]
                     }
                     """.trimIndent(),
                 ),
@@ -331,45 +321,40 @@ class RealMenuRepositoryTest {
             .setResponseCode(200)
             .setBody(
                 """
-                {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": [
-                    {
-                      "id": 101,
-                      "name": "바스크 치즈케이크",
-                      "price": 6800,
-                      "category": "디저트",
-                      "imageUrl": "https://cdn.example/cake.png",
-                      "isAvailable": true
-                    },
-                    {
-                      "id": 102,
-                      "name": "바닐라라떼",
-                      "price": 5500,
-                      "category": "커피",
-                      "imageUrl": "https://cdn.example/latte.png",
-                      "isAvailable": true
-                    },
-                    {
-                      "id": 103,
-                      "name": "아인슈페너",
-                      "price": 6000,
-                      "category": "커피",
-                      "imageUrl": "https://cdn.example/einspanner.png",
-                      "isAvailable": false
-                    },
-                    {
-                      "id": 104,
-                      "name": "유자차",
-                      "price": 4800,
-                      "category": "티",
-                      "imageUrl": "https://cdn.example/tea.png",
-                      "isAvailable": true
-                    }
-                  ]
-                }
+                [
+                  {
+                    "id": 101,
+                    "name": "바스크 치즈케이크",
+                    "price": 6800,
+                    "category": "디저트",
+                    "imageUrl": "https://cdn.example/cake.png",
+                    "isAvailable": true
+                  },
+                  {
+                    "id": 102,
+                    "name": "바닐라라떼",
+                    "price": 5500,
+                    "category": "커피",
+                    "imageUrl": "https://cdn.example/latte.png",
+                    "isAvailable": true
+                  },
+                  {
+                    "id": 103,
+                    "name": "아인슈페너",
+                    "price": 6000,
+                    "category": "커피",
+                    "imageUrl": "https://cdn.example/einspanner.png",
+                    "isAvailable": false
+                  },
+                  {
+                    "id": 104,
+                    "name": "유자차",
+                    "price": 4800,
+                    "category": "티",
+                    "imageUrl": "https://cdn.example/tea.png",
+                    "isAvailable": true
+                  }
+                ]
                 """.trimIndent(),
             )
 }

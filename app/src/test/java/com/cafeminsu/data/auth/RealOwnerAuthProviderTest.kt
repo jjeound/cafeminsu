@@ -69,20 +69,7 @@ class RealOwnerAuthProviderTest {
 
     @Test
     fun loginFailureReturnsUnauthorizedAndDoesNotStoreTokens() = runTest {
-        server.enqueue(
-            MockResponse()
-                .setResponseCode(200)
-                .setBody(
-                    """
-                    {
-                      "isSuccess": false,
-                      "code": 401,
-                      "message": "invalid owner credentials",
-                      "result": null
-                    }
-                    """.trimIndent(),
-                ),
-        )
+        server.enqueue(MockResponse().setResponseCode(401))
         val tokenStore = InMemorySessionTokenStore()
         val provider = realOwnerAuthProvider(tokenStore)
 
@@ -174,14 +161,9 @@ class RealOwnerAuthProviderTest {
             .setBody(
                 """
                 {
-                  "isSuccess": true,
-                  "code": 1000,
-                  "message": "OK",
-                  "result": {
-                    "accessToken": "owner-access",
-                    "refreshToken": "owner-refresh",
-                    "nickname": "$nickname"
-                  }
+                  "accessToken": "owner-access",
+                  "refreshToken": "owner-refresh",
+                  "nickname": "$nickname"
                 }
                 """.trimIndent(),
             )
