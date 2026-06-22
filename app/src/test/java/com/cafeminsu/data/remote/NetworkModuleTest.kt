@@ -67,6 +67,14 @@ class NetworkModuleTest {
     }
 
     @Test
+    fun networkLoggerRedactsOwnerLoginPasswordJsonField() {
+        assertEquals(
+            """{"loginId":"owner02","password":"<redacted>"}""",
+            """{"loginId":"owner02","password":"cafe5678"}""".redactSensitiveNetworkValues(),
+        )
+    }
+
+    @Test
     fun networkLoggerRedactsGifticonCodeJsonFields() {
         assertEquals(
             """{"qrCode":"<redacted>","barcodeValue":"<redacted>","qrValue":"<redacted>"}""",

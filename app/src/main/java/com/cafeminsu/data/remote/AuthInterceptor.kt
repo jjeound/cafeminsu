@@ -99,6 +99,7 @@ private fun Request.isAuthEndpoint(): Boolean =
 
 private val AuthEndpointPaths = setOf(
     "/api/user/kakao-login",
+    "/api/user/owner-login",
     "/api/user/refresh",
     "/api/user/logout",
 )

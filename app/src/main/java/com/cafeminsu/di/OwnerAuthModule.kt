@@ -1,17 +1,39 @@
 package com.cafeminsu.di
 
+import com.cafeminsu.BuildConfig
 import com.cafeminsu.data.auth.MockOwnerAuthProvider
+import com.cafeminsu.data.auth.RealOwnerAuthProvider
 import com.cafeminsu.domain.auth.OwnerAuthProvider
-import dagger.Binds
 import dagger.Module
+import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
+import javax.inject.Provider
 import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
-abstract class OwnerAuthModule {
-    @Binds
+object OwnerAuthModule {
+    @Provides
     @Singleton
-    abstract fun bindOwnerAuthProvider(provider: MockOwnerAuthProvider): OwnerAuthProvider
+    fun provideOwnerAuthProvider(
+        realProvider: Provider<RealOwnerAuthProvider>,
+        mockProvider: Provider<MockOwnerAuthProvider>,
+    ): OwnerAuthProvider =
+        selectOwnerAuthProvider(
+            baseUrl = BuildConfig.BASE_URL,
+            realFactory = { realProvider.get() },
+            mockFactory = { mockProvider.get() },
+        )
 }
+
+internal fun selectOwnerAuthProvider(
+    baseUrl: String,
+    realFactory: () -> OwnerAuthProvider,
+    mockFactory: () -> OwnerAuthProvider,
+): OwnerAuthProvider =
+    if (baseUrl.isNotBlank()) {
+        realFactory()
+    } else {
+        mockFactory()
+    }
