@@ -39,6 +39,7 @@ import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.StrokeCap
 import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.window.Dialog
@@ -49,54 +50,22 @@ import com.cafeminsu.ui.theme.CafeTheme
 @Composable
 fun LoadingView(
     modifier: Modifier = Modifier,
-    title: String = DefaultLoadingTitle,
-    message: String = DefaultLoadingMessage,
 ) {
     val colors = CafeTheme.colors
     val spacing = CafeTheme.spacing
 
     Box(
         modifier = modifier
+            .testTag(LoadingViewTestTag)
             .fillMaxWidth()
             .heightIn(min = spacing.space18 * LoadingViewMinHeightUnits)
             .background(colors.canvas)
             .padding(spacing.space5),
+        contentAlignment = Alignment.Center,
     ) {
-        Column(
-            modifier = Modifier.align(Alignment.Center),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(spacing.space2),
-        ) {
-            LoadingArcSpinner(
-                modifier = Modifier.size(spacing.space18 + spacing.space2),
-            )
-
-            Spacer(modifier = Modifier.height(spacing.space2))
-
-            Text(
-                text = title,
-                style = CafeTheme.typography.h3,
-                color = colors.ink,
-                textAlign = TextAlign.Center,
-            )
-            Text(
-                text = message,
-                style = CafeTheme.typography.body,
-                color = colors.muted,
-                textAlign = TextAlign.Center,
-            )
-        }
-
-        Column(
-            modifier = Modifier
-                .align(Alignment.BottomCenter)
-                .padding(bottom = spacing.space5),
-            verticalArrangement = Arrangement.spacedBy(spacing.space3),
-        ) {
-            repeat(LoadingSkeletonCardCount) {
-                LoadingSkeletonCard()
-            }
-        }
+        LoadingArcSpinner(
+            modifier = Modifier.size(spacing.space18 + spacing.space2),
+        )
     }
 }
 
@@ -367,56 +336,6 @@ private fun LoadingArcSpinner(
             size = arcSize,
             style = Stroke(width = strokeWidth, cap = StrokeCap.Round),
         )
-    }
-}
-
-@Composable
-private fun LoadingSkeletonCard() {
-    val colors = CafeTheme.colors
-    val spacing = CafeTheme.spacing
-
-    Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .height(spacing.space18 + spacing.space2),
-        shape = CafeTheme.shapes.radiusLg,
-        color = colors.surfaceCard,
-        contentColor = colors.muted,
-    ) {
-        Row(
-            modifier = Modifier.padding(spacing.space3),
-            horizontalArrangement = Arrangement.spacedBy(spacing.space4),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            Surface(
-                modifier = Modifier.size(spacing.space14),
-                shape = CafeTheme.shapes.radiusMd,
-                color = colors.hairline.copy(alpha = SkeletonBlockAlpha),
-                contentColor = colors.hairline,
-            ) {}
-
-            Column(
-                modifier = Modifier.weight(SkeletonTextWeight),
-                verticalArrangement = Arrangement.spacedBy(spacing.space3),
-            ) {
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth(LoadingSkeletonPrimaryWidthFraction)
-                        .height(spacing.space4),
-                    shape = CafeTheme.shapes.radiusSm,
-                    color = colors.hairline.copy(alpha = SkeletonBlockAlpha),
-                    contentColor = colors.hairline,
-                ) {}
-                Surface(
-                    modifier = Modifier
-                        .fillMaxWidth(LoadingSkeletonSecondaryWidthFraction)
-                        .height(spacing.space2 + spacing.space1),
-                    shape = CafeTheme.shapes.radiusSm,
-                    color = colors.hairline.copy(alpha = SkeletonBlockAlpha),
-                    contentColor = colors.hairline,
-                ) {}
-            }
-        }
     }
 }
 
@@ -712,15 +631,11 @@ private fun snackbarColor(type: CafeSnackbarType): Color {
     }
 }
 
-private const val DefaultLoadingTitle = "메뉴 정보를 불러오고 있어요"
-private const val DefaultLoadingMessage = "잠시만 기다려주세요"
+private const val LoadingViewTestTag = "loading_view"
 private const val DefaultErrorTitle = "연결에 실패했어요"
 private const val DefaultErrorMessage = "네트워크 상태를 확인하고\n다시 시도해주세요."
 private const val DefaultNetworkErrorCode = "ERR_NETWORK_408"
 private const val LoadingViewMinHeightUnits = 10
-private const val LoadingSkeletonCardCount = 2
-private const val LoadingSkeletonPrimaryWidthFraction = 0.62f
-private const val LoadingSkeletonSecondaryWidthFraction = 0.42f
 private const val LoadingArcStartRotation = 0f
 private const val LoadingArcEndRotation = 360f
 private const val LoadingArcRotationMillis = 1_200
@@ -731,8 +646,6 @@ private const val LoadingArcTrackStartAngle = 116f
 private const val LoadingArcTrackSweepAngle = 300f
 private const val LoadingArcPrimaryStartAngle = 126f
 private const val LoadingArcPrimarySweepAngle = 246f
-private const val SkeletonBlockAlpha = 0.58f
-private const val SkeletonTextWeight = 1f
 private const val ErrorViewMinHeightUnits = 10
 private const val ErrorTopBarContentSpacerUnits = 2
 private const val ErrorContentTopSpacerUnits = 2

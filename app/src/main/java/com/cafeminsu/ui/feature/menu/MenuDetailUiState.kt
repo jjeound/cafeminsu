@@ -16,6 +16,7 @@ sealed interface MenuDetailUiState {
         val totalPrice: Int,
         val canAddToCart: Boolean,
         val addStatus: MenuDetailAddStatus,
+        val isEditing: Boolean = false,
     ) : MenuDetailUiState
 
     data class Error(
