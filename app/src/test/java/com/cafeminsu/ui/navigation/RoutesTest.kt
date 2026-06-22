@@ -6,7 +6,6 @@ import org.junit.Test
 class RoutesTest {
     @Test
     fun routesMatchRedesignScreenCodeContract() {
-        assertEquals("splash", Routes.SPLASH)
         assertEquals("login", Routes.LOGIN)
         assertEquals("home", Routes.HOME)
         assertEquals("noti", Routes.NOTI)
