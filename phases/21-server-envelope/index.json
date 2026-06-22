@@ -16,7 +16,7 @@
       "status": "completed",
       "started_at": "2026-06-22T21:01:55+0900",
       "summary": "스탬프/기프티콘/알림/FCM API 반환타입을 BaseResponse<T>→T(목록 List<T>)로 바꾸고 Real리워드/선물/알림/FCM Repository의 .unwrap{}·toUnitResult 제거(DTO에 매퍼 직접 적용, 2xx=성공), 실패는 HTTP 상태로만 신호; 공통 봉투 코드(BaseResponse·unwrap·toDomainErrorOrUnknown)를 AuthApi.kt에서 삭제(app/src/main 전체에서 사용처 0 확인); 봉투 테스트 픽스처를 bare DTO/배열·HTTP 코드로 전환. AC: testDebugUnitTest·assembleDebug·compileDebugAndroidTestKotlin BUILD SUCCESSFUL.",
-      "completed_at": "2026-06-22T21:10:00+0900"
+      "completed_at": "2026-06-22T21:09:54+0900"
     }
   ],
   "created_at": "2026-06-22T20:51:16+0900"
