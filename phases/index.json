@@ -139,6 +139,13 @@
       "name": "order-scheduling",
       "status": "completed",
       "completed_at": "2026-06-22T13:46:38+0900"
+    },
+    {
+      "dir": "20-local-persistence",
+      "name": "local-persistence",
+      "status": "completed",
+      "summary": "로컬 영속화 — DataStore(선택 매장·점주 영업토글·앱 플래그) + Room 오프라인 캐시(매장/메뉴/알림/주문내역)",
+      "completed_at": "2026-06-22T20:12:58+0900"
     }
   ]
 }

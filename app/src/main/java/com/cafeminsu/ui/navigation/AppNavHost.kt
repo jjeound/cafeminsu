@@ -78,6 +78,7 @@ fun AppNavHost(
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
     splashDelayMillis: Long = SplashGateDelayMillis,
+    onCustomerTabSelected: (String) -> Unit = {},
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -103,6 +104,7 @@ fun AppNavHost(
                 CafeBottomBar(
                     currentRoute = currentRoute,
                     onTabSelected = { route ->
+                        onCustomerTabSelected(route)
                         navController.navigate(route) {
                             popUpTo(Routes.HOME) {
                                 saveState = true

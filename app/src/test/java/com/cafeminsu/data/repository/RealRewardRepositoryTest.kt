@@ -245,7 +245,7 @@ class RealRewardRepositoryTest {
         authState: AuthState = authenticatedState(),
         selectedStore: Store? = sampleStore(id = "11"),
     ): RealRewardRepository {
-        val holder = SelectedStoreHolder()
+        val holder = selectedStoreHolderForTest()
         if (selectedStore != null) {
             holder.select(selectedStore)
         }

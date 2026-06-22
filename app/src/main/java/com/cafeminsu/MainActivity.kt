@@ -12,12 +12,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.platform.LocalContext
 import androidx.core.content.ContextCompat
+import com.cafeminsu.data.local.prefs.UserPreferencesDataStore
+import com.cafeminsu.di.ApplicationScope
 import com.cafeminsu.domain.auth.OwnerAuthProvider
 import com.cafeminsu.domain.repository.SessionRepository
 import com.cafeminsu.ui.navigation.AppNavHost
 import com.cafeminsu.ui.theme.CafeTheme
 import dagger.hilt.android.AndroidEntryPoint
 import javax.inject.Inject
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.launch
 
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
@@ -27,6 +31,13 @@ class MainActivity : ComponentActivity() {
     @Inject
     lateinit var ownerAuthProvider: OwnerAuthProvider
 
+    @Inject
+    lateinit var userPreferences: UserPreferencesDataStore
+
+    @Inject
+    @ApplicationScope
+    lateinit var appScope: CoroutineScope
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContent {
@@ -35,6 +46,9 @@ class MainActivity : ComponentActivity() {
                 AppNavHost(
                     sessionRepository = sessionRepository,
                     ownerAuthProvider = ownerAuthProvider,
+                    onCustomerTabSelected = { route ->
+                        appScope.launch { userPreferences.setLastCustomerTab(route) }
+                    },
                 )
             }
         }

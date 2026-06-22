@@ -4,10 +4,12 @@ import app.cash.turbine.test
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.data.auth.SessionStateHolder
+import com.cafeminsu.data.local.notification.NotificationLocalDataSource
 import com.cafeminsu.data.remote.NotificationApi
 import com.cafeminsu.data.remote.createMoshi
 import com.cafeminsu.data.remote.createOkHttpClient
 import com.cafeminsu.data.remote.createRetrofit
+import com.cafeminsu.domain.model.AppNotification
 import com.cafeminsu.domain.model.AuthState
 import com.cafeminsu.domain.model.NotificationType
 import com.cafeminsu.domain.model.UserProfile
@@ -127,14 +129,58 @@ class RealNotificationRepositoryTest {
 
     @Test
     fun guestSessionBlocksNetworkBeforeCall() = runTest(testDispatcher) {
-        val repository = realNotificationRepository(authState = AuthState.Guest)
+        val cache = FakeNotificationLocalDataSource(initial = cachedNotifications())
+        val repository = realNotificationRepository(authState = AuthState.Guest, local = cache)
 
         repository.observeNotifications().test {
             assertEquals(AppResult.Failure(DomainError.Unauthorized), awaitItem())
             cancelAndIgnoreRemainingEvents()
         }
 
+        // 미인증이면 네트워크는 물론 캐시도 읽지 않는다(다른 사용자 데이터 누출 방지).
         assertEquals(0, server.requestCount)
+        assertEquals(0, cache.cachedCount)
+        assertEquals(0, cache.replaceCount)
+    }
+
+    @Test
+    fun observeNotificationsWritesThroughToCacheOnSuccess() = runTest(testDispatcher) {
+        server.enqueue(notificationListResponse())
+        val cache = FakeNotificationLocalDataSource()
+        val repository = realNotificationRepository(local = cache)
+
+        repository.observeNotifications().test {
+            awaitItem()
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        assertEquals(1, cache.replaceCount)
+        assertEquals(listOf("71", "72", "73"), cache.stored().map { it.id })
+    }
+
+    @Test
+    fun observeNotificationsFallsBackToCacheOnNetworkFailure() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setResponseCode(500))
+        val cache = FakeNotificationLocalDataSource(initial = cachedNotifications())
+        val repository = realNotificationRepository(local = cache)
+
+        repository.observeNotifications().test {
+            val result = awaitItem()
+            assertTrue(result is AppResult.Success)
+            assertEquals(listOf("61", "62"), (result as AppResult.Success).data.map { it.id })
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun observeNotificationsEmitsFailureWhenNetworkFailsAndCacheEmpty() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setResponseCode(500))
+        val repository = realNotificationRepository(local = FakeNotificationLocalDataSource())
+
+        repository.observeNotifications().test {
+            assertTrue(awaitItem() is AppResult.Failure)
+            cancelAndIgnoreRemainingEvents()
+        }
     }
 
     @Test
@@ -149,11 +195,33 @@ class RealNotificationRepositoryTest {
 
     private fun realNotificationRepository(
         authState: AuthState = authenticatedState(),
+        local: NotificationLocalDataSource = FakeNotificationLocalDataSource(),
     ): RealNotificationRepository =
         RealNotificationRepository(
             notificationApi = notificationApi(),
             sessionStateHolder = SessionStateHolder(authState),
+            localDataSource = local,
             ioDispatcher = testDispatcher,
+        )
+
+    private fun cachedNotifications(): List<AppNotification> =
+        listOf(
+            AppNotification(
+                id = "61",
+                type = NotificationType.OrderReady,
+                title = "캐시 알림 61",
+                body = "",
+                createdAtMillis = 20L,
+                read = false,
+            ),
+            AppNotification(
+                id = "62",
+                type = NotificationType.StampEarned,
+                title = "캐시 알림 62",
+                body = "",
+                createdAtMillis = 10L,
+                read = true,
+            ),
         )
 
     private fun notificationApi(): NotificationApi =
@@ -250,4 +318,26 @@ class RealNotificationRepositoryTest {
                 phoneLast4 = null,
             ),
         )
+}
+
+private class FakeNotificationLocalDataSource(
+    initial: List<AppNotification> = emptyList(),
+) : NotificationLocalDataSource {
+    private var store: List<AppNotification> = initial
+    var replaceCount: Int = 0
+        private set
+    var cachedCount: Int = 0
+        private set
+
+    override suspend fun cachedNotifications(): List<AppNotification> {
+        cachedCount++
+        return store
+    }
+
+    override suspend fun replaceNotifications(notifications: List<AppNotification>) {
+        store = notifications
+        replaceCount++
+    }
+
+    fun stored(): List<AppNotification> = store
 }
