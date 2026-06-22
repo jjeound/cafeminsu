@@ -11,12 +11,12 @@ interface StoreApi {
         @Query("keyword") keyword: String? = null,
         @Query("page") page: Int = DefaultStorePage,
         @Query("size") size: Int = DefaultStorePageSize,
-    ): BaseResponse<StoreSearchRes>
+    ): StoreSearchRes
 
     @GET("api/stores/{storeId}")
     suspend fun getStore(
         @Path("storeId") storeId: Long,
-    ): BaseResponse<StoreDetailRes>
+    ): StoreDetailRes
 }
 
 @JsonClass(generateAdapter = true)

@@ -37,12 +37,7 @@ class AuthInterceptorTest {
                 .setBody(
                     """
                     {
-                      "isSuccess": true,
-                      "code": 200,
-                      "message": "OK",
-                      "result": {
-                        "accessToken": "new-access-token"
-                      }
+                      "accessToken": "new-access-token"
                     }
                     """.trimIndent(),
                 ),

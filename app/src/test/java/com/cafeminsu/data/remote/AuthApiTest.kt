@@ -128,18 +128,4 @@ class AuthApiTest {
         assertEquals(UserRole.Customer, authState.role)
         assertEquals(false, authState.isNewUser)
     }
-
-    @Test
-    fun failedBaseResponseMapsCodeToDomainError() {
-        val response = BaseResponse<KakaoLoginRes>(
-            isSuccess = false,
-            code = 401,
-            message = "unauthorized",
-            result = null,
-        )
-
-        val result = response.unwrap { it.toLoginExchange() }
-
-        assertEquals(AppResult.Failure(DomainError.Unauthorized), result)
-    }
 }

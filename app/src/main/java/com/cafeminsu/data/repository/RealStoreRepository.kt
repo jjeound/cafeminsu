@@ -10,7 +10,6 @@ import com.cafeminsu.data.remote.DefaultStorePageSize
 import com.cafeminsu.data.remote.StoreApi
 import com.cafeminsu.data.remote.Unauthenticated
 import com.cafeminsu.data.remote.runCatchingToAppResult
-import com.cafeminsu.data.remote.unwrap
 import com.cafeminsu.di.IoDispatcher
 import com.cafeminsu.domain.model.Store
 import com.cafeminsu.domain.repository.StoreRepository
@@ -72,7 +71,7 @@ class RealStoreRepository @Inject constructor(
                     storeApi.getStore(serverId)
                 }
             ) {
-                is AppResult.Success -> response.data.unwrap { it.toStore() }
+                is AppResult.Success -> response.data.toStore()
                 is AppResult.Failure -> response
             }
         }
@@ -99,7 +98,7 @@ class RealStoreRepository @Inject constructor(
                 )
             }
         ) {
-            is AppResult.Success -> response.data.unwrap { it.toStores() }
+            is AppResult.Success -> response.data.toStores()
             is AppResult.Failure -> response
         }
 

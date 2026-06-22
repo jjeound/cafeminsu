@@ -118,21 +118,8 @@ class RealOrderRepositoryTest {
     }
 
     @Test
-    fun serverEnvelopeErrorMapsToAppResultFailure() = runTest(testDispatcher) {
-        server.enqueue(
-            MockResponse()
-                .setResponseCode(200)
-                .setBody(
-                    """
-                    {
-                      "isSuccess": false,
-                      "code": 404,
-                      "message": "주문 없음",
-                      "result": null
-                    }
-                    """.trimIndent(),
-                ),
-        )
+    fun serverHttpErrorMapsToAppResultFailure() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setResponseCode(404))
         val repository = realOrderRepository()
 
         repository.observeOrder("404").test {
@@ -284,15 +271,10 @@ class RealOrderRepositoryTest {
             .setBody(
                 """
                 {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": {
-                    "orderId": 77,
-                    "orderNumber": "A-2543",
-                    "totalAmount": $totalAmount,
-                    "status": "PENDING"
-                  }
+                  "orderId": 77,
+                  "orderNumber": "A-2543",
+                  "totalAmount": $totalAmount,
+                  "status": "PENDING"
                 }
                 """.trimIndent(),
             )
@@ -303,39 +285,34 @@ class RealOrderRepositoryTest {
             .setBody(
                 """
                 {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": {
-                    "orderId": 77,
-                    "orderNumber": "A-2543",
-                    "storeId": 11,
-                    "storeName": "카페민수 강남점",
-                    "orderType": "MOBILE",
-                    "orderMethod": "MANUAL",
-                    "status": "READY",
-                    "totalAmount": 10000,
-                    "cancelReason": null,
-                    "items": [
-                      {
-                        "menuId": 101,
-                        "menuName": "바닐라라떼",
-                        "quantity": 1,
-                        "unitPrice": 5500,
-                        "options": [
-                          {
-                            "optionId": 1,
-                            "optionGroup": "온도",
-                            "optionName": "ICE",
-                            "optionPrice": 0
-                          }
-                        ],
-                        "subtotal": 5500
-                      }
-                    ],
-                    "payment": null,
-                    "createdAt": "2026-06-20T01:15:30Z"
-                  }
+                  "orderId": 77,
+                  "orderNumber": "A-2543",
+                  "storeId": 11,
+                  "storeName": "카페민수 강남점",
+                  "orderType": "MOBILE",
+                  "orderMethod": "MANUAL",
+                  "status": "READY",
+                  "totalAmount": 10000,
+                  "cancelReason": null,
+                  "items": [
+                    {
+                      "menuId": 101,
+                      "menuName": "바닐라라떼",
+                      "quantity": 1,
+                      "unitPrice": 5500,
+                      "options": [
+                        {
+                          "optionId": 1,
+                          "optionGroup": "온도",
+                          "optionName": "ICE",
+                          "optionPrice": 0
+                        }
+                      ],
+                      "subtotal": 5500
+                    }
+                  ],
+                  "payment": null,
+                  "createdAt": "2026-06-20T01:15:30Z"
                 }
                 """.trimIndent(),
             )
@@ -345,29 +322,24 @@ class RealOrderRepositoryTest {
             .setResponseCode(200)
             .setBody(
                 """
-                {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": [
-                    {
-                      "orderId": 77,
-                      "orderNumber": "A-2543",
-                      "storeName": "카페민수 강남점",
-                      "totalAmount": 10000,
-                      "status": "DONE",
-                      "createdAt": "2026-06-20T01:15:30Z"
-                    },
-                    {
-                      "orderId": 78,
-                      "orderNumber": "A-2544",
-                      "storeName": "카페민수 강남점",
-                      "totalAmount": 8500,
-                      "status": "ACCEPTED",
-                      "createdAt": "2026-06-20T01:20:30Z"
-                    }
-                  ]
-                }
+                [
+                  {
+                    "orderId": 77,
+                    "orderNumber": "A-2543",
+                    "storeName": "카페민수 강남점",
+                    "totalAmount": 10000,
+                    "status": "DONE",
+                    "createdAt": "2026-06-20T01:15:30Z"
+                  },
+                  {
+                    "orderId": 78,
+                    "orderNumber": "A-2544",
+                    "storeName": "카페민수 강남점",
+                    "totalAmount": 8500,
+                    "status": "ACCEPTED",
+                    "createdAt": "2026-06-20T01:20:30Z"
+                  }
+                ]
                 """.trimIndent(),
             )
 

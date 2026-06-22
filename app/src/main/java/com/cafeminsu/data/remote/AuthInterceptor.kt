@@ -59,7 +59,7 @@ class SessionAuthenticator @Inject constructor(
         }
 
         val result = when (response) {
-            is AppResult.Success -> response.data.unwrap { it.toAccessToken() }
+            is AppResult.Success -> response.data.toAccessToken()
             is AppResult.Failure -> response
         }
 

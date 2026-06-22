@@ -10,17 +10,17 @@ interface PaymentApi {
     @POST("api/payments/prepare")
     suspend fun prepare(
         @Body request: PaymentPrepareReq,
-    ): BaseResponse<PaymentPrepareRes>
+    ): PaymentPrepareRes
 
     @POST("api/payments/verify")
     suspend fun verify(
         @Body request: PaymentVerifyReq,
-    ): BaseResponse<PaymentVerifyRes>
+    ): PaymentVerifyRes
 
     @GET("api/payments/{paymentId}")
     suspend fun getPayment(
         @Path("paymentId") paymentId: Long,
-    ): BaseResponse<PaymentDetailRes>
+    ): PaymentDetailRes
 }
 
 @JsonClass(generateAdapter = true)

@@ -6,12 +6,12 @@ import retrofit2.http.Path
 
 interface StampApi {
     @GET("api/stamps")
-    suspend fun getMyStamps(): BaseResponse<List<StampSummaryRes>>
+    suspend fun getMyStamps(): List<StampSummaryRes>
 
     @GET("api/stamps/{storeId}")
     suspend fun getStoreStamp(
         @Path("storeId") storeId: Long,
-    ): BaseResponse<StampDetailRes>
+    ): StampDetailRes
 }
 
 @JsonClass(generateAdapter = true)

@@ -11,19 +11,19 @@ interface OrderApi {
     @POST("api/orders")
     suspend fun createOrder(
         @Body request: OrderCreateReq,
-    ): BaseResponse<OrderCreateRes>
+    ): OrderCreateRes
 
     @GET("api/orders/{orderId}")
     suspend fun getOrder(
         @Path("orderId") orderId: Long,
-    ): BaseResponse<OrderDetailRes>
+    ): OrderDetailRes
 
     @GET("api/orders/my")
     suspend fun getMyOrders(
         @Query("status") status: String? = null,
         @Query("page") page: Int = DefaultOrderPage,
         @Query("size") size: Int = DefaultOrderPageSize,
-    ): BaseResponse<List<OrderListItemRes>>
+    ): List<OrderListItemRes>
 }
 
 @JsonClass(generateAdapter = true)

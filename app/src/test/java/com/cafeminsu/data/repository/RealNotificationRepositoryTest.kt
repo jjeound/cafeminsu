@@ -94,21 +94,8 @@ class RealNotificationRepositoryTest {
     }
 
     @Test
-    fun baseResponseErrorMapsToFailure() = runTest(testDispatcher) {
-        server.enqueue(
-            MockResponse()
-                .setResponseCode(200)
-                .setBody(
-                    """
-                    {
-                      "isSuccess": false,
-                      "code": 404,
-                      "message": "알림 없음",
-                      "result": null
-                    }
-                    """.trimIndent(),
-                ),
-        )
+    fun notFoundHttpStatusMapsToFailure() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setResponseCode(404))
         val repository = realNotificationRepository()
 
         repository.observeNotifications().test {
@@ -236,79 +223,56 @@ class RealNotificationRepositoryTest {
             .setResponseCode(200)
             .setBody(
                 """
-                {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": [
-                    {
-                      "id": 73,
-                      "title": "기프티콘이 도착했어요",
-                      "body": "선물함에서 확인해주세요",
-                      "type": "GIFTICON",
-                      "isRead": false,
-                      "relatedEntityId": 55,
-                      "createdAt": "2026-06-19T01:20:30Z"
-                    },
-                    {
-                      "id": 71,
-                      "title": "주문이 준비됐어요",
-                      "body": "주문번호 A-2419 — 픽업대에서 수령해주세요",
-                      "type": "ORDER",
-                      "isRead": false,
-                      "relatedEntityId": 2419,
-                      "createdAt": "2026-06-20T01:20:30Z"
-                    },
-                    {
-                      "id": 72,
-                      "title": "스탬프가 적립됐어요",
-                      "body": "스탬프 1개가 적립됐어요",
-                      "type": "STAMP",
-                      "isRead": true,
-                      "relatedEntityId": 88,
-                      "createdAt": "2026-06-20T01:15:30Z"
-                    },
-                    {
-                      "id": 74,
-                      "title": "새 소식",
-                      "body": "지원하지 않는 타입",
-                      "type": "SYSTEM",
-                      "isRead": false,
-                      "relatedEntityId": null,
-                      "createdAt": "2026-06-21T01:20:30Z"
-                    }
-                  ]
-                }
+                [
+                  {
+                    "id": 73,
+                    "title": "기프티콘이 도착했어요",
+                    "body": "선물함에서 확인해주세요",
+                    "type": "GIFTICON",
+                    "isRead": false,
+                    "relatedEntityId": 55,
+                    "createdAt": "2026-06-19T01:20:30Z"
+                  },
+                  {
+                    "id": 71,
+                    "title": "주문이 준비됐어요",
+                    "body": "주문번호 A-2419 — 픽업대에서 수령해주세요",
+                    "type": "ORDER",
+                    "isRead": false,
+                    "relatedEntityId": 2419,
+                    "createdAt": "2026-06-20T01:20:30Z"
+                  },
+                  {
+                    "id": 72,
+                    "title": "스탬프가 적립됐어요",
+                    "body": "스탬프 1개가 적립됐어요",
+                    "type": "STAMP",
+                    "isRead": true,
+                    "relatedEntityId": 88,
+                    "createdAt": "2026-06-20T01:15:30Z"
+                  },
+                  {
+                    "id": 74,
+                    "title": "새 소식",
+                    "body": "지원하지 않는 타입",
+                    "type": "SYSTEM",
+                    "isRead": false,
+                    "relatedEntityId": null,
+                    "createdAt": "2026-06-21T01:20:30Z"
+                  }
+                ]
                 """.trimIndent(),
             )
 
     private fun emptyNotificationListResponse(): MockResponse =
         MockResponse()
             .setResponseCode(200)
-            .setBody(
-                """
-                {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": []
-                }
-                """.trimIndent(),
-            )
+            .setBody("[]")
 
     private fun successVoidResponse(): MockResponse =
         MockResponse()
             .setResponseCode(200)
-            .setBody(
-                """
-                {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": null
-                }
-                """.trimIndent(),
-            )
+            .setBody("{}")
 
     private fun authenticatedState(): AuthState.Authenticated =
         AuthState.Authenticated(

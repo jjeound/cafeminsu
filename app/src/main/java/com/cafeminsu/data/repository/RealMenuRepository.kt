@@ -11,7 +11,6 @@ import com.cafeminsu.data.remote.MenuApi
 import com.cafeminsu.data.remote.MenuListItemRes
 import com.cafeminsu.data.remote.Unauthenticated
 import com.cafeminsu.data.remote.runCatchingToAppResult
-import com.cafeminsu.data.remote.unwrap
 import com.cafeminsu.di.IoDispatcher
 import com.cafeminsu.domain.model.MenuCategory
 import com.cafeminsu.domain.model.MenuItem
@@ -48,7 +47,7 @@ class RealMenuRepository @Inject constructor(
                     menuApi.getMenu(serverId)
                 }
             ) {
-                is AppResult.Success -> response.data.unwrap { it.toMenuItem() }
+                is AppResult.Success -> response.data.toMenuItem()
                 is AppResult.Failure -> response
             }
         }
@@ -114,7 +113,7 @@ class RealMenuRepository @Inject constructor(
                 )
             }
         ) {
-            is AppResult.Success -> response.data.unwrap { AppResult.Success(it) }
+            is AppResult.Success -> AppResult.Success(response.data)
             is AppResult.Failure -> response
         }
 

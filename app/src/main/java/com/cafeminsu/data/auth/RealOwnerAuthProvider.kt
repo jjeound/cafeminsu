@@ -7,7 +7,6 @@ import com.cafeminsu.data.remote.AuthApi
 import com.cafeminsu.data.remote.OwnerLoginReq
 import com.cafeminsu.data.remote.runCatchingToAppResult
 import com.cafeminsu.data.remote.toOwnerLoginExchange
-import com.cafeminsu.data.remote.unwrap
 import com.cafeminsu.domain.auth.OwnerAuthProvider
 import com.cafeminsu.domain.model.OwnerProfile
 import javax.inject.Inject
@@ -34,7 +33,7 @@ class RealOwnerAuthProvider @Inject constructor(
                 authApi.ownerLogin(OwnerLoginReq(loginId = loginId, password = password))
             }
         ) {
-            is AppResult.Success -> response.data.unwrap { it.toOwnerLoginExchange(loginId) }
+            is AppResult.Success -> response.data.toOwnerLoginExchange(loginId)
             is AppResult.Failure -> response
         }
 

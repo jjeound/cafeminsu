@@ -12,7 +12,6 @@ import com.cafeminsu.data.remote.toAccessToken
 import com.cafeminsu.data.remote.toAvailability
 import com.cafeminsu.data.remote.toAuthenticatedState
 import com.cafeminsu.data.remote.toLoginExchange
-import com.cafeminsu.data.remote.unwrap
 import com.cafeminsu.domain.auth.LoginProvider
 import com.cafeminsu.domain.model.AuthState
 import com.cafeminsu.domain.model.UserProfile
@@ -42,7 +41,7 @@ class RealSessionRepository @Inject constructor(
                 authApi.kakaoLogin(KakaoLoginReq(accessToken = kakaoToken.value))
             }
         ) {
-            is AppResult.Success -> response.data.unwrap { it.toLoginExchange() }
+            is AppResult.Success -> response.data.toLoginExchange()
             is AppResult.Failure -> response
         }
 
@@ -72,7 +71,7 @@ class RealSessionRepository @Inject constructor(
                 authApi.checkNickname(normalized)
             }
         ) {
-            is AppResult.Success -> response.data.unwrap { it.toAvailability() }
+            is AppResult.Success -> response.data.toAvailability()
             is AppResult.Failure -> response
         }
     }
@@ -92,9 +91,7 @@ class RealSessionRepository @Inject constructor(
                 authApi.signup(SignupReq(nickname = normalized))
             }
         ) {
-            is AppResult.Success -> response.data.unwrap {
-                AppResult.Success(it.toAuthenticatedState())
-            }
+            is AppResult.Success -> AppResult.Success(response.data.toAuthenticatedState())
             is AppResult.Failure -> response
         }
 
@@ -119,7 +116,7 @@ class RealSessionRepository @Inject constructor(
                 authApi.refresh(tokens.refreshToken)
             }
         ) {
-            is AppResult.Success -> response.data.unwrap { it.toAccessToken() }
+            is AppResult.Success -> response.data.toAccessToken()
             is AppResult.Failure -> response
         }
 

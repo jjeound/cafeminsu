@@ -8,11 +8,20 @@
   모든 API 경로는 `api/...`(예: `api/user/kakao-login`), 헬스체크만 `health`. Retrofit baseUrl은 루트(`/`).
 - **HTTPS 강제 · cleartext 차단**(`SECURITY.md §2`). 키 부재(`BASE_URL` 공백) 시 해당 Repository는 Mock 폴백.
 
-## 공통 응답 봉투 `BaseResponse<T>`
-모든 응답은 `{ isSuccess: boolean, code: int, message: string, result: T }` 형태다.
-- data 레이어에서 봉투를 **언랩**: `isSuccess==true` → `AppResult.Success(map(result))`,
-  아니면 `AppResult.Failure(code/HTTP→DomainError)`. (스펙에 별도 에러 스키마는 없음 → `isSuccess`/`code` +
-  HTTP 상태로 판정.) 예외→`DomainError` 매핑은 data 레이어에서만(`AppResult`/`DomainError` 재사용).
+## 응답 구조  ⚠ 2026-06-22 변경: 공통 봉투 `BaseResponse<T>` **폐지**
+서버가 공통 응답 봉투를 제거했다. **이전**에는 모든 응답이
+`{ isSuccess, code, message, result: T }` 봉투였으나, **현재**는 각 API가 **DTO(`T`)를 본문에 직접** 반환한다.
+- **성공(2xx)**: 본문 = DTO 그 자체(`{...}`). 목록 엔드포인트는 **최상위 JSON 배열**(`[...]`).
+  `result`/`isSuccess`/`code`/`message` 래퍼는 더 이상 없다.
+- **실패**: **HTTP 상태 코드**로만 신호한다(401/404/4xx/5xx 등). 본문 플래그(`isSuccess:false`)로
+  실패를 표현하지 않는다(그런 케이스 없음).
+- **data 레이어 규칙(반드시 준수)**:
+  - Retrofit API 메서드 반환 타입은 `BaseResponse<T>`가 아니라 **`T`**(목록은 `List<T>`).
+  - 호출은 `runCatchingToAppResult { api.foo() }`로 감싸 비-2xx(`HttpException`)·네트워크 예외를
+    `AppResult.Failure(DomainError)`로 변환(`toDomainError()` 재사용). 성공 시 DTO를 매퍼(`toX()`)로
+    도메인 모델로 변환한다. 예외 전파 금지(`AppResult`만, `ARCHITECTURE.md`).
+  - 봉투 언랩 헬퍼 `BaseResponse<T>.unwrap`·데이터클래스 `BaseResponse`·`isSuccess`/`code` 본문 판정은
+    **전부 제거**한다(HTTP 상태가 단일 실패 신호).
 
 ## 인증 (카카오 토큰 서버 교환, JWT Bearer)
 - 글로벌 시큐리티 `bearerAuth`(HTTP Bearer JWT). `kakao-login`/`refresh`/`stores`/`menus`는 **public**,

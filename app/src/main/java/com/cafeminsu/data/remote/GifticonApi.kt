@@ -10,26 +10,26 @@ interface GifticonApi {
     @POST("api/gifticons")
     suspend fun purchaseGifticon(
         @Body request: GifticonPurchaseReq,
-    ): BaseResponse<GifticonPurchaseRes>
+    ): GifticonPurchaseRes
 
     @GET("api/gifticons/my")
-    suspend fun getMyGifticons(): BaseResponse<List<MyGifticonRes>>
+    suspend fun getMyGifticons(): List<MyGifticonRes>
 
     @GET("api/gifticons/{gifticonId}")
     suspend fun getGifticon(
         @Path("gifticonId") gifticonId: Long,
-    ): BaseResponse<GifticonDetailRes>
+    ): GifticonDetailRes
 
     @POST("api/gifticons/{gifticonId}/use")
     suspend fun useGifticon(
         @Path("gifticonId") gifticonId: Long,
         @Body request: GifticonUseReq,
-    ): BaseResponse<GifticonUseRes>
+    ): GifticonUseRes
 
     @POST("api/gifticons/{gifticonId}/share")
     suspend fun shareGifticon(
         @Path("gifticonId") gifticonId: Long,
-    ): BaseResponse<GifticonShareRes>
+    ): GifticonShareRes
 }
 
 @JsonClass(generateAdapter = true)

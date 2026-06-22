@@ -43,20 +43,15 @@ class RealStoreRepositoryTest {
                 .setBody(
                     """
                     {
-                      "isSuccess": true,
-                      "code": 200,
-                      "message": "OK",
-                      "result": {
-                        "stores": [
-                          {
-                            "id": 7,
-                            "name": "카페민수 강남점",
-                            "address": "서울 강남구 테헤란로 134",
-                            "imageUrl": "https://cdn.example/store.png"
-                          }
-                        ],
-                        "total": 1
-                      }
+                      "stores": [
+                        {
+                          "id": 7,
+                          "name": "카페민수 강남점",
+                          "address": "서울 강남구 테헤란로 134",
+                          "imageUrl": "https://cdn.example/store.png"
+                        }
+                      ],
+                      "total": 1
                     }
                     """.trimIndent(),
                 ),
@@ -110,20 +105,15 @@ class RealStoreRepositoryTest {
                 .setBody(
                     """
                     {
-                      "isSuccess": true,
-                      "code": 200,
-                      "message": "OK",
-                      "result": {
-                        "stores": [
-                          {
-                            "id": 7,
-                            "name": "카페민수 강남점",
-                            "address": "서울 강남구 테헤란로 134",
-                            "imageUrl": null
-                          }
-                        ],
-                        "total": 1
-                      }
+                      "stores": [
+                        {
+                          "id": 7,
+                          "name": "카페민수 강남점",
+                          "address": "서울 강남구 테헤란로 134",
+                          "imageUrl": null
+                        }
+                      ],
+                      "total": 1
                     }
                     """.trimIndent(),
                 ),
@@ -178,13 +168,8 @@ class RealStoreRepositoryTest {
                 .setBody(
                     """
                     {
-                      "isSuccess": true,
-                      "code": 200,
-                      "message": "OK",
-                      "result": {
-                        "stores": [],
-                        "total": 0
-                      }
+                      "stores": [],
+                      "total": 0
                     }
                     """.trimIndent(),
                 ),
@@ -272,20 +257,15 @@ class RealStoreRepositoryTest {
             .setBody(
                 """
                 {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": {
-                    "stores": [
-                      {
-                        "id": 7,
-                        "name": "카페민수 강남점",
-                        "address": "서울 강남구 테헤란로 134",
-                        "imageUrl": null
-                      }
-                    ],
-                    "total": 1
-                  }
+                  "stores": [
+                    {
+                      "id": 7,
+                      "name": "카페민수 강남점",
+                      "address": "서울 강남구 테헤란로 134",
+                      "imageUrl": null
+                    }
+                  ],
+                  "total": 1
                 }
                 """.trimIndent(),
             )
@@ -303,19 +283,14 @@ class RealStoreRepositoryTest {
             .setBody(
                 """
                 {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": {
-                    "id": 7,
-                    "name": "카페민수 강남점",
-                    "address": "서울 강남구 테헤란로 134",
-                    "latitude": 37.498,
-                    "longitude": 127.028,
-                    "phone": "02-1234-5678",
-                    "businessHours": "09:00-22:00",
-                    "imageUrl": "https://cdn.example/store.png"
-                  }
+                  "id": 7,
+                  "name": "카페민수 강남점",
+                  "address": "서울 강남구 테헤란로 134",
+                  "latitude": 37.498,
+                  "longitude": 127.028,
+                  "phone": "02-1234-5678",
+                  "businessHours": "09:00-22:00",
+                  "imageUrl": "https://cdn.example/store.png"
                 }
                 """.trimIndent(),
             )

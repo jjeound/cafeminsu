@@ -18,39 +18,31 @@ interface AuthApi {
     @POST("api/user/kakao-login")
     suspend fun kakaoLogin(
         @Body request: KakaoLoginReq,
-    ): BaseResponse<KakaoLoginRes>
+    ): KakaoLoginRes
 
     @POST("api/user/owner-login")
     suspend fun ownerLogin(
         @Body request: OwnerLoginReq,
-    ): BaseResponse<OwnerLoginRes>
+    ): OwnerLoginRes
 
     @POST("api/user/refresh")
     suspend fun refresh(
         @Header("Refresh-Token") refreshToken: String,
-    ): BaseResponse<RefreshRes>
+    ): RefreshRes
 
     @GET("api/user/profile")
-    suspend fun getMyProfile(): BaseResponse<UserProfileRes>
+    suspend fun getMyProfile(): UserProfileRes
 
     @GET("api/user/nickname/check")
     suspend fun checkNickname(
         @Query("nickname") nickname: String,
-    ): BaseResponse<NicknameCheckRes>
+    ): NicknameCheckRes
 
     @POST("api/user/signup")
     suspend fun signup(
         @Body request: SignupReq,
-    ): BaseResponse<SignupRes>
+    ): SignupRes
 }
-
-@JsonClass(generateAdapter = true)
-data class BaseResponse<T>(
-    val isSuccess: Boolean?,
-    val code: Int?,
-    val message: String?,
-    val result: T?,
-)
 
 @JsonClass(generateAdapter = true)
 data class KakaoLoginReq(
@@ -117,17 +109,6 @@ data class OwnerLoginExchange(
     val tokens: SessionTokens,
     val ownerProfile: OwnerProfile,
 )
-
-fun <T, R> BaseResponse<T>.unwrap(
-    mapper: (T) -> AppResult<R>,
-): AppResult<R> {
-    if (isSuccess != true) {
-        return AppResult.Failure(code.toDomainErrorOrUnknown())
-    }
-
-    val body = result ?: return AppResult.Failure(DomainError.Unknown)
-    return mapper(body)
-}
 
 fun KakaoLoginRes.toLoginExchange(): AppResult<LoginExchange> {
     val accessToken = accessToken?.takeIf { it.isNotBlank() }
@@ -213,9 +194,6 @@ fun SignupRes.toAuthenticatedState(): AuthState.Authenticated =
         role = UserRole.Customer,
         isNewUser = false,
     )
-
-private fun Int?.toDomainErrorOrUnknown(): DomainError =
-    this?.toDomainError() ?: DomainError.Unknown
 
 private fun String?.toDisplayName(): String =
     this
