@@ -3,6 +3,7 @@ package com.cafeminsu.data.repository
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.data.auth.SessionStateHolder
+import com.cafeminsu.data.mapper.emptyStampCard
 import com.cafeminsu.data.mapper.toGifticon
 import com.cafeminsu.data.mapper.toGifticons
 import com.cafeminsu.data.mapper.toRepresentativeStampCard
@@ -143,7 +144,12 @@ class RealRewardRepository @Inject constructor(
                 }
             ) {
                 is AppResult.Success -> response.data.unwrap { it.toStampCard() }
-                is AppResult.Failure -> response
+                is AppResult.Failure ->
+                    if (response.error == DomainError.NotFound) {
+                        AppResult.Success(emptyStampCard(selectedStoreId))
+                    } else {
+                        response
+                    }
             }
         } else {
             when (

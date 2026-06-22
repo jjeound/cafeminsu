@@ -41,6 +41,14 @@ fun StampDetailRes.toStampCard(): AppResult<StampCard> {
     )
 }
 
+fun emptyStampCard(storeId: Long): StampCard =
+    StampCard(
+        userId = storeId.toString(),
+        currentCount = DefaultStampCount,
+        goalCount = DefaultStampGoal,
+        history = emptyList(),
+    )
+
 fun List<StampSummaryRes>.toRepresentativeStampCard(): AppResult<StampCard> =
     firstOrNull()?.toStampCard()
         ?: AppResult.Success(

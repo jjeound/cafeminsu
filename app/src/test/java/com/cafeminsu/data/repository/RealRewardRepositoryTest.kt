@@ -85,6 +85,39 @@ class RealRewardRepositoryTest {
     }
 
     @Test
+    fun observeStampCardReturnsEmptyCardWhenSelectedStoreHasNoStamps() = runTest(testDispatcher) {
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(404)
+                .setBody(
+                    """
+                    {
+                      "isSuccess": false,
+                      "code": 2800,
+                      "message": "스탬프 정보가 없습니다.",
+                      "result": null
+                    }
+                    """.trimIndent(),
+                ),
+        )
+        val repository = realRewardRepository(selectedStore = sampleStore(id = "6"))
+
+        repository.observeStampCard().test {
+            val result = awaitItem()
+
+            assertTrue(result is AppResult.Success)
+            val stampCard = (result as AppResult.Success).data
+            assertEquals("6", stampCard.userId)
+            assertEquals(0, stampCard.currentCount)
+            assertEquals(10, stampCard.goalCount)
+            assertEquals(emptyList<Any>(), stampCard.history)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        assertEquals("/api/stamps/6", server.takeRequest().requestUrl?.encodedPath)
+    }
+
+    @Test
     fun grantStampsForPaidOrderRequeriesStampCardWithoutGrantEndpoint() = runTest(testDispatcher) {
         server.enqueue(stampDetailResponse(count = 9))
         val repository = realRewardRepository(selectedStore = sampleStore(id = "11"))
