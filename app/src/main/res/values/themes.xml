@@ -1,6 +1,20 @@
 <resources>
+    <!-- 스플래시 이후 앱 본 테마. -->
     <style name="Theme.CafeMinsu" parent="android:style/Theme.Material.Light.NoActionBar">
         <item name="android:windowActionBar">false</item>
         <item name="android:windowNoTitle">true</item>
+        <!-- 핸드오프 흰 플래시 방지용으로 코랄 유지(앱 화면은 각자 Surface로 덮음). -->
+        <item name="android:windowBackground">@color/cafe_splash_background</item>
+    </style>
+
+    <!--
+      Android 12+ SplashScreen API(androidx.core:core-splashscreen) 런처 테마.
+      코랄 배경 + 흰색 커피 로고. 스플래시 종료 후 postSplashScreenTheme 로 본 테마 전환.
+      (라이브러리 호환 속성 — android:/tools: 접두사 불필요, API 23+ 백포트.)
+    -->
+    <style name="Theme.CafeMinsu.Splash" parent="Theme.SplashScreen">
+        <item name="windowSplashScreenBackground">@color/cafe_splash_background</item>
+        <item name="windowSplashScreenAnimatedIcon">@drawable/ic_splash_logo</item>
+        <item name="postSplashScreenTheme">@style/Theme.CafeMinsu</item>
     </style>
 </resources>

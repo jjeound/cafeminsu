@@ -8,8 +8,6 @@ import com.cafeminsu.core.AppResult
 import com.cafeminsu.domain.auth.OwnerAuthProvider
 import com.cafeminsu.domain.model.AuthState
 import com.cafeminsu.domain.model.OwnerProfile
-import com.cafeminsu.domain.model.UserProfile
-import com.cafeminsu.domain.model.UserRole
 import com.cafeminsu.domain.repository.SessionRepository
 import com.cafeminsu.ui.theme.CafeTheme
 import kotlinx.coroutines.flow.Flow
@@ -22,13 +20,13 @@ class AppNavHostTest {
     val composeRule = createComposeRule()
 
     @Test
-    fun startsAtSplashThenRoutesGuestToLogin() {
+    fun guestStartDestinationShowsLogin() {
         composeRule.setContent {
             CafeTheme {
                 AppNavHost(
                     sessionRepository = FakeSessionRepository(AuthState.Guest),
                     ownerAuthProvider = FakeOwnerAuthProvider(),
-                    splashDelayMillis = 0,
+                    startDestination = Routes.LOGIN,
                 )
             }
         }
@@ -39,28 +37,13 @@ class AppNavHostTest {
     }
 
     @Test
-    fun splashScreenIsStartDestination() {
-        composeRule.setContent {
-            CafeTheme {
-                AppNavHost(
-                    sessionRepository = FakeSessionRepository(AuthState.Unknown),
-                    ownerAuthProvider = FakeOwnerAuthProvider(),
-                    splashDelayMillis = 0,
-                )
-            }
-        }
-
-        composeRule.onNodeWithText("카페민수").assertIsDisplayed()
-    }
-
-    @Test
     fun ownerLoginLinkRoutesToOwnerLoginScreen() {
         composeRule.setContent {
             CafeTheme {
                 AppNavHost(
                     sessionRepository = FakeSessionRepository(AuthState.Guest),
                     ownerAuthProvider = FakeOwnerAuthProvider(),
-                    splashDelayMillis = 0,
+                    startDestination = Routes.LOGIN,
                 )
             }
         }
@@ -72,22 +55,13 @@ class AppNavHostTest {
     }
 
     @Test
-    fun ownerAuthenticatedSplashRoutesToOwnerShell() {
-        val ownerAuthState = AuthState.Authenticated(
-            user = UserProfile(
-                id = "owner-user",
-                displayName = "강남점 점주",
-                phoneLast4 = null,
-            ),
-            role = UserRole.Owner,
-        )
-
+    fun ownerStartDestinationShowsOwnerShell() {
         composeRule.setContent {
             CafeTheme {
                 AppNavHost(
-                    sessionRepository = FakeSessionRepository(ownerAuthState),
+                    sessionRepository = FakeSessionRepository(AuthState.Guest),
                     ownerAuthProvider = FakeOwnerAuthProvider(),
-                    splashDelayMillis = 0,
+                    startDestination = Routes.OWNER_HOME,
                 )
             }
         }

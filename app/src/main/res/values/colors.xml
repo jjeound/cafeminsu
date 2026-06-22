@@ -1,0 +1,10 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!--
+      네이티브 윈도우/스플래시 배경 전용 색. 네이티브 테마(themes.xml)는 Compose 토큰을
+      읽을 수 없어, 콜드 스타트/시스템 스플래시를 인앱 SplashScreen(코랄 primary)과 맞추기 위해
+      ui/theme/Color.kt 의 primary(#CC785C) 값을 부득이 이 한 곳에만 미러링한다.
+      앱 화면 색의 단일 진실은 여전히 ui/theme/Color.kt 다.
+    -->
+    <color name="cafe_splash_background">#FFCC785C</color>
+</resources>
