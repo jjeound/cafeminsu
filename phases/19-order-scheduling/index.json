@@ -13,7 +13,10 @@
     {
       "step": 1,
       "name": "beacon-proximity",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-06-22T13:11:57+0900",
+      "summary": "비콘(BLE) 근접 신호를 step0 스케줄러에 배선: domain/proximity(ProximitySignal·ProximityScanner·인메모리 ProximitySignalRepository·rssi→ProximityInput 매핑), data/proximity(내장 BluetoothLeScanner 기반 AndroidBeaconScanner는 권한/하드웨어 부재 시 AppResult.Failure 안전폴백·비로깅, 데모용 SimulatedProximityScanner), ProximityModule은 기본 시뮬레이터 @Binds(실 BLE 교체법 주석). OwnerOrdersViewModel이 근접 신호를 combine해 SchedulingSignals.proximity를 채워 임박 주문이 우선순위 상단+ArrivingSoon('곧 도착') 뱃지로 노출. 매니페스트 BLUETOOTH_SCAN(neverForLocation)/CONNECT 최소권한·SECURITY.md §9 추가. 단위테스트(스케줄러 근접 정렬/뱃지, repo, 시뮬레이터, 권한·rssi 헬퍼, ViewModel 근접 반응) 전부 통과.",
+      "completed_at": "2026-06-22T13:35:45+0900"
     },
     {
       "step": 2,

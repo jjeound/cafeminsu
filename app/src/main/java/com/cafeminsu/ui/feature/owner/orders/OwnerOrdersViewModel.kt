@@ -7,11 +7,15 @@ import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.CartItem
 import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.OrderStatus
+import com.cafeminsu.domain.proximity.ProximitySignal
+import com.cafeminsu.domain.proximity.ProximitySignalRepository
+import com.cafeminsu.domain.proximity.toProximityInput
 import com.cafeminsu.domain.repository.OwnerOrderRepository
 import com.cafeminsu.domain.scheduling.CongestionCalculator
 import com.cafeminsu.domain.scheduling.CongestionLevel
 import com.cafeminsu.domain.scheduling.OrderScheduler
 import com.cafeminsu.domain.scheduling.PrepTimeEstimator
+import com.cafeminsu.domain.scheduling.ProximityInput
 import com.cafeminsu.domain.scheduling.ScheduledOrder
 import com.cafeminsu.domain.scheduling.SchedulingSignals
 import com.cafeminsu.domain.time.Clock
@@ -36,6 +40,7 @@ class OwnerOrdersViewModel @Inject constructor(
     private val orderScheduler: OrderScheduler,
     private val congestionCalculator: CongestionCalculator,
     private val prepTimeEstimator: PrepTimeEstimator,
+    private val proximitySignalRepository: ProximitySignalRepository,
     private val clock: Clock,
 ) : ViewModel() {
     private val selectedFilter = MutableStateFlow(OwnerOrdersFilter.New)
@@ -47,12 +52,14 @@ class OwnerOrdersViewModel @Inject constructor(
         selectedFilter,
         operationError,
         processingOrderIds,
-    ) { orderResult, filter, actionError, processingIds ->
+        proximitySignalRepository.observe(),
+    ) { orderResult, filter, actionError, processingIds, proximitySignals ->
         mapOwnerOrdersState(
             orderResult = orderResult,
             selectedFilter = filter,
             operationError = actionError,
             processingOrderIds = processingIds,
+            proximitySignals = proximitySignals,
         )
     }.catch {
         emit(
@@ -108,6 +115,7 @@ class OwnerOrdersViewModel @Inject constructor(
         selectedFilter: OwnerOrdersFilter,
         operationError: DomainError?,
         processingOrderIds: Set<String>,
+        proximitySignals: Map<String, ProximitySignal>,
     ): OwnerOrdersUiState {
         operationError?.let { return it.toOwnerOrdersError() }
 
@@ -120,7 +128,12 @@ class OwnerOrdersViewModel @Inject constructor(
         val congestion = congestionCalculator.level(orders.activeOrderCount())
         val filtered = orders.filter { it.status == selectedFilter.status }
         val signals = filtered.associate { order ->
-            order.id to order.toSchedulingSignals(nowMillis = nowMillis, congestion = congestion)
+            order.id to order.toSchedulingSignals(
+                nowMillis = nowMillis,
+                congestion = congestion,
+                // 비콘 근접 신호가 있으면 스케줄러 입력으로 변환해 우선순위·ArrivingSoon 뱃지에 반영.
+                proximity = proximitySignals[order.id]?.toProximityInput(),
+            )
         }
         val filteredOrders = orderScheduler
             .schedule(orders = filtered, signals = signals, nowMillis = nowMillis)
@@ -154,6 +167,7 @@ class OwnerOrdersViewModel @Inject constructor(
     private fun Order.toSchedulingSignals(
         nowMillis: Long,
         congestion: CongestionLevel,
+        proximity: ProximityInput?,
     ): SchedulingSignals =
         SchedulingSignals(
             orderId = id,
@@ -161,8 +175,7 @@ class OwnerOrdersViewModel @Inject constructor(
             prepSeconds = prepTimeEstimator.estimateSeconds(this),
             quantity = items.sumOf { it.quantity },
             congestion = congestion,
-            // 근접 신호는 다음 step 의 비콘이 채운다. 지금은 항상 null.
-            proximity = null,
+            proximity = proximity,
         )
 
     private fun ScheduledOrder.toOwnerOrdersOrderUiModel(
