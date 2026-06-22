@@ -29,8 +29,12 @@
     {
       "step": 3,
       "name": "room-noti-history-cache",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-06-22T19:57:30+0900",
+      "summary": "CafeDatabase 를 version 3 으로 확장(NotificationEntity/NotificationDao·OrderEntity/OrderHistoryDao 추가)하고, RealNotificationRepository.observeNotifications·RealOrderRepository.observeOrderHistory 에 인증 게이트 유지한 read-through 캐시를 통합 — 인증 통과+API 성공 시 LocalDataSource 로 write-through(전체 clear+upsert), 네트워크 실패 시 캐시 있으면 오프라인 폴백·없으면 Failure, 미인증이면 캐시 미조회(다른 사용자 데이터 누출 방지). 주문 항목은 Moshi JSON(CartItem/SelectedOption @JsonClass)으로 직렬화. observeOrder/createOrderFromCart(금전) 는 무변경. JVM(NotificationCacheMapper/OrderCacheMapper/Room*LocalDataSource/Real* 캐시·DatabaseModule) + androidTest(NotificationDao/OrderHistoryDao) 테스트 통과.",
+      "completed_at": "2026-06-22T20:20:00+0900"
     }
   ],
-  "created_at": "2026-06-22T17:10:00+0900"
+  "created_at": "2026-06-22T17:10:00+0900",
+  "completed_at": "2026-06-22T20:20:00+0900"
 }

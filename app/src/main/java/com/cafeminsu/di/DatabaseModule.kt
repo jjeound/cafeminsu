@@ -6,6 +6,12 @@ import com.cafeminsu.data.local.db.CafeDatabase
 import com.cafeminsu.data.local.menu.MenuDao
 import com.cafeminsu.data.local.menu.MenuLocalDataSource
 import com.cafeminsu.data.local.menu.RoomMenuLocalDataSource
+import com.cafeminsu.data.local.notification.NotificationDao
+import com.cafeminsu.data.local.notification.NotificationLocalDataSource
+import com.cafeminsu.data.local.notification.RoomNotificationLocalDataSource
+import com.cafeminsu.data.local.order.OrderHistoryDao
+import com.cafeminsu.data.local.order.OrderHistoryLocalDataSource
+import com.cafeminsu.data.local.order.RoomOrderHistoryLocalDataSource
 import com.cafeminsu.data.local.store.RoomStoreLocalDataSource
 import com.cafeminsu.data.local.store.StoreDao
 import com.cafeminsu.data.local.store.StoreLocalDataSource
@@ -47,6 +53,27 @@ object DatabaseModule {
     @Singleton
     fun provideMenuLocalDataSource(menuDao: MenuDao, moshi: Moshi): MenuLocalDataSource =
         RoomMenuLocalDataSource(menuDao, moshi)
+
+    @Provides
+    @Singleton
+    fun provideNotificationDao(database: CafeDatabase): NotificationDao = database.notificationDao()
+
+    @Provides
+    @Singleton
+    fun provideNotificationLocalDataSource(
+        notificationDao: NotificationDao,
+    ): NotificationLocalDataSource = RoomNotificationLocalDataSource(notificationDao)
+
+    @Provides
+    @Singleton
+    fun provideOrderHistoryDao(database: CafeDatabase): OrderHistoryDao = database.orderHistoryDao()
+
+    @Provides
+    @Singleton
+    fun provideOrderHistoryLocalDataSource(
+        orderHistoryDao: OrderHistoryDao,
+        moshi: Moshi,
+    ): OrderHistoryLocalDataSource = RoomOrderHistoryLocalDataSource(orderHistoryDao, moshi)
 }
 
 private const val CacheDatabaseName = "cafeminsu-cache.db"
