@@ -1,0 +1,27 @@
+{
+  "project": "CafeMinsu",
+  "phase": "local-persistence",
+  "steps": [
+    {
+      "step": 0,
+      "name": "datastore-prefs",
+      "status": "pending"
+    },
+    {
+      "step": 1,
+      "name": "room-store-cache",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "room-menu-cache",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "name": "room-noti-history-cache",
+      "status": "pending"
+    }
+  ],
+  "created_at": "2026-06-22T17:10:00+0900"
+}
