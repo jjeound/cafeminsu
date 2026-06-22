@@ -270,6 +270,11 @@ fun AppNavHost(
                     navArgument(Routes.MENU_DETAIL_MENU_ID) {
                         type = NavType.StringType
                     },
+                    navArgument(Routes.MENU_DETAIL_CART_ITEM_ID) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
                 ),
             ) {
                 MenuDetailRoute(
@@ -289,6 +294,9 @@ fun AppNavHost(
                         navController.navigate(Routes.pay(orderId))
                     },
                     onBrowseMenuClick = { navController.navigate(Routes.STORE) },
+                    onItemClick = { menuItemId, cartItemId ->
+                        navController.navigate(Routes.menuDetail(menuItemId, cartItemId))
+                    },
                     onBackClick = { navController.popBackStack() },
                 )
             }

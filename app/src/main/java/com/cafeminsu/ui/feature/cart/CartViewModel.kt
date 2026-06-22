@@ -41,7 +41,8 @@ class CartViewModel @Inject constructor(
     }
 
     fun onQuantityChange(cartItemId: String, quantity: Int) {
-        if (quantity < RemoveQuantity) {
+        if (quantity <= RemoveQuantity) {
+            onRemove(cartItemId)
             return
         }
 

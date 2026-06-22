@@ -3,11 +3,13 @@ package com.cafeminsu.ui.feature.cart
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
+import androidx.compose.ui.test.performClick
 import com.cafeminsu.domain.model.CartItem
 import com.cafeminsu.domain.model.CartValidation
 import com.cafeminsu.domain.model.OrderType
 import com.cafeminsu.domain.model.SelectedOption
 import com.cafeminsu.ui.theme.CafeTheme
+import org.junit.Assert.assertEquals
 import org.junit.Rule
 import org.junit.Test
 
@@ -34,6 +36,7 @@ class CartScreenTest {
                     onCheckout = {},
                     onRetry = {},
                     onBrowseMenuClick = {},
+                    onItemClick = { _, _ -> },
                 )
             }
         }
@@ -63,6 +66,7 @@ class CartScreenTest {
                     onCheckout = {},
                     onRetry = {},
                     onBrowseMenuClick = {},
+                    onItemClick = { _, _ -> },
                 )
             }
         }
@@ -76,7 +80,75 @@ class CartScreenTest {
         composeRule.onNodeWithText("11,400원").assertIsDisplayed()
     }
 
-    private fun sampleCartItem(): CartItem =
+    @Test
+    fun tappingItemNavigatesToMenuDetailWithCartItemId() {
+        var clicked: Pair<String, String>? = null
+
+        composeRule.setContent {
+            CafeTheme {
+                CartScreen(
+                    state = CartUiState.Content(
+                        items = listOf(sampleCartItem()),
+                        subtotal = 11_400,
+                        validation = CartValidation.Valid,
+                        checkoutInProgress = false,
+                        orderType = OrderType.DineIn,
+                        requestNote = "",
+                    ),
+                    onBackClick = {},
+                    onQuantityChange = { _, _ -> },
+                    onOrderTypeSelected = {},
+                    onRequestNoteChange = {},
+                    onCheckout = {},
+                    onRetry = {},
+                    onBrowseMenuClick = {},
+                    onItemClick = { menuItemId, cartItemId -> clicked = menuItemId to cartItemId },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("민수 라떼").performClick()
+
+        composeRule.runOnIdle {
+            assertEquals("latte" to "cart-item-1", clicked)
+        }
+    }
+
+    @Test
+    fun decreasingQuantityToZeroRequestsRemoval() {
+        var lastQuantityChange: Pair<String, Int>? = null
+
+        composeRule.setContent {
+            CafeTheme {
+                CartScreen(
+                    state = CartUiState.Content(
+                        items = listOf(sampleCartItem(quantity = 1)),
+                        subtotal = 5_700,
+                        validation = CartValidation.Valid,
+                        checkoutInProgress = false,
+                        orderType = OrderType.DineIn,
+                        requestNote = "",
+                    ),
+                    onBackClick = {},
+                    onQuantityChange = { id, quantity -> lastQuantityChange = id to quantity },
+                    onOrderTypeSelected = {},
+                    onRequestNoteChange = {},
+                    onCheckout = {},
+                    onRetry = {},
+                    onBrowseMenuClick = {},
+                    onItemClick = { _, _ -> },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("−").performClick()
+
+        composeRule.runOnIdle {
+            assertEquals("cart-item-1" to 0, lastQuantityChange)
+        }
+    }
+
+    private fun sampleCartItem(quantity: Int = 2): CartItem =
         CartItem(
             id = "cart-item-1",
             menuItemId = "latte",
@@ -90,6 +162,6 @@ class CartScreenTest {
                     extraPrice = 700,
                 ),
             ),
-            quantity = 2,
+            quantity = quantity,
         )
 }

@@ -134,6 +134,30 @@ class CartViewModelTest {
     }
 
     @Test
+    fun quantityChangeToZeroRemovesItemInsteadOfUpdating() = runTest {
+        val repository = FakeCartRepository(
+            initialCart = sampleCart(
+                items = listOf(sampleCartItem(unitPrice = 4_500, quantity = 1)),
+                validation = CartValidation.Valid,
+            ),
+        )
+        val viewModel = viewModel(cartRepository = repository)
+
+        viewModel.uiState.test {
+            assertEquals(4_500, awaitContent().subtotal)
+
+            viewModel.onQuantityChange(cartItemId = "cart-item-1", quantity = 0)
+
+            val empty = awaitEmpty()
+            assertEquals(RemoveRequest("cart-item-1"), repository.removeRequests.single())
+            assertTrue(repository.updateQuantityRequests.isEmpty())
+            assertEquals(CartValidation.Invalid(listOf(CartInvalidReason.Empty)), empty.validation)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun checkoutWithEmptyCartExposesInvalidReasonAndDoesNotCreateOrder() = runTest {
         val orderRepository = FakeOrderRepository()
         val viewModel = viewModel(

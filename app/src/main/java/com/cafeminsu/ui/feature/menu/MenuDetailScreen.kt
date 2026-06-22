@@ -63,8 +63,9 @@ fun MenuDetailRoute(
         viewModel.events.collect { event ->
             when (event) {
                 MenuDetailEvent.AddedToCart -> {
+                    val editing = (state as? MenuDetailUiState.Content)?.isEditing == true
                     snackbarHostState.cafeSnackbar(
-                        message = "장바구니에 담았어요",
+                        message = if (editing) "변경사항을 저장했어요" else "장바구니에 담았어요",
                         type = CafeSnackbarType.Success,
                     )
                     onAddedToCart()
@@ -470,7 +471,11 @@ private fun AddToCartBar(
                 AddStatusText(state)
 
                 CafeButton(
-                    text = "장바구니 담기 · ${formatWon(state.totalPrice)}",
+                    text = if (state.isEditing) {
+                        "변경사항 저장 · ${formatWon(state.totalPrice)}"
+                    } else {
+                        "장바구니 담기 · ${formatWon(state.totalPrice)}"
+                    },
                     onClick = onAddToCart,
                     modifier = Modifier.fillMaxWidth(),
                     variant = CafeButtonVariant.Primary,
