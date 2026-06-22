@@ -261,6 +261,7 @@ fun AppNavHost(
                         navController.navigate(Routes.menuDetail(menuItemId))
                     },
                     onVoiceClick = { navController.navigate(Routes.VOICE) },
+                    onCartClick = { navController.navigate(Routes.CART) },
                 )
             }
             composable(
