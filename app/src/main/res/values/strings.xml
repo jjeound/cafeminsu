@@ -1,3 +1,4 @@
 <resources>
     <string name="app_name">민수</string>
+    <string name="fcm_default_channel_id">cafeminsu_orders</string>
 </resources>
