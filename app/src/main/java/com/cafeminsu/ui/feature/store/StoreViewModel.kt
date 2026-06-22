@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
+import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.flatMapLatest
@@ -35,6 +36,10 @@ class StoreViewModel @Inject constructor(
     private val mutableEvents = MutableSharedFlow<StoreEvent>()
 
     val events: SharedFlow<StoreEvent> = mutableEvents.asSharedFlow()
+
+    // 검색어는 입력 즉시 반영돼야 하므로 매장 목록(비동기 로딩) UiState와 분리해 동기 StateFlow로 노출한다.
+    // (TextField 값을 uiState.query에 묶으면 네트워크 응답 전까지 값이 지연돼 입력이 끊긴다.)
+    val searchQuery: StateFlow<String> = query.asStateFlow()
 
     val uiState: StateFlow<StoreUiState> = combine(query, refreshRequests) { currentQuery, _ ->
         currentQuery

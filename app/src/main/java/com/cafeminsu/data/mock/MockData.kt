@@ -19,8 +19,6 @@ import java.time.Instant
 import java.time.ZoneId
 
 object MockData {
-    const val minimumOrderAmount: Int = 10_000
-
     val menuCategories: List<MenuCategory> = listOf(
         MenuCategory(id = "coffee", name = "커피", sortOrder = 1),
         MenuCategory(id = "tea", name = "티", sortOrder = 2),

@@ -43,7 +43,6 @@ class CartViewModelTest {
             cartRepository = FakeCartRepository(
                 initialCart = sampleCart(
                     items = listOf(sampleCartItem(unitPrice = 5_000, quantity = 2)),
-                    minimumOrderAmount = 10_000,
                     validation = CartValidation.Valid,
                 ),
             ),
@@ -52,7 +51,6 @@ class CartViewModelTest {
         viewModel.uiState.test {
             val content = awaitContent()
             assertEquals(10_000, content.subtotal)
-            assertEquals(10_000, content.minimumOrderAmount)
             assertEquals(CartValidation.Valid, content.validation)
             assertEquals(listOf("민수 라떼"), content.items.map { it.name })
             assertEquals(OrderType.DineIn, content.orderType)
@@ -85,7 +83,6 @@ class CartViewModelTest {
             cartRepository = FakeCartRepository(
                 initialCart = sampleCart(
                     items = listOf(sampleCartItem(unitPrice = 5_000, quantity = 2)),
-                    minimumOrderAmount = 10_000,
                     validation = CartValidation.Valid,
                 ),
             ),
@@ -113,8 +110,7 @@ class CartViewModelTest {
         val repository = FakeCartRepository(
             initialCart = sampleCart(
                 items = listOf(sampleCartItem(unitPrice = 4_500, quantity = 1)),
-                minimumOrderAmount = 10_000,
-                validation = CartValidation.Invalid(listOf(CartInvalidReason.BelowMinimumAmount(5_500))),
+                validation = CartValidation.Valid,
             ),
         )
         val viewModel = viewModel(cartRepository = repository)
@@ -159,34 +155,6 @@ class CartViewModelTest {
     }
 
     @Test
-    fun checkoutBelowMinimumExposesInvalidReasonAndDoesNotCreateOrder() = runTest {
-        val invalid = CartValidation.Invalid(listOf(CartInvalidReason.BelowMinimumAmount(2_000)))
-        val orderRepository = FakeOrderRepository()
-        val viewModel = viewModel(
-            cartRepository = FakeCartRepository(
-                initialCart = sampleCart(
-                    items = listOf(sampleCartItem(unitPrice = 8_000, quantity = 1)),
-                    minimumOrderAmount = 10_000,
-                    validation = invalid,
-                ),
-            ),
-            orderRepository = orderRepository,
-        )
-
-        viewModel.uiState.test {
-            awaitContent()
-
-            viewModel.onCheckout()
-
-            val blocked = awaitContent(checkoutInProgress = false)
-            assertEquals(invalid, blocked.validation)
-            assertEquals(0, orderRepository.createOrderCalls)
-
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
     fun checkoutSoldOutExposesInvalidReasonAndDoesNotCreateOrder() = runTest {
         val invalid = CartValidation.Invalid(listOf(CartInvalidReason.SoldOut("latte")))
         val orderRepository = FakeOrderRepository()
@@ -194,7 +162,6 @@ class CartViewModelTest {
             cartRepository = FakeCartRepository(
                 initialCart = sampleCart(
                     items = listOf(sampleCartItem(menuItemId = "latte", unitPrice = 5_000, quantity = 2)),
-                    minimumOrderAmount = 10_000,
                     validation = invalid,
                 ),
             ),
@@ -221,7 +188,6 @@ class CartViewModelTest {
             cartRepository = FakeCartRepository(
                 initialCart = sampleCart(
                     items = listOf(sampleCartItem(unitPrice = 5_000, quantity = 2)),
-                    minimumOrderAmount = 10_000,
                     validation = CartValidation.Valid,
                 ),
             ),
@@ -258,7 +224,6 @@ class CartViewModelTest {
             cartRepository = FakeCartRepository(
                 initialCart = sampleCart(
                     items = listOf(sampleCartItem(unitPrice = 5_000, quantity = 2)),
-                    minimumOrderAmount = 10_000,
                     validation = CartValidation.Valid,
                 ),
             ),
@@ -388,8 +353,6 @@ private class FakeCartRepository(
             subtotal = subtotal,
             validation = if (items.isEmpty()) {
                 CartValidation.Invalid(listOf(CartInvalidReason.Empty))
-            } else if (subtotal < minimumOrderAmount) {
-                CartValidation.Invalid(listOf(CartInvalidReason.BelowMinimumAmount(minimumOrderAmount - subtotal)))
             } else {
                 CartValidation.Valid
             },
@@ -430,20 +393,17 @@ private data class RemoveRequest(
 
 private fun sampleCart(
     items: List<CartItem>,
-    minimumOrderAmount: Int,
     validation: CartValidation,
 ): Cart =
     Cart(
         items = items,
         subtotal = items.sumOf { item -> item.unitPrice * item.quantity },
-        minimumOrderAmount = minimumOrderAmount,
         validation = validation,
     )
 
 private fun emptyCart(): Cart =
     sampleCart(
         items = emptyList(),
-        minimumOrderAmount = 10_000,
         validation = CartValidation.Invalid(listOf(CartInvalidReason.Empty)),
     )
 

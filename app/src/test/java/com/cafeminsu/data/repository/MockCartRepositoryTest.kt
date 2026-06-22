@@ -106,27 +106,11 @@ class MockCartRepositoryTest {
     }
 
     @Test
-    fun validateForCheckoutReturnsBelowMinimumAmount() = runBlocking {
-        val repository = MockCartRepository(MockMenuRepository())
-        val menu = availableMenu()
-
-        val cart = repository.addItem(menu.id, emptyList(), quantity = 1).successData()
-
-        assertEquals(
-            CartValidation.Invalid(
-                listOf(CartInvalidReason.BelowMinimumAmount(MockData.minimumOrderAmount - cart.subtotal)),
-            ),
-            cart.validation,
-        )
-    }
-
-    @Test
     fun validateForCheckoutReturnsSoldOutReason() = runBlocking {
         val repository = MockCartRepository(MockMenuRepository())
         val soldOutMenu = MockData.menuItems.first { it.isSoldOut }
-        val quantity = quantityToMeetMinimum(soldOutMenu)
 
-        val cart = repository.addItem(soldOutMenu.id, emptyList(), quantity).successData()
+        val cart = repository.addItem(soldOutMenu.id, emptyList(), quantity = 1).successData()
 
         assertTrue(cart.validation is CartValidation.Invalid)
         assertTrue(
@@ -137,12 +121,11 @@ class MockCartRepositoryTest {
     }
 
     @Test
-    fun validateForCheckoutReturnsValidWhenCartMeetsRules() = runBlocking {
+    fun validateForCheckoutReturnsValidWhenCartHasAvailableItem() = runBlocking {
         val repository = MockCartRepository(MockMenuRepository())
         val menu = availableMenu()
-        val quantity = quantityToMeetMinimum(menu)
 
-        val cart = repository.addItem(menu.id, emptyList(), quantity).successData()
+        val cart = repository.addItem(menu.id, emptyList(), quantity = 1).successData()
 
         assertEquals(CartValidation.Valid, cart.validation)
         assertEquals(CartValidation.Valid, repository.validateForCheckout().successData())
@@ -163,9 +146,6 @@ class MockCartRepositoryTest {
             name = option.name,
             extraPrice = option.extraPrice,
         )
-
-    private fun quantityToMeetMinimum(menu: MenuItem): Int =
-        (MockData.minimumOrderAmount / menu.basePrice) + 1
 
     @Suppress("UNCHECKED_CAST")
     private fun <T> AppResult<T>.successData(): T {

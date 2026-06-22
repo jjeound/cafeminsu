@@ -14,7 +14,7 @@ class CartUiStateTest {
         assertFalse(content(validation = CartValidation.Valid, checkoutInProgress = true).canCheckout)
         assertFalse(
             content(
-                validation = CartValidation.Invalid(listOf(CartInvalidReason.BelowMinimumAmount(1_000))),
+                validation = CartValidation.Invalid(listOf(CartInvalidReason.SoldOut("latte"))),
                 checkoutInProgress = false,
             ).canCheckout,
         )
@@ -27,7 +27,6 @@ class CartUiStateTest {
         CartUiState.Content(
             items = emptyList(),
             subtotal = 0,
-            minimumOrderAmount = 10_000,
             validation = validation,
             checkoutInProgress = checkoutInProgress,
             orderType = OrderType.DineIn,

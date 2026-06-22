@@ -343,6 +343,5 @@ private fun emptyCart(): Cart =
     Cart(
         items = emptyList<CartItem>(),
         subtotal = 0,
-        minimumOrderAmount = 10_000,
         validation = CartValidation.Invalid(listOf(CartInvalidReason.Empty)),
     )

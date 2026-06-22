@@ -55,7 +55,6 @@ class MockOrderRepositoryTest {
         return Cart(
             items = listOf(item),
             subtotal = item.unitPrice * item.quantity,
-            minimumOrderAmount = MockData.minimumOrderAmount,
             validation = CartValidation.Valid,
         )
     }

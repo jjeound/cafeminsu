@@ -22,7 +22,6 @@ class CartScreenTest {
                 CartScreen(
                     state = CartUiState.Empty(
                         message = "담은 메뉴가 없어요",
-                        minimumOrderAmount = 10_000,
                         validation = CartValidation.Invalid(emptyList()),
                         checkoutInProgress = false,
                         orderType = OrderType.DineIn,
@@ -52,7 +51,6 @@ class CartScreenTest {
                     state = CartUiState.Content(
                         items = listOf(sampleCartItem()),
                         subtotal = 11_400,
-                        minimumOrderAmount = 10_000,
                         validation = CartValidation.Valid,
                         checkoutInProgress = false,
                         orderType = OrderType.DineIn,

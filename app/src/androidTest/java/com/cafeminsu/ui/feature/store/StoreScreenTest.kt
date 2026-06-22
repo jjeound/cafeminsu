@@ -23,6 +23,7 @@ class StoreScreenTest {
             CafeTheme {
                 StoreScreen(
                     state = sampleContentState(selectedStore = sampleDetail()),
+                    query = "",
                     onQueryChange = {},
                     onStoreClick = { detailRequestedStoreId = it },
                     onDismissStoreDetail = {},

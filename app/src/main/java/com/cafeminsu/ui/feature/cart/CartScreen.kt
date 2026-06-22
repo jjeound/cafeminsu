@@ -551,7 +551,6 @@ private fun CartValidation.message(items: List<CartItem>): String? =
 private fun CartInvalidReason.message(items: List<CartItem>): String =
     when (this) {
         CartInvalidReason.Empty -> "담은 메뉴가 없어요"
-        is CartInvalidReason.BelowMinimumAmount -> "최소 주문 금액까지 ${formatWon(shortage)} 부족해요"
         is CartInvalidReason.SoldOut -> "${items.nameFor(menuItemId)}은 지금 품절이에요"
         is CartInvalidReason.PriceChanged -> "${items.nameFor(menuItemId)} 가격이 ${formatWon(latestPrice)}로 바뀌었어요"
         is CartInvalidReason.OptionUnavailable -> "선택할 수 없는 옵션이 있어요"

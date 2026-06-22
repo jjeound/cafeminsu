@@ -2,7 +2,6 @@ package com.cafeminsu.data.repository
 
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
-import com.cafeminsu.data.mock.MockData
 import com.cafeminsu.domain.model.Cart
 import com.cafeminsu.domain.model.CartInvalidReason
 import com.cafeminsu.domain.model.CartItem
@@ -22,8 +21,6 @@ import javax.inject.Singleton
 class MockCartRepository @Inject constructor(
     private val menuRepository: MenuRepository,
 ) : CartRepository {
-    private val minimumOrderAmount: Int = MockData.minimumOrderAmount
-
     private val cartState = MutableStateFlow(AppResult.Success(emptyCart()))
     private val resolvedMenus = mutableMapOf<String, MenuItem>()
     private var nextCartItemNumber = 1
@@ -106,20 +103,16 @@ class MockCartRepository @Inject constructor(
         return Cart(
             items = items,
             subtotal = subtotal,
-            minimumOrderAmount = minimumOrderAmount,
-            validation = validateItems(items, subtotal),
+            validation = validateItems(items),
         )
     }
 
-    private fun validateItems(items: List<CartItem>, subtotal: Int): CartValidation {
+    private fun validateItems(items: List<CartItem>): CartValidation {
         if (items.isEmpty()) {
             return CartValidation.Invalid(listOf(CartInvalidReason.Empty))
         }
 
         val reasons = buildList {
-            if (subtotal < minimumOrderAmount) {
-                add(CartInvalidReason.BelowMinimumAmount(minimumOrderAmount - subtotal))
-            }
             items.forEach { item ->
                 val menu = resolvedMenus[item.menuItemId]
                 if (menu?.isSoldOut == true) {
