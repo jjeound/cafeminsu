@@ -152,7 +152,7 @@ class RealOrderRepositoryTest {
     private fun realOrderRepository(
         authState: AuthState = authenticatedState(),
     ): RealOrderRepository {
-        val holder = SelectedStoreHolder()
+        val holder = selectedStoreHolderForTest()
         holder.select(sampleStore())
         return RealOrderRepository(
             orderApi = orderApi(),

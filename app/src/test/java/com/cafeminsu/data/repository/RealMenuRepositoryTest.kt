@@ -109,7 +109,7 @@ class RealMenuRepositoryTest {
         // 로그인 직후 선택 매장이 없을 때 홈이 메뉴 Failure로 에러 화면에 빠지지 않도록 빈 목록 폴백.
         val repository = RealMenuRepository(
             menuApi = menuApi(),
-            selectedStoreHolder = SelectedStoreHolder(),
+            selectedStoreHolder = selectedStoreHolderForTest(),
             ioDispatcher = testDispatcher,
         )
 
@@ -197,7 +197,7 @@ class RealMenuRepositoryTest {
     }
 
     private fun realMenuRepository(): RealMenuRepository {
-        val holder = SelectedStoreHolder()
+        val holder = selectedStoreHolderForTest()
         holder.select(
             Store(
                 id = "11",

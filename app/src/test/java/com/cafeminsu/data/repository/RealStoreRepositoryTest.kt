@@ -199,7 +199,7 @@ class RealStoreRepositoryTest {
     private fun realStoreRepository(): RealStoreRepository =
         RealStoreRepository(
             storeApi = storeApi(),
-            selectedStoreHolder = SelectedStoreHolder(),
+            selectedStoreHolder = selectedStoreHolderForTest(),
             ioDispatcher = testDispatcher,
         )
 

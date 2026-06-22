@@ -5,7 +5,9 @@
     {
       "step": 0,
       "name": "datastore-prefs",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-06-22T17:16:40+0900",
+      "summary": "Preferences DataStore(UserPreferencesDataStore+DataStoreModule)로 선택매장·점주영업토글·온보딩·마지막탭을 영속화하고, SelectedStoreHolder(Moshi 직렬화)·RealOwnerAuthProvider(토글 영속·재로그인 복원)·고객 하단탭 저장을 배선(토큰은 EncryptedDataStore 유지)."
     },
     {
       "step": 1,
