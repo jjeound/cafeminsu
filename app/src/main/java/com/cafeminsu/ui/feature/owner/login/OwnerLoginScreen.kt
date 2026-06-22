@@ -76,8 +76,9 @@ fun OwnerLoginScreen(
 ) {
     val colors = CafeTheme.colors
     val spacing = CafeTheme.spacing
-    var loginId by remember { mutableStateOf("") }
-    var password by remember { mutableStateOf("") }
+    // 데모 매장 계정: 점주 화면을 열 때마다 바로 로그인할 수 있도록 기본값으로 채워 둔다.
+    var loginId by remember { mutableStateOf(DemoOwnerLoginId) }
+    var password by remember { mutableStateOf(DemoOwnerPassword) }
 
     Scaffold(
         modifier = modifier,
@@ -194,6 +195,8 @@ private fun OwnerLoginFieldGroup(
 
 private const val OwnerLoginIdTag = "owner-login-id"
 private const val OwnerLoginPasswordTag = "owner-login-password"
+private const val DemoOwnerLoginId = "owner02"
+private const val DemoOwnerPassword = "cafe5678"
 
 private class OwnerLoginViewModelFactory(
     private val ownerAuthProvider: OwnerAuthProvider,

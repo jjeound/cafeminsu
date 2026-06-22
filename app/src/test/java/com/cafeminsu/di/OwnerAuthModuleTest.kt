@@ -1,21 +1,47 @@
 package com.cafeminsu.di
 
-import com.cafeminsu.data.auth.MockOwnerAuthProvider
+import com.cafeminsu.core.AppResult
 import com.cafeminsu.domain.auth.OwnerAuthProvider
-import java.lang.reflect.Modifier
-import org.junit.Assert.assertEquals
-import org.junit.Assert.assertTrue
+import com.cafeminsu.domain.model.OwnerProfile
+import org.junit.Assert.assertSame
 import org.junit.Test
 
 class OwnerAuthModuleTest {
     @Test
-    fun ownerAuthModuleBindsOwnerAuthProviderToMockSingleton() {
-        val method = OwnerAuthModule::class.java.getDeclaredMethod(
-            "bindOwnerAuthProvider",
-            MockOwnerAuthProvider::class.java,
+    fun blankBaseUrlSelectsMockOwnerAuthProvider() {
+        val realProvider = FakeOwnerAuthProvider()
+        val mockProvider = FakeOwnerAuthProvider()
+
+        val selected = selectOwnerAuthProvider(
+            baseUrl = "",
+            realFactory = { realProvider },
+            mockFactory = { mockProvider },
         )
 
-        assertTrue(Modifier.isAbstract(method.modifiers))
-        assertEquals(OwnerAuthProvider::class.java, method.returnType)
+        assertSame(mockProvider, selected)
     }
+
+    @Test
+    fun nonBlankBaseUrlSelectsRealOwnerAuthProvider() {
+        val realProvider = FakeOwnerAuthProvider()
+        val mockProvider = FakeOwnerAuthProvider()
+
+        val selected = selectOwnerAuthProvider(
+            baseUrl = "https://cafeminsu.duckdns.org/",
+            realFactory = { realProvider },
+            mockFactory = { mockProvider },
+        )
+
+        assertSame(realProvider, selected)
+    }
+}
+
+private class FakeOwnerAuthProvider : OwnerAuthProvider {
+    override suspend fun login(loginId: String, password: String): AppResult<OwnerProfile> =
+        AppResult.Failure(com.cafeminsu.core.DomainError.Unknown)
+
+    override suspend fun logout(): AppResult<Unit> = AppResult.Success(Unit)
+
+    override suspend fun setStoreOpen(open: Boolean): AppResult<OwnerProfile> =
+        AppResult.Failure(com.cafeminsu.core.DomainError.Unknown)
 }

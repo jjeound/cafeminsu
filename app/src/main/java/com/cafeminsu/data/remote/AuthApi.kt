@@ -4,6 +4,7 @@ import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.data.auth.SessionTokens
 import com.cafeminsu.domain.model.AuthState
+import com.cafeminsu.domain.model.OwnerProfile
 import com.cafeminsu.domain.model.UserProfile
 import com.cafeminsu.domain.model.UserRole
 import com.squareup.moshi.JsonClass
@@ -18,6 +19,11 @@ interface AuthApi {
     suspend fun kakaoLogin(
         @Body request: KakaoLoginReq,
     ): BaseResponse<KakaoLoginRes>
+
+    @POST("api/user/owner-login")
+    suspend fun ownerLogin(
+        @Body request: OwnerLoginReq,
+    ): BaseResponse<OwnerLoginRes>
 
     @POST("api/user/refresh")
     suspend fun refresh(
@@ -60,6 +66,19 @@ data class KakaoLoginRes(
 )
 
 @JsonClass(generateAdapter = true)
+data class OwnerLoginReq(
+    val loginId: String,
+    val password: String,
+)
+
+@JsonClass(generateAdapter = true)
+data class OwnerLoginRes(
+    val accessToken: String?,
+    val refreshToken: String?,
+    val nickname: String?,
+)
+
+@JsonClass(generateAdapter = true)
 data class RefreshRes(
     val accessToken: String?,
 )
@@ -94,6 +113,11 @@ data class LoginExchange(
     val authState: AuthState.Authenticated,
 )
 
+data class OwnerLoginExchange(
+    val tokens: SessionTokens,
+    val ownerProfile: OwnerProfile,
+)
+
 fun <T, R> BaseResponse<T>.unwrap(
     mapper: (T) -> AppResult<R>,
 ): AppResult<R> {
@@ -125,6 +149,30 @@ fun KakaoLoginRes.toLoginExchange(): AppResult<LoginExchange> {
                 ),
                 role = UserRole.Customer,
                 isNewUser = isNewUser == true,
+            ),
+        ),
+    )
+}
+
+fun OwnerLoginRes.toOwnerLoginExchange(loginId: String): AppResult<OwnerLoginExchange> {
+    val accessToken = accessToken?.takeIf { it.isNotBlank() }
+        ?: return AppResult.Failure(DomainError.Unknown)
+    val refreshToken = refreshToken?.takeIf { it.isNotBlank() }
+        ?: return AppResult.Failure(DomainError.Unknown)
+    val storeName = nickname?.trim()?.takeIf { it.isNotEmpty() } ?: loginId
+
+    return AppResult.Success(
+        OwnerLoginExchange(
+            tokens = SessionTokens(
+                accessToken = accessToken,
+                refreshToken = refreshToken,
+            ),
+            ownerProfile = OwnerProfile(
+                id = loginId,
+                storeId = loginId,
+                storeName = storeName,
+                loginId = loginId,
+                isStoreOpen = true,
             ),
         ),
     )

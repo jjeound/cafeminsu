@@ -194,6 +194,6 @@ private val SensitiveHeaderRegex = Regex(
 )
 
 private val SensitiveJsonValueRegex = Regex(
-    pattern = "(\"(?:accessToken|refreshToken|qrCode|barcodeValue|qrValue)\"\\s*:\\s*\")[^\"]*(\")",
+    pattern = "(\"(?:accessToken|refreshToken|password|qrCode|barcodeValue|qrValue)\"\\s*:\\s*\")[^\"]*(\")",
     options = setOf(RegexOption.IGNORE_CASE),
 )

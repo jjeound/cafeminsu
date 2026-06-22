@@ -5,6 +5,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
+import androidx.compose.ui.test.performTextClearance
 import androidx.compose.ui.test.performTextInput
 import com.cafeminsu.ui.theme.CafeTheme
 import org.junit.Assert.assertEquals
@@ -36,6 +37,21 @@ class OwnerLoginScreenTest {
     }
 
     @Test
+    fun prefillsDemoOwnerCredentials() {
+        composeRule.setContent {
+            CafeTheme {
+                OwnerLoginScreen(
+                    uiState = OwnerLoginUiState(),
+                    onBackClick = {},
+                    onLoginClick = { _, _ -> },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("owner02").assertIsDisplayed()
+    }
+
+    @Test
     fun loginButtonPassesIdAndPasswordWithoutRenderingRawPassword() {
         var submittedLoginId = ""
         var submittedPassword = ""
@@ -53,7 +69,9 @@ class OwnerLoginScreenTest {
             }
         }
 
+        composeRule.onNodeWithTag("owner-login-id").performTextClearance()
         composeRule.onNodeWithTag("owner-login-id").performTextInput("owner")
+        composeRule.onNodeWithTag("owner-login-password").performTextClearance()
         composeRule.onNodeWithTag("owner-login-password").performTextInput("owner-secret")
         composeRule.onNodeWithText("로그인").performClick()
 
