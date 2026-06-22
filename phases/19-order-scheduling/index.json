@@ -21,7 +21,10 @@
     {
       "step": 2,
       "name": "ai-prediction",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-06-22T13:36:33+0900",
+      "summary": "스케줄러 입력값(제조시간·혼잡도·도착확률)을 온디바이스 AI로 보정하는 선택 레이어 추가: domain/scheduling에 OrderMetricsPredictor 인터페이스(추정치만 반환, AppResult)와 AiPrepTimeEstimator(step0 PrepTimeEstimator 구현, AI 우선·실패 시 RulePrepTimeEstimator 폴백), data/scheduling에 GemmaOrderMetricsPredictor(음성 GemmaVoiceOrderInterpreter 패턴 재사용 — VoiceLlmEngine+Moshi, buildPrompt→generate→코드펜스제거→파싱·검증, isReady=false면 규칙추정치 Success 폴백·추론 안함, 깨진응답/예외는 Failure로 호출측 규칙폴백, PII/주문정보 비로깅). SchedulingModule의 PrepTimeEstimator 바인딩을 AiPrepTimeEstimator로 교체(GemmaOrderMetricsPredictor→OrderMetricsPredictor, RulePrepTimeEstimator는 폴백 유지). AI는 OrderScheduler 점수식/정렬 결정로직을 바꾸지 않고 입력만 보정. 모델 미가용(기본) 시 step0 규칙값과 동일함을 테스트로 검증. 단위테스트 21개(predictor 폴백/파싱/클램프, AI우선-규칙폴백, 모듈 바인딩) 통과, testDebugUnitTest·assembleDebug·compileDebugAndroidTestKotlin 성공.",
+      "completed_at": "2026-06-22T14:05:00+0900"
     }
   ],
   "created_at": "2026-06-22T00:00:00+0900"
