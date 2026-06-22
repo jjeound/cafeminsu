@@ -8,12 +8,15 @@ import com.cafeminsu.data.repository.MockNotificationRepository
 import com.cafeminsu.data.repository.MockOrderRepository
 import com.cafeminsu.data.repository.MockOwnerMenuRepository
 import com.cafeminsu.data.repository.MockOwnerOrderRepository
+import com.cafeminsu.data.repository.MockFcmTokenRepository
 import com.cafeminsu.data.repository.MockSessionRepository
 import com.cafeminsu.data.repository.MockStoreRepository
+import com.cafeminsu.data.repository.RealFcmTokenRepository
 import com.cafeminsu.data.repository.RealGiftRepository
 import com.cafeminsu.data.repository.RealNotificationRepository
 import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.CouponRepository
+import com.cafeminsu.domain.repository.FcmTokenRepository
 import com.cafeminsu.domain.repository.GiftRepository
 import com.cafeminsu.domain.repository.MenuRepository
 import com.cafeminsu.domain.repository.NotificationRepository
@@ -241,6 +244,47 @@ class RepositoryModuleTest {
     }
 
     @Test
+    fun blankBaseUrlSelectsMockFcmTokenRepositoryFallback() {
+        val realRepository = FakeFcmTokenRepository()
+        val mockRepository = FakeFcmTokenRepository()
+
+        val selected = selectFcmTokenRepository(
+            baseUrl = "",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(mockRepository, selected)
+    }
+
+    @Test
+    fun configuredBaseUrlSelectsRealFcmTokenRepository() {
+        val realRepository = FakeFcmTokenRepository()
+        val mockRepository = FakeFcmTokenRepository()
+
+        val selected = selectFcmTokenRepository(
+            baseUrl = "https://cafeminsu.example/",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(realRepository, selected)
+    }
+
+    @Test
+    fun repositoryModuleProvidesFcmTokenRepositoryWithRealAndMockProviders() {
+        val method = RepositoryModule.Companion::class.java.getDeclaredMethod(
+            "provideFcmTokenRepository",
+            javax.inject.Provider::class.java,
+            javax.inject.Provider::class.java,
+        )
+
+        assertEquals(FcmTokenRepository::class.java, method.returnType)
+        assertEquals(RealFcmTokenRepository::class.java, method.genericParameterTypes.first().providerArgument())
+        assertEquals(MockFcmTokenRepository::class.java, method.genericParameterTypes.last().providerArgument())
+    }
+
+    @Test
     fun blankBaseUrlSelectsMockStoreRepositoryFallback() {
         val realRepository = FakeStoreRepository()
         val mockRepository = FakeStoreRepository()
@@ -445,5 +489,10 @@ private class FakeNotificationRepository : NotificationRepository {
         kotlinx.coroutines.flow.flowOf(com.cafeminsu.core.AppResult.Success(emptyList()))
 
     override suspend fun markAllRead(): com.cafeminsu.core.AppResult<Unit> =
+        com.cafeminsu.core.AppResult.Success(Unit)
+}
+
+private class FakeFcmTokenRepository : FcmTokenRepository {
+    override suspend fun register(token: String): com.cafeminsu.core.AppResult<Unit> =
         com.cafeminsu.core.AppResult.Success(Unit)
 }

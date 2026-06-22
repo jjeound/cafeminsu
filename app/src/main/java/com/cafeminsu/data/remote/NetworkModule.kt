@@ -108,6 +108,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideFcmTokenApi(retrofit: Retrofit): FcmTokenApi =
+        retrofit.create(FcmTokenApi::class.java)
+
+    @Provides
+    @Singleton
     @Unauthenticated
     fun provideStoreApi(
         @Unauthenticated retrofit: Retrofit,
