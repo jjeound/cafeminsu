@@ -4,7 +4,7 @@ import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.data.remote.MenuDetailRes
 import com.cafeminsu.data.remote.MenuListItemRes
-import com.cafeminsu.data.remote.OptionRes
+import com.cafeminsu.data.remote.MenuOptionRes
 import com.cafeminsu.domain.model.MenuCategory
 import com.cafeminsu.domain.model.MenuItem
 import com.cafeminsu.domain.model.MenuOption
@@ -66,8 +66,8 @@ private fun MenuListItemRes.toMenuItem(): AppResult<MenuItem> {
     )
 }
 
-private fun List<OptionRes>.toOptionGroups(): List<MenuOptionGroup> =
-    groupBy { it.optionGroup.normalizedOptionGroup() }
+private fun List<MenuOptionRes>.toOptionGroups(): List<MenuOptionGroup> =
+    groupBy { it.group.normalizedOptionGroup() }
         .map { (groupName, options) ->
             val mappedOptions = options.mapNotNull { it.toMenuOption() }
             MenuOptionGroup(
@@ -80,12 +80,12 @@ private fun List<OptionRes>.toOptionGroups(): List<MenuOptionGroup> =
             )
         }
 
-private fun OptionRes.toMenuOption(): MenuOption? {
-    val id = optionId ?: return null
+private fun MenuOptionRes.toMenuOption(): MenuOption? {
+    val optionId = id ?: return null
     return MenuOption(
-        id = id.toString(),
-        name = optionName.orEmpty(),
-        extraPrice = optionPrice ?: DefaultPrice,
+        id = optionId.toString(),
+        name = name.orEmpty(),
+        extraPrice = additionalPrice ?: DefaultPrice,
         isAvailable = true,
     )
 }

@@ -266,7 +266,6 @@ class RealOrderRepositoryTest {
         Cart(
             items = sampleCartItems(),
             subtotal = subtotal,
-            minimumOrderAmount = 8_000,
             validation = CartValidation.Valid,
         )
 

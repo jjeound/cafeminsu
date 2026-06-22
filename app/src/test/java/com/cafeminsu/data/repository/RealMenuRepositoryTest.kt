@@ -143,22 +143,25 @@ class RealMenuRepositoryTest {
                         "isAvailable": true,
                         "options": [
                           {
-                            "optionId": 1,
-                            "optionGroup": "온도",
-                            "optionName": "HOT",
-                            "optionPrice": 0
+                            "id": 1,
+                            "group": "온도",
+                            "name": "HOT",
+                            "additionalPrice": 0,
+                            "isDefault": true
                           },
                           {
-                            "optionId": 2,
-                            "optionGroup": "온도",
-                            "optionName": "ICE",
-                            "optionPrice": 0
+                            "id": 2,
+                            "group": "온도",
+                            "name": "ICE",
+                            "additionalPrice": 0,
+                            "isDefault": false
                           },
                           {
-                            "optionId": 3,
-                            "optionGroup": "샷 추가",
-                            "optionName": "+1샷",
-                            "optionPrice": 500
+                            "id": 3,
+                            "group": "샷 추가",
+                            "name": "+1샷",
+                            "additionalPrice": 500,
+                            "isDefault": false
                           }
                         ]
                       }

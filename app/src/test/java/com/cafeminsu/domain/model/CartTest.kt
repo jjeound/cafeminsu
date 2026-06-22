@@ -23,7 +23,6 @@ class CartTest {
         )
         val validation = CartValidation.Invalid(
             reasons = listOf(
-                CartInvalidReason.BelowMinimumAmount(shortage = 1000),
                 CartInvalidReason.SoldOut(menuItemId = "latte"),
                 CartInvalidReason.PriceChanged(menuItemId = "latte", latestPrice = 5500),
                 CartInvalidReason.OptionUnavailable(optionId = "large"),
@@ -33,15 +32,13 @@ class CartTest {
         val cart = Cart(
             items = listOf(cartItem),
             subtotal = 11800,
-            minimumOrderAmount = 12000,
             validation = validation,
         )
 
         assertEquals(11800, cart.subtotal)
-        assertEquals(12000, cart.minimumOrderAmount)
         assertEquals(2, cart.items.single().quantity)
         assertSame(CartValidation.Valid, CartValidation.Valid)
-        assertEquals(5, validation.reasons.size)
+        assertEquals(4, validation.reasons.size)
     }
 
     @Test

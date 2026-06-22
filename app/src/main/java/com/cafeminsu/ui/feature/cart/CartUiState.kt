@@ -10,7 +10,6 @@ sealed interface CartUiState {
     data class Content(
         val items: List<CartItem>,
         val subtotal: Int,
-        val minimumOrderAmount: Int,
         val validation: CartValidation,
         val checkoutInProgress: Boolean,
         val orderType: OrderType,
@@ -22,7 +21,6 @@ sealed interface CartUiState {
 
     data class Empty(
         val message: String,
-        val minimumOrderAmount: Int,
         val validation: CartValidation,
         val checkoutInProgress: Boolean,
         val orderType: OrderType,

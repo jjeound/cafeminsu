@@ -58,6 +58,18 @@ class StoreViewModelTest {
     }
 
     @Test
+    fun searchQueryReflectsInputImmediatelyIndependentOfListLoading() = runTest {
+        // TextField가 묶이는 searchQuery는 비동기 매장 로딩과 무관하게 입력 즉시 반영돼야 한다.
+        val viewModel = StoreViewModel(
+            FakeStoreRepository(stores = AppResult.Success(listOf(sampleStore(id = "gangnam")))),
+        )
+
+        viewModel.onQueryChange("강남")
+
+        assertEquals("강남", viewModel.searchQuery.value)
+    }
+
+    @Test
     fun searchQueryMapsEmptyResultsToEmptyState() = runTest {
         val viewModel = StoreViewModel(
             FakeStoreRepository(

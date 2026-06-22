@@ -22,7 +22,7 @@ class MenuApiTest {
     }
 
     @Test
-    fun menuDetailDtoKeepsFlatOptionFields() {
+    fun menuDetailDtoKeepsLiveServerOptionFields() {
         val detail = MenuDetailRes(
             id = 101,
             name = "바닐라라떼",
@@ -32,16 +32,17 @@ class MenuApiTest {
             imageUrl = null,
             isAvailable = true,
             options = listOf(
-                OptionRes(
-                    optionId = 1,
-                    optionGroup = "온도",
-                    optionName = "ICE",
-                    optionPrice = 0,
+                MenuOptionRes(
+                    id = 1,
+                    group = "온도",
+                    name = "ICE",
+                    additionalPrice = 0,
+                    isDefault = false,
                 ),
             ),
         )
 
-        assertEquals("온도", detail.options?.single()?.optionGroup)
-        assertEquals("ICE", detail.options?.single()?.optionName)
+        assertEquals("온도", detail.options?.single()?.group)
+        assertEquals("ICE", detail.options?.single()?.name)
     }
 }

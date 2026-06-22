@@ -162,7 +162,6 @@ class CartViewModel @Inject constructor(
         if (items.isEmpty()) {
             CartUiState.Empty(
                 message = "담은 메뉴가 없어요",
-                minimumOrderAmount = minimumOrderAmount,
                 validation = validation.ensureEmptyReason(),
                 checkoutInProgress = checkoutInProgress,
                 orderType = selectedOrderType,
@@ -172,7 +171,6 @@ class CartViewModel @Inject constructor(
             CartUiState.Content(
                 items = items,
                 subtotal = subtotal,
-                minimumOrderAmount = minimumOrderAmount,
                 validation = validation,
                 checkoutInProgress = checkoutInProgress,
                 orderType = selectedOrderType,

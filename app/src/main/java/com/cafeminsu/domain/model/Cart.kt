@@ -3,7 +3,6 @@ package com.cafeminsu.domain.model
 data class Cart(
     val items: List<CartItem>,
     val subtotal: Int,
-    val minimumOrderAmount: Int,
     val validation: CartValidation,
     val orderType: OrderType = OrderType.DineIn,
     val requestNote: String? = null,
@@ -37,7 +36,6 @@ sealed interface CartValidation {
 
 sealed interface CartInvalidReason {
     data object Empty : CartInvalidReason
-    data class BelowMinimumAmount(val shortage: Int) : CartInvalidReason
     data class SoldOut(val menuItemId: String) : CartInvalidReason
     data class PriceChanged(val menuItemId: String, val latestPrice: Int) : CartInvalidReason
     data class OptionUnavailable(val optionId: String) : CartInvalidReason

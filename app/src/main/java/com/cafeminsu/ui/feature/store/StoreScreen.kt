@@ -54,6 +54,7 @@ fun StoreRoute(
     viewModel: StoreViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+    val query by viewModel.searchQuery.collectAsState()
     val context = LocalContext.current
 
     // 매장 선택 화면 진입 시 위치 권한을 1회 요청한다(이미 허용돼 있으면 생략). 허용되면 지도가 내 위치로 이동.
@@ -82,6 +83,7 @@ fun StoreRoute(
 
     StoreScreen(
         state = state,
+        query = query,
         onQueryChange = viewModel::onQueryChange,
         onStoreClick = viewModel::onStoreClick,
         onDismissStoreDetail = viewModel::onDismissStoreDetail,
@@ -94,6 +96,7 @@ fun StoreRoute(
 @Composable
 fun StoreScreen(
     state: StoreUiState,
+    query: String,
     onQueryChange: (String) -> Unit,
     onStoreClick: (String) -> Unit,
     onDismissStoreDetail: () -> Unit,
@@ -104,13 +107,6 @@ fun StoreScreen(
 ) {
     val selectedStore = (state as? StoreUiState.Content)?.selectedStore
     val mapMarkers = (state as? StoreUiState.Content)?.stores?.map { it.toMapMarker() }.orEmpty()
-    val query = when (state) {
-        is StoreUiState.Content -> state.query
-        is StoreUiState.Empty -> state.query
-        is StoreUiState.Error,
-        StoreUiState.Loading,
-        -> ""
-    }
 
     Surface(
         modifier = modifier.fillMaxSize(),

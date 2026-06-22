@@ -42,9 +42,12 @@
    또는 `businessHours` 파생. `distance`는 nearby에서만.
 4. **메뉴 카테고리**: **별도 카테고리 엔드포인트 없음.** `GET api/stores/{storeId}/menus`의
    `MenuListItemRes.category`(문자열)로 `observeCategories()`를 **distinct 파생**(sortOrder는 등장 순/이름순).
-5. **메뉴 옵션**: `MenuDetailRes.options`는 평면 `[{optionId,optionGroup,optionName,optionPrice}]`.
-   도메인 `MenuOptionGroup`(중첩)으로 **`optionGroup` 기준 그룹핑**. required/min/max 정보 없음 → 기본값.
-6. **장바구니**: **서버 카트 없음.** `CartRepository`는 로컬/Mock 유지. 주문 생성 시 카트 → 주문 아이템 변환:
+5. **메뉴 옵션**: 라이브 서버 `GET api/menus/{id}`의 `options`는 평면 `[{id,group,name,additionalPrice,isDefault}]`
+   (OpenAPI 스펙의 `OptionRes{optionId,...}`와 필드명이 다름 → 메뉴 전용 `MenuOptionRes` DTO 사용).
+   도메인 `MenuOptionGroup`(중첩)으로 **`group` 기준 그룹핑**. required/min/max 정보 없음 → 기본값.
+   주문 응답(`ItemRes.options`)은 여전히 `OptionRes{optionId,optionGroup,optionName,optionPrice}`.
+6. **장바구니**: **서버 카트 없음.** `CartRepository`는 로컬/Mock 유지(메뉴 정보는 활성 `MenuRepository`에서 해석 —
+   서버 메뉴 id와 일치). 주문 생성 시 카트 → 주문 아이템 변환:
    `OrderCreateReq{ storeId, orderType:MOBILE|KIOSK, orderMethod:VOICE|MANUAL, items:[{menuId, quantity, optionIds:[]}] }`.
    - 모바일 주문은 `orderType=MOBILE`, 수동 담기는 `orderMethod=MANUAL`(음성주문은 VOICE).
    - 도메인 `OrderType{DineIn,Takeout}`는 **서버에 대응 필드 없음** → 주문 생성 시 사용하지 않거나
