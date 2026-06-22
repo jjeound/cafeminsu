@@ -20,7 +20,6 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.HorizontalDivider
-import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -33,10 +32,8 @@ import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.platform.LocalContext
-import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.navigation.compose.hiltViewModel
-import com.cafeminsu.R
 import com.cafeminsu.ui.components.CafeButton
 import com.cafeminsu.ui.components.CafeCard
 import com.cafeminsu.ui.components.CafeCardType
@@ -166,29 +163,19 @@ fun StoreScreen(
 
 @Composable
 private fun StoreHeader() {
-    Row(
+    Column(
         modifier = Modifier.fillMaxWidth(),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Top,
+        verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space3),
     ) {
-        Column(
-            verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space3),
-        ) {
-            Text(
-                text = "매장 선택",
-                style = CafeTheme.typography.h1,
-                color = CafeTheme.colors.ink,
-            )
-            Text(
-                text = "오늘 어디서 한 잔 하실까요?",
-                style = CafeTheme.typography.body,
-                color = CafeTheme.colors.muted,
-            )
-        }
-
-        SearchIcon(
-            modifier = Modifier.size(CafeTheme.spacing.space8),
+        Text(
+            text = "매장 선택",
+            style = CafeTheme.typography.h1,
             color = CafeTheme.colors.ink,
+        )
+        Text(
+            text = "오늘 어디서 한 잔 하실까요?",
+            style = CafeTheme.typography.body,
+            color = CafeTheme.colors.muted,
         )
     }
 }
@@ -532,19 +519,6 @@ private fun StoreInfoDivider() {
     HorizontalDivider(
         color = CafeTheme.colors.hairline,
         thickness = CafeTheme.spacing.space1 / DividerThicknessDivider,
-    )
-}
-
-@Composable
-private fun SearchIcon(
-    color: Color,
-    modifier: Modifier = Modifier,
-) {
-    Icon(
-        painter = painterResource(R.drawable.ic_search),
-        contentDescription = null,
-        tint = color,
-        modifier = modifier,
     )
 }
 
