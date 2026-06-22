@@ -2,10 +2,13 @@ package com.cafeminsu.data.repository
 
 import app.cash.turbine.test
 import com.cafeminsu.core.AppResult
+import com.cafeminsu.data.local.store.StoreLocalDataSource
 import com.cafeminsu.data.remote.StoreApi
 import com.cafeminsu.data.remote.createMoshi
 import com.cafeminsu.data.remote.createOkHttpClient
 import com.cafeminsu.data.remote.createRetrofit
+import com.cafeminsu.domain.model.Store
+import com.cafeminsu.domain.model.StoreAmenity
 import com.cafeminsu.domain.model.StoreStatus
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -196,12 +199,96 @@ class RealStoreRepositoryTest {
         }
     }
 
-    private fun realStoreRepository(): RealStoreRepository =
+    @Test
+    fun observeNearbyStoresWritesThroughToCacheOnSuccess() = runTest(testDispatcher) {
+        server.enqueue(storeListResponse())
+        server.enqueue(storeDetailResponse()) // 좌표 보강
+        val cache = FakeStoreLocalDataSource()
+        val repository = realStoreRepository(local = cache)
+
+        repository.observeNearbyStores("강남").test {
+            awaitItem() // 목록
+            awaitItem() // 좌표 보강
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        assertEquals(1, cache.replaceCount)
+        assertEquals("7", cache.stored.single().id)
+    }
+
+    @Test
+    fun observeNearbyStoresFallsBackToCacheOnNetworkFailure() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setResponseCode(500))
+        val cache = FakeStoreLocalDataSource(initial = listOf(cachedStore()))
+        val repository = realStoreRepository(local = cache)
+
+        repository.observeNearbyStores("강남").test {
+            val result = awaitItem()
+            assertTrue(result is AppResult.Success)
+            assertEquals("99", (result as AppResult.Success).data.single().id)
+            // 폴백은 단발 emit 후 완료 — 좌표 보강은 일어나지 않는다.
+            awaitComplete()
+        }
+    }
+
+    @Test
+    fun observeNearbyStoresEmitsFailureWhenNetworkFailsAndCacheEmpty() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setResponseCode(500))
+        val repository = realStoreRepository(local = FakeStoreLocalDataSource())
+
+        repository.observeNearbyStores("강남").test {
+            assertTrue(awaitItem() is AppResult.Failure)
+            awaitComplete()
+        }
+    }
+
+    private fun realStoreRepository(
+        local: StoreLocalDataSource = FakeStoreLocalDataSource(),
+    ): RealStoreRepository =
         RealStoreRepository(
             storeApi = storeApi(),
             selectedStoreHolder = selectedStoreHolderForTest(),
+            localDataSource = local,
             ioDispatcher = testDispatcher,
         )
+
+    private fun cachedStore(): Store =
+        Store(
+            id = "99",
+            name = "캐시된 매장",
+            address = "서울 강남구 어딘가",
+            phone = "",
+            distanceMeters = 0,
+            latitude = 37.5,
+            longitude = 127.0,
+            status = StoreStatus.Open,
+            closingTimeLabel = null,
+            amenities = listOf(StoreAmenity.Wifi),
+        )
+
+    private fun storeListResponse(): MockResponse =
+        MockResponse()
+            .setResponseCode(200)
+            .setBody(
+                """
+                {
+                  "isSuccess": true,
+                  "code": 200,
+                  "message": "OK",
+                  "result": {
+                    "stores": [
+                      {
+                        "id": 7,
+                        "name": "카페민수 강남점",
+                        "address": "서울 강남구 테헤란로 134",
+                        "imageUrl": null
+                      }
+                    ],
+                    "total": 1
+                  }
+                }
+                """.trimIndent(),
+            )
 
     private fun storeApi(): StoreApi =
         createRetrofit(
@@ -232,4 +319,20 @@ class RealStoreRepositoryTest {
                 }
                 """.trimIndent(),
             )
+}
+
+private class FakeStoreLocalDataSource(
+    initial: List<Store> = emptyList(),
+) : StoreLocalDataSource {
+    var stored: List<Store> = initial
+        private set
+    var replaceCount: Int = 0
+        private set
+
+    override suspend fun cachedStores(): List<Store> = stored
+
+    override suspend fun replaceStores(stores: List<Store>) {
+        stored = stores
+        replaceCount++
+    }
 }

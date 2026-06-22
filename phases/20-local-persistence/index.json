@@ -13,7 +13,10 @@
     {
       "step": 1,
       "name": "room-store-cache",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-06-22T17:36:40+0900",
+      "summary": "Room 토대(CafeDatabase+StoreEntity/StoreDao+DatabaseModule)를 배선하고, RealStoreRepository.observeNearbyStores를 매장 목록 read-through 캐시로 통합 — 네트워크 성공 시 StoreLocalDataSource로 write-through(clear+upsert), 실패 시 캐시 있으면 AppResult.Success 오프라인 폴백·없으면 Failure. JVM(StoreCacheMapper/RoomStoreLocalDataSource/RealStoreRepository 캐시) + androidTest(StoreDao/CafeDatabase 컴파일) 테스트 통과.",
+      "completed_at": "2026-06-22T17:46:40+0900"
     },
     {
       "step": 2,
