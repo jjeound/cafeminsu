@@ -1,6 +1,7 @@
 package com.cafeminsu.ui.feature.owner.orders
 
 import com.cafeminsu.domain.model.OrderStatus
+import com.cafeminsu.domain.scheduling.SchedulingBadge
 
 sealed interface OwnerOrdersUiState {
     data object Loading : OwnerOrdersUiState
@@ -48,4 +49,6 @@ data class OwnerOrdersOrderUiModel(
     val totalAmount: Int,
     val actionLabel: String,
     val isActionInProgress: Boolean,
+    val priorityBadge: SchedulingBadge = SchedulingBadge.Normal,
+    val etaLabel: String? = null,
 )

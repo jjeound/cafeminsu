@@ -133,6 +133,12 @@
       "status": "completed",
       "summary": "신규 카카오 유저 닉네임/회원가입(SIGNUP) 플로우 — isNewUser 라우팅 + 닉네임 중복확인/가입 실연동 (step1 화면+네비는 Claude 직접 구현)",
       "completed_at": "2026-06-21T16:30:00+0900"
+    },
+    {
+      "dir": "19-order-scheduling",
+      "name": "order-scheduling",
+      "status": "completed",
+      "completed_at": "2026-06-22T13:46:38+0900"
     }
   ]
 }

@@ -8,7 +8,14 @@ import com.cafeminsu.domain.model.CartItem
 import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.OrderStatus
 import com.cafeminsu.domain.model.SelectedOption
+import com.cafeminsu.domain.proximity.ProximitySignal
+import com.cafeminsu.domain.proximity.ProximitySignalRepository
 import com.cafeminsu.domain.repository.OwnerOrderRepository
+import com.cafeminsu.domain.scheduling.CongestionCalculator
+import com.cafeminsu.domain.scheduling.OrderScheduler
+import com.cafeminsu.domain.scheduling.RulePrepTimeEstimator
+import com.cafeminsu.domain.scheduling.SchedulingBadge
+import com.cafeminsu.domain.time.Clock
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -33,8 +40,8 @@ class OwnerOrdersViewModelTest {
 
     @Test
     fun defaultStateCalculatesCountsAndShowsNewOrders() = runTest {
-        val viewModel = OwnerOrdersViewModel(
-            ownerOrderRepository = FakeOwnerOrdersRepository(
+        val viewModel = ownerOrdersViewModel(
+            FakeOwnerOrdersRepository(
                 initialResult = AppResult.Success(sampleOrders()),
             ),
         )
@@ -56,8 +63,8 @@ class OwnerOrdersViewModelTest {
 
     @Test
     fun selectingFilterShowsOnlyMatchingOrders() = runTest {
-        val viewModel = OwnerOrdersViewModel(
-            ownerOrderRepository = FakeOwnerOrdersRepository(
+        val viewModel = ownerOrdersViewModel(
+            FakeOwnerOrdersRepository(
                 initialResult = AppResult.Success(sampleOrders()),
             ),
         )
@@ -90,7 +97,7 @@ class OwnerOrdersViewModelTest {
         val repository = FakeOwnerOrdersRepository(
             initialResult = AppResult.Success(sampleOrders()),
         )
-        val viewModel = OwnerOrdersViewModel(ownerOrderRepository = repository)
+        val viewModel = ownerOrdersViewModel(repository)
 
         viewModel.uiState.test {
             assertEquals("#1042", awaitContent().orders.single().orderNumberLabel)
@@ -107,7 +114,8 @@ class OwnerOrdersViewModelTest {
             viewModel.selectFilter(OwnerOrdersFilter.Preparing)
             val preparing = awaitContent()
 
-            assertEquals(listOf("#1042", "#1043"), preparing.orders.map { it.orderNumberLabel })
+            // 우선순위 정렬: 더 오래 기다린 #1043(1분 먼저 접수)이 #1042 보다 앞선다(FIFO 아님).
+            assertEquals(listOf("#1043", "#1042"), preparing.orders.map { it.orderNumberLabel })
 
             viewModel.advanceStatus("order-1042")
             val preparingAfterAdvance = awaitContent()
@@ -121,7 +129,8 @@ class OwnerOrdersViewModelTest {
             viewModel.selectFilter(OwnerOrdersFilter.Ready)
             val ready = awaitContent()
 
-            assertEquals(listOf("#1042", "#1044"), ready.orders.map { it.orderNumberLabel })
+            // 우선순위 정렬: 더 오래 기다린 #1044(2분 먼저 접수)이 #1042 보다 앞선다(FIFO 아님).
+            assertEquals(listOf("#1044", "#1042"), ready.orders.map { it.orderNumberLabel })
 
             viewModel.advanceStatus("order-1042")
             val readyAfterPickup = awaitContent()
@@ -138,8 +147,8 @@ class OwnerOrdersViewModelTest {
 
     @Test
     fun emptySelectedFilterProducesEmptyStateWithCounts() = runTest {
-        val viewModel = OwnerOrdersViewModel(
-            ownerOrderRepository = FakeOwnerOrdersRepository(
+        val viewModel = ownerOrdersViewModel(
+            FakeOwnerOrdersRepository(
                 initialResult = AppResult.Success(
                     listOf(sampleOrder(id = "order-1043", orderNumber = "1043", status = OrderStatus.Preparing)),
                 ),
@@ -163,8 +172,8 @@ class OwnerOrdersViewModelTest {
 
     @Test
     fun repositoryFailureProducesErrorState() = runTest {
-        val viewModel = OwnerOrdersViewModel(
-            ownerOrderRepository = FakeOwnerOrdersRepository(
+        val viewModel = ownerOrdersViewModel(
+            FakeOwnerOrdersRepository(
                 initialResult = AppResult.Failure(DomainError.Network),
             ),
         )
@@ -180,6 +189,111 @@ class OwnerOrdersViewModelTest {
             cancelAndIgnoreRemainingEvents()
         }
     }
+
+    @Test
+    fun ordersAreSortedByPriorityNotFifoAndAgedOrderIsUrgentWithEta() = runTest {
+        // 같은 신규(접수) 주문 2건: #1100 은 방금, #1099 는 700초 전 접수(기아 임박).
+        // FIFO(최신순)면 [#1100, #1099] 이지만 우선순위 정렬은 더 오래 기다린 #1099 가 앞선다.
+        val viewModel = ownerOrdersViewModel(
+            FakeOwnerOrdersRepository(
+                initialResult = AppResult.Success(
+                    listOf(
+                        sampleOrder(
+                            id = "order-1100",
+                            orderNumber = "1100",
+                            status = OrderStatus.Accepted,
+                            createdAtMillis = FixedNow - MinuteMillis,
+                        ),
+                        sampleOrder(
+                            id = "order-1099",
+                            orderNumber = "1099",
+                            status = OrderStatus.Accepted,
+                            createdAtMillis = FixedNow - AgedWaitingMillis,
+                        ),
+                    ),
+                ),
+            ),
+        )
+
+        viewModel.uiState.test {
+            val content = awaitContent()
+
+            assertEquals(listOf("#1099", "#1100"), content.orders.map { it.orderNumberLabel })
+            val aged = content.orders.first()
+            assertEquals(SchedulingBadge.Urgent, aged.priorityBadge)
+            assertEquals("약 3분", aged.etaLabel)
+            assertEquals(SchedulingBadge.Normal, content.orders.last().priorityBadge)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun arrivingProximitySignalLiftsOrderToTopAndMarksArrivingSoon() = runTest {
+        // 신규 주문 2건: #2001 이 1분 더 오래 기다려 근접 신호 전에는 우선순위가 높다.
+        val proximityRepository = ProximitySignalRepository()
+        val viewModel = ownerOrdersViewModel(
+            FakeOwnerOrdersRepository(
+                initialResult = AppResult.Success(
+                    listOf(
+                        sampleOrder(
+                            id = "order-2000",
+                            orderNumber = "2000",
+                            status = OrderStatus.Accepted,
+                            createdAtMillis = FixedNow,
+                        ),
+                        sampleOrder(
+                            id = "order-2001",
+                            orderNumber = "2001",
+                            status = OrderStatus.Accepted,
+                            createdAtMillis = FixedNow - MinuteMillis,
+                        ),
+                    ),
+                ),
+            ),
+            proximitySignalRepository = proximityRepository,
+        )
+
+        viewModel.uiState.test {
+            val before = awaitContent()
+            assertEquals(listOf("#2001", "#2000"), before.orders.map { it.orderNumberLabel })
+            assertEquals(SchedulingBadge.Normal, before.orders.first().priorityBadge)
+
+            // 고객이 매장에 가까워졌다는 비콘 신호가 들어온다.
+            proximityRepository.publish(
+                ProximitySignal(
+                    orderId = "order-2000",
+                    rssi = -60,
+                    estimatedArrivalSeconds = 30,
+                    atMillis = FixedNow,
+                ),
+            )
+            val after = awaitContent()
+
+            // 근접 임박 주문 #2000 이 더 오래 기다린 #2001 보다 위로 올라오고 ArrivingSoon 뱃지가 붙는다.
+            assertEquals(listOf("#2000", "#2001"), after.orders.map { it.orderNumberLabel })
+            val arriving = after.orders.first()
+            assertEquals(SchedulingBadge.ArrivingSoon, arriving.priorityBadge)
+            assertTrue(arriving.etaLabel != null)
+            assertEquals(SchedulingBadge.Normal, after.orders.last().priorityBadge)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    private fun ownerOrdersViewModel(
+        repository: OwnerOrderRepository,
+        proximitySignalRepository: ProximitySignalRepository = ProximitySignalRepository(),
+        clock: Clock = FakeClock(FixedNow),
+    ): OwnerOrdersViewModel =
+        OwnerOrdersViewModel(
+            ownerOrderRepository = repository,
+            orderScheduler = OrderScheduler(),
+            congestionCalculator = CongestionCalculator(),
+            prepTimeEstimator = RulePrepTimeEstimator(),
+            proximitySignalRepository = proximitySignalRepository,
+            clock = clock,
+        )
 
     private suspend fun ReceiveTurbine<OwnerOrdersUiState>.awaitContent(): OwnerOrdersUiState.Content {
         while (true) {
@@ -331,5 +445,11 @@ class OwnerOrdersMainDispatcherRule(
     }
 }
 
+private class FakeClock(private val now: Long) : Clock {
+    override fun nowMillis(): Long = now
+}
+
 private const val SampleCreatedAtMillis = 1_750_311_240_000L
 private const val MinuteMillis = 60L * 1000L
+private const val FixedNow = SampleCreatedAtMillis + 5L * MinuteMillis
+private const val AgedWaitingMillis = 700L * 1000L
