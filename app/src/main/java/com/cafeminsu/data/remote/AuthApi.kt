@@ -45,14 +45,6 @@ interface AuthApi {
 }
 
 @JsonClass(generateAdapter = true)
-data class BaseResponse<T>(
-    val isSuccess: Boolean?,
-    val code: Int?,
-    val message: String?,
-    val result: T?,
-)
-
-@JsonClass(generateAdapter = true)
 data class KakaoLoginReq(
     val accessToken: String,
 )
@@ -117,17 +109,6 @@ data class OwnerLoginExchange(
     val tokens: SessionTokens,
     val ownerProfile: OwnerProfile,
 )
-
-fun <T, R> BaseResponse<T>.unwrap(
-    mapper: (T) -> AppResult<R>,
-): AppResult<R> {
-    if (isSuccess != true) {
-        return AppResult.Failure(code.toDomainErrorOrUnknown())
-    }
-
-    val body = result ?: return AppResult.Failure(DomainError.Unknown)
-    return mapper(body)
-}
 
 fun KakaoLoginRes.toLoginExchange(): AppResult<LoginExchange> {
     val accessToken = accessToken?.takeIf { it.isNotBlank() }
@@ -213,9 +194,6 @@ fun SignupRes.toAuthenticatedState(): AuthState.Authenticated =
         role = UserRole.Customer,
         isNewUser = false,
     )
-
-private fun Int?.toDomainErrorOrUnknown(): DomainError =
-    this?.toDomainError() ?: DomainError.Unknown
 
 private fun String?.toDisplayName(): String =
     this

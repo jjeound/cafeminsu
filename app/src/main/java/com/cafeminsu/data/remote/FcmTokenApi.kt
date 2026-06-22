@@ -8,7 +8,7 @@ interface FcmTokenApi {
     @POST("api/user/fcm-token")
     suspend fun updateFcmToken(
         @Body request: FcmTokenReq,
-    ): BaseResponse<FcmTokenRes>
+    ): FcmTokenRes
 }
 
 @JsonClass(generateAdapter = true)

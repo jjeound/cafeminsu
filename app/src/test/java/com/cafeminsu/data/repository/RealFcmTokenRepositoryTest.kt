@@ -50,21 +50,8 @@ class RealFcmTokenRepositoryTest {
     }
 
     @Test
-    fun baseResponseErrorMapsToFailure() = runTest(testDispatcher) {
-        server.enqueue(
-            MockResponse()
-                .setResponseCode(200)
-                .setBody(
-                    """
-                    {
-                      "isSuccess": false,
-                      "code": 404,
-                      "message": "사용자 없음",
-                      "result": null
-                    }
-                    """.trimIndent(),
-                ),
-        )
+    fun notFoundHttpStatusMapsToFailure() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setResponseCode(404))
         val repository = realFcmTokenRepository()
 
         val result = repository.register("device-token-abc")
@@ -111,16 +98,7 @@ class RealFcmTokenRepositoryTest {
     private fun successVoidResponse(): MockResponse =
         MockResponse()
             .setResponseCode(200)
-            .setBody(
-                """
-                {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": null
-                }
-                """.trimIndent(),
-            )
+            .setBody("{}")
 
     private fun authenticatedState(): AuthState.Authenticated =
         AuthState.Authenticated(

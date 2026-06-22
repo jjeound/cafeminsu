@@ -14,7 +14,6 @@ import com.cafeminsu.data.remote.GifticonDetailRes
 import com.cafeminsu.data.remote.GifticonUseReq
 import com.cafeminsu.data.remote.StampApi
 import com.cafeminsu.data.remote.runCatchingToAppResult
-import com.cafeminsu.data.remote.unwrap
 import com.cafeminsu.di.IoDispatcher
 import com.cafeminsu.domain.model.AuthState
 import com.cafeminsu.domain.model.Gifticon
@@ -78,7 +77,7 @@ class RealRewardRepository @Inject constructor(
                         gifticonApi.getMyGifticons()
                     }
                 ) {
-                    is AppResult.Success -> response.data.unwrap { it.toGifticons() }
+                    is AppResult.Success -> response.data.toGifticons()
                     is AppResult.Failure -> response
                 },
             )
@@ -130,7 +129,7 @@ class RealRewardRepository @Inject constructor(
                     )
                 }
             ) {
-                is AppResult.Success -> response.data.unwrap { it.toGifticon(previous = detail) }
+                is AppResult.Success -> response.data.toGifticon(previous = detail)
                 is AppResult.Failure -> response
             }
         }
@@ -143,7 +142,7 @@ class RealRewardRepository @Inject constructor(
                     stampApi.getStoreStamp(storeId = selectedStoreId)
                 }
             ) {
-                is AppResult.Success -> response.data.unwrap { it.toStampCard() }
+                is AppResult.Success -> response.data.toStampCard()
                 is AppResult.Failure ->
                     if (response.error == DomainError.NotFound) {
                         AppResult.Success(emptyStampCard(selectedStoreId))
@@ -157,20 +156,15 @@ class RealRewardRepository @Inject constructor(
                     stampApi.getMyStamps()
                 }
             ) {
-                is AppResult.Success -> response.data.unwrap { it.toRepresentativeStampCard() }
+                is AppResult.Success -> response.data.toRepresentativeStampCard()
                 is AppResult.Failure -> response
             }
         }
     }
 
     private suspend fun fetchGifticonDetail(gifticonId: Long): AppResult<GifticonDetailRes> =
-        when (
-            val response = runCatchingToAppResult {
-                gifticonApi.getGifticon(gifticonId = gifticonId)
-            }
-        ) {
-            is AppResult.Success -> response.data.unwrap { AppResult.Success(it) }
-            is AppResult.Failure -> response
+        runCatchingToAppResult {
+            gifticonApi.getGifticon(gifticonId = gifticonId)
         }
 
     private fun ensureAuthenticated(): AppResult<Unit> {

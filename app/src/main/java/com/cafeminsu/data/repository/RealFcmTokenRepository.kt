@@ -3,12 +3,9 @@ package com.cafeminsu.data.repository
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.data.auth.SessionStateHolder
-import com.cafeminsu.data.remote.BaseResponse
 import com.cafeminsu.data.remote.FcmTokenApi
 import com.cafeminsu.data.remote.FcmTokenReq
-import com.cafeminsu.data.remote.FcmTokenRes
 import com.cafeminsu.data.remote.runCatchingToAppResult
-import com.cafeminsu.data.remote.toDomainError
 import com.cafeminsu.di.IoDispatcher
 import com.cafeminsu.domain.model.AuthState
 import com.cafeminsu.domain.repository.FcmTokenRepository
@@ -35,7 +32,7 @@ class RealFcmTokenRepository @Inject constructor(
                     fcmTokenApi.updateFcmToken(FcmTokenReq(fcmToken = token))
                 }
             ) {
-                is AppResult.Success -> response.data.toUnitResult()
+                is AppResult.Success -> AppResult.Success(Unit)
                 is AppResult.Failure -> response
             }
         }
@@ -47,14 +44,4 @@ class RealFcmTokenRepository @Inject constructor(
         }
         return AppResult.Success(Unit)
     }
-
-    private fun BaseResponse<FcmTokenRes>.toUnitResult(): AppResult<Unit> =
-        if (isSuccess == true) {
-            AppResult.Success(Unit)
-        } else {
-            AppResult.Failure(code.toDomainErrorOrUnknown())
-        }
-
-    private fun Int?.toDomainErrorOrUnknown(): DomainError =
-        this?.toDomainError() ?: DomainError.Unknown
 }
