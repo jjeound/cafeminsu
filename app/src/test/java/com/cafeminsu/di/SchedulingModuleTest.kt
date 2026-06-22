@@ -38,11 +38,23 @@ class SchedulingModuleTest {
     }
 
     @Test
-    fun providesAiFirstPrepTimeEstimator() {
+    fun providesRuleEstimatorAsDefaultPrepTimeEstimator() {
         val weights = SchedulingModule.provideSchedulingWeights()
         val rule = SchedulingModule.provideRulePrepTimeEstimator(weights)
 
-        val estimator = SchedulingModule.providePrepTimeEstimator(NoopPredictor, rule)
+        // 기본 바인딩은 규칙 추정기 — 온디바이스 LLM 은 주문 처리 동기 경로에서 호출하지 않는다(네이티브 크래시 방지).
+        val estimator = SchedulingModule.providePrepTimeEstimator(rule)
+
+        assertTrue(estimator is RulePrepTimeEstimator)
+    }
+
+    @Test
+    fun aiPrepTimeEstimatorFactoryBuildsAiEstimator() {
+        val weights = SchedulingModule.provideSchedulingWeights()
+        val rule = SchedulingModule.provideRulePrepTimeEstimator(weights)
+
+        // 선택 레이어 팩토리는 AI 우선 추정기를 만든다(기본 그래프엔 미바인딩).
+        val estimator = SchedulingModule.aiPrepTimeEstimator(NoopPredictor, rule)
 
         assertTrue(estimator is AiPrepTimeEstimator)
     }
