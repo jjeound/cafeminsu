@@ -146,6 +146,12 @@
       "status": "completed",
       "summary": "로컬 영속화 — DataStore(선택 매장·점주 영업토글·앱 플래그) + Room 오프라인 캐시(매장/메뉴/알림/주문내역)",
       "completed_at": "2026-06-22T20:12:58+0900"
+    },
+    {
+      "dir": "21-server-envelope",
+      "name": "server-envelope",
+      "status": "pending",
+      "summary": "서버 공통 응답 봉투(BaseResponse<T>) 폐지 대응 — API 가 DTO 직접 반환, 실패는 HTTP 상태로만 신호하도록 remote/repository/test 정렬 + 봉투 코드 삭제"
     }
   ]
 }

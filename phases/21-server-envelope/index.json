@@ -1,0 +1,16 @@
+{
+  "project": "CafeMinsu",
+  "phase": "server-envelope",
+  "steps": [
+    {
+      "step": 0,
+      "name": "auth-store-menu-order-pay-direct",
+      "status": "pending"
+    },
+    {
+      "step": 1,
+      "name": "reward-noti-fcm-direct-and-cleanup",
+      "status": "pending"
+    }
+  ]
+}
