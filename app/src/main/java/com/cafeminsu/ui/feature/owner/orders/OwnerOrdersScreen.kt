@@ -27,6 +27,7 @@ import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cafeminsu.domain.model.OrderStatus
+import com.cafeminsu.domain.scheduling.SchedulingBadge
 import com.cafeminsu.ui.components.CafeChip
 import com.cafeminsu.ui.components.EmptyView
 import com.cafeminsu.ui.components.ErrorView
@@ -240,7 +241,13 @@ private fun OwnerOrdersCard(
                         color = CafeTheme.colors.muted,
                     )
                 }
-                OwnerOrdersStatus(status = order.status, label = order.statusLabel)
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space2),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    OwnerOrderPriorityBadge(badge = order.priorityBadge)
+                    OwnerOrdersStatus(status = order.status, label = order.statusLabel)
+                }
             }
 
             Text(
@@ -254,6 +261,24 @@ private fun OwnerOrdersCard(
                 style = CafeTheme.typography.caption,
                 color = CafeTheme.colors.muted,
             )
+
+            order.etaLabel?.let { eta ->
+                Row(
+                    horizontalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space1),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    Text(
+                        text = "조리 예상",
+                        style = CafeTheme.typography.caption,
+                        color = CafeTheme.colors.muted,
+                    )
+                    Text(
+                        text = eta,
+                        style = CafeTheme.typography.caption,
+                        color = CafeTheme.colors.primary,
+                    )
+                }
+            }
 
             Spacer(modifier = Modifier.height(CafeTheme.spacing.space1))
 
@@ -274,6 +299,31 @@ private fun OwnerOrdersCard(
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun OwnerOrderPriorityBadge(badge: SchedulingBadge) {
+    val (label, color) = when (badge) {
+        SchedulingBadge.Urgent -> "긴급" to CafeTheme.colors.error
+        SchedulingBadge.ArrivingSoon -> "곧 도착" to CafeTheme.colors.primary
+        SchedulingBadge.Normal -> return
+    }
+
+    Surface(
+        shape = CafeTheme.shapes.radiusSm,
+        color = CafeTheme.colors.accentSoft,
+        contentColor = color,
+    ) {
+        Text(
+            modifier = Modifier.padding(
+                horizontal = CafeTheme.spacing.space2,
+                vertical = CafeTheme.spacing.space1,
+            ),
+            text = label,
+            style = CafeTheme.typography.caption,
+            color = color,
+        )
     }
 }
 

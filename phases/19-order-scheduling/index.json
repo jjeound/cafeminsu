@@ -5,7 +5,9 @@
     {
       "step": 0,
       "name": "scheduling-core",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-06-22T12:01:53+0900",
+      "summary": "순수 도메인 우선순위 스케줄링 엔진(OrderScheduler·RulePrepTimeEstimator·CongestionCalculator·Clock·SchedulingWeights) 추가, 대기/수량/근접(null슬롯)/픽업/혼잡 가중합·기아방지 뱃지·누적 ETA를 결정론적 단위테스트로 검증하고 OWNER_ORDERS 정렬을 FIFO→우선순위로 교체(카드에 긴급/곧도착 뱃지·'약 N분' ETA 표시)."
     },
     {
       "step": 1,

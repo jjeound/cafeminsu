@@ -5,6 +5,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.cafeminsu.domain.model.OrderStatus
+import com.cafeminsu.domain.scheduling.SchedulingBadge
 import com.cafeminsu.ui.theme.CafeTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -41,6 +42,8 @@ class OwnerOrdersScreenTest {
                                 totalAmount = 9_300,
                                 actionLabel = "접수하기",
                                 isActionInProgress = false,
+                                priorityBadge = SchedulingBadge.Urgent,
+                                etaLabel = "약 4분",
                             ),
                         ),
                     ),
@@ -60,6 +63,8 @@ class OwnerOrdersScreenTest {
         composeRule.onNodeWithText("아메리카노 (L) · ICE · 1\n바닐라라떼 (R) · HOT · 1").assertIsDisplayed()
         composeRule.onNodeWithText("포장 · 요청: 얼음 적게").assertIsDisplayed()
         composeRule.onNodeWithText("₩9,300").assertIsDisplayed()
+        composeRule.onNodeWithText("긴급").assertIsDisplayed()
+        composeRule.onNodeWithText("약 4분").assertIsDisplayed()
 
         composeRule.onNodeWithText("준비중 5").performClick()
         composeRule.onNodeWithText("접수하기").performClick()
