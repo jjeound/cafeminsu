@@ -10,23 +10,22 @@ import com.cafeminsu.domain.model.CartValidation
 import com.cafeminsu.domain.model.MenuItem
 import com.cafeminsu.domain.model.SelectedOption
 import com.cafeminsu.domain.repository.CartRepository
+import com.cafeminsu.domain.repository.MenuRepository
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import javax.inject.Inject
 import javax.inject.Singleton
 
+// 서버 카트가 없어 카트는 로컬 보관이지만, 메뉴 정보(가격·품절·옵션)는 활성 MenuRepository(Mock/Real)에서
+// 해석한다. 그래야 서버 메뉴 id로도 담기·검증이 동작한다(MockData 하드코딩 목록에 의존하지 않음).
 @Singleton
-class MockCartRepository(
-    private val menuItems: List<MenuItem>,
-    private val minimumOrderAmount: Int,
+class MockCartRepository @Inject constructor(
+    private val menuRepository: MenuRepository,
 ) : CartRepository {
-    @Inject
-    constructor() : this(
-        menuItems = MockData.menuItems,
-        minimumOrderAmount = MockData.minimumOrderAmount,
-    )
+    private val minimumOrderAmount: Int = MockData.minimumOrderAmount
 
     private val cartState = MutableStateFlow(AppResult.Success(emptyCart()))
+    private val resolvedMenus = mutableMapOf<String, MenuItem>()
     private var nextCartItemNumber = 1
 
     override fun observeCart(): Flow<AppResult<Cart>> = cartState
@@ -40,8 +39,11 @@ class MockCartRepository(
             return AppResult.Failure(DomainError.Validation("quantity"))
         }
 
-        val menu = menuItems.firstOrNull { it.id == menuItemId }
-            ?: return AppResult.Failure(DomainError.NotFound)
+        val menu = when (val result = menuRepository.getMenu(menuItemId)) {
+            is AppResult.Success -> result.data
+            is AppResult.Failure -> return result
+        }
+        resolvedMenus[menu.id] = menu
         val selectedOptions = canonicalOptions(menu, options)
             ?: return AppResult.Failure(DomainError.Validation("options"))
 
@@ -119,7 +121,7 @@ class MockCartRepository(
                 add(CartInvalidReason.BelowMinimumAmount(minimumOrderAmount - subtotal))
             }
             items.forEach { item ->
-                val menu = menuItems.firstOrNull { it.id == item.menuItemId }
+                val menu = resolvedMenus[item.menuItemId]
                 if (menu?.isSoldOut == true) {
                     add(CartInvalidReason.SoldOut(item.menuItemId))
                 }

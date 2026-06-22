@@ -2,14 +2,19 @@ package com.cafeminsu.data.repository
 
 import app.cash.turbine.test
 import com.cafeminsu.core.AppResult
+import com.cafeminsu.core.DomainError
 import com.cafeminsu.data.mock.MockData
 import com.cafeminsu.domain.model.Cart
 import com.cafeminsu.domain.model.CartInvalidReason
 import com.cafeminsu.domain.model.CartValidation
+import com.cafeminsu.domain.model.MenuCategory
 import com.cafeminsu.domain.model.MenuItem
 import com.cafeminsu.domain.model.MenuOption
 import com.cafeminsu.domain.model.MenuOptionGroup
 import com.cafeminsu.domain.model.SelectedOption
+import com.cafeminsu.domain.repository.MenuRepository
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flowOf
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -17,8 +22,38 @@ import org.junit.Test
 
 class MockCartRepositoryTest {
     @Test
+    fun addItemResolvesMenuFromInjectedRepositoryNotMockData() = runBlocking {
+        // 서버 메뉴 id("701")는 MockData에 없다. 카트는 주입된 MenuRepository로 메뉴를 해석해야 한다.
+        val serverMenu = MenuItem(
+            id = "701",
+            categoryId = "커피",
+            name = "아메리카노",
+            description = "",
+            basePrice = 4_500,
+            imageUrl = null,
+            isSoldOut = false,
+            options = emptyList(),
+        )
+        val repository = MockCartRepository(SingleMenuRepository(serverMenu))
+
+        val cart = repository.addItem(serverMenu.id, emptyList(), quantity = 1).successData()
+
+        assertEquals(serverMenu.id, cart.items.single().menuItemId)
+        assertEquals(serverMenu.basePrice, cart.items.single().unitPrice)
+    }
+
+    @Test
+    fun addItemFailsWhenMenuRepositoryCannotResolveMenu() = runBlocking {
+        val repository = MockCartRepository(MockMenuRepository())
+
+        val result = repository.addItem("unknown-id", emptyList(), quantity = 1)
+
+        assertEquals(AppResult.Failure(DomainError.NotFound), result)
+    }
+
+    @Test
     fun addItemCalculatesSubtotalWithSelectedOptions() = runBlocking {
-        val repository = MockCartRepository()
+        val repository = MockCartRepository(MockMenuRepository())
         val menu = availableMenuWithPricedOption()
         val pricedGroup = menu.options.first { group -> group.options.any { it.extraPrice > 0 } }
         val selectedOption = selectedOption(pricedGroup, pricedGroup.options.first { it.extraPrice > 0 })
@@ -37,7 +72,7 @@ class MockCartRepositoryTest {
 
     @Test
     fun updateQuantityAndRemoveItemRecalculateCart() = runBlocking {
-        val repository = MockCartRepository()
+        val repository = MockCartRepository(MockMenuRepository())
         val menu = availableMenu()
         val added = repository.addItem(menu.id, emptyList(), quantity = 1).successData()
         val cartItemId = added.items.single().id
@@ -52,7 +87,7 @@ class MockCartRepositoryTest {
 
     @Test
     fun updateQuantityAtZeroRemovesItem() = runBlocking {
-        val repository = MockCartRepository()
+        val repository = MockCartRepository(MockMenuRepository())
         val added = repository.addItem(availableMenu().id, emptyList(), quantity = 1).successData()
 
         val cart = repository.updateQuantity(added.items.single().id, quantity = 0).successData()
@@ -63,7 +98,7 @@ class MockCartRepositoryTest {
 
     @Test
     fun validateForCheckoutReturnsEmptyWhenCartHasNoItems() = runBlocking {
-        val repository = MockCartRepository()
+        val repository = MockCartRepository(MockMenuRepository())
 
         val validation = repository.validateForCheckout().successData()
 
@@ -72,7 +107,7 @@ class MockCartRepositoryTest {
 
     @Test
     fun validateForCheckoutReturnsBelowMinimumAmount() = runBlocking {
-        val repository = MockCartRepository()
+        val repository = MockCartRepository(MockMenuRepository())
         val menu = availableMenu()
 
         val cart = repository.addItem(menu.id, emptyList(), quantity = 1).successData()
@@ -87,7 +122,7 @@ class MockCartRepositoryTest {
 
     @Test
     fun validateForCheckoutReturnsSoldOutReason() = runBlocking {
-        val repository = MockCartRepository()
+        val repository = MockCartRepository(MockMenuRepository())
         val soldOutMenu = MockData.menuItems.first { it.isSoldOut }
         val quantity = quantityToMeetMinimum(soldOutMenu)
 
@@ -103,7 +138,7 @@ class MockCartRepositoryTest {
 
     @Test
     fun validateForCheckoutReturnsValidWhenCartMeetsRules() = runBlocking {
-        val repository = MockCartRepository()
+        val repository = MockCartRepository(MockMenuRepository())
         val menu = availableMenu()
         val quantity = quantityToMeetMinimum(menu)
 
@@ -141,5 +176,22 @@ class MockCartRepositoryTest {
     private suspend fun app.cash.turbine.ReceiveTurbine<AppResult<Cart>>.awaitCart(): Cart {
         val result = awaitItem()
         return result.successData()
+    }
+
+    private class SingleMenuRepository(private val menu: MenuItem) : MenuRepository {
+        override fun observeCategories(): Flow<AppResult<List<MenuCategory>>> =
+            flowOf(AppResult.Success(emptyList()))
+
+        override fun observeMenus(categoryId: String?): Flow<AppResult<List<MenuItem>>> =
+            flowOf(AppResult.Success(listOf(menu)))
+
+        override suspend fun getMenu(menuItemId: String): AppResult<MenuItem> =
+            if (menuItemId == menu.id) {
+                AppResult.Success(menu)
+            } else {
+                AppResult.Failure(DomainError.NotFound)
+            }
+
+        override suspend fun refreshMenus(): AppResult<Unit> = AppResult.Success(Unit)
     }
 }

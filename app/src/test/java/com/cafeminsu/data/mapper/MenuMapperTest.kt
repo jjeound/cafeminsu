@@ -4,7 +4,7 @@ import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.data.remote.MenuDetailRes
 import com.cafeminsu.data.remote.MenuListItemRes
-import com.cafeminsu.data.remote.OptionRes
+import com.cafeminsu.data.remote.MenuOptionRes
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -47,9 +47,9 @@ class MenuMapperTest {
             imageUrl = "https://cdn.example/latte.png",
             isAvailable = true,
             options = listOf(
-                OptionRes(optionId = 1, optionGroup = "온도", optionName = "HOT", optionPrice = 0),
-                OptionRes(optionId = 2, optionGroup = "온도", optionName = "ICE", optionPrice = 0),
-                OptionRes(optionId = 3, optionGroup = "샷 추가", optionName = "+1샷", optionPrice = 500),
+                MenuOptionRes(id = 1, group = "온도", name = "HOT", additionalPrice = 0, isDefault = true),
+                MenuOptionRes(id = 2, group = "온도", name = "ICE", additionalPrice = 0, isDefault = false),
+                MenuOptionRes(id = 3, group = "샷 추가", name = "+1샷", additionalPrice = 500, isDefault = false),
             ),
         ).toMenuItem()
 
@@ -58,6 +58,7 @@ class MenuMapperTest {
         assertEquals("커피", menu.categoryId)
         assertEquals(listOf("온도", "샷 추가"), menu.options.map { it.name })
         assertEquals(listOf("HOT", "ICE"), menu.options[0].options.map { it.name })
+        assertEquals(listOf("1", "2"), menu.options[0].options.map { it.id })
         assertEquals(500, menu.options[1].options.single().extraPrice)
     }
 

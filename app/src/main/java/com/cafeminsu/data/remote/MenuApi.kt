@@ -37,7 +37,18 @@ data class MenuDetailRes(
     val category: String?,
     val imageUrl: String?,
     val isAvailable: Boolean?,
-    val options: List<OptionRes>?,
+    val options: List<MenuOptionRes>?,
+)
+
+// 라이브 서버 메뉴 상세의 옵션 스키마. 주문 응답(`OptionRes`)과 필드명이 달라 별도 DTO로 둔다:
+// 메뉴는 `{id, group, name, additionalPrice, isDefault}`, 주문은 `{optionId, optionGroup, optionName, optionPrice}`.
+@JsonClass(generateAdapter = true)
+data class MenuOptionRes(
+    val id: Long?,
+    val group: String?,
+    val name: String?,
+    val additionalPrice: Int?,
+    val isDefault: Boolean? = null,
 )
 
 @JsonClass(generateAdapter = true)
