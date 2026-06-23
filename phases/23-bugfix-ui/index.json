@@ -7,7 +7,8 @@
       "name": "bottomnav-insets",
       "status": "completed",
       "started_at": "2026-06-23T23:57:25+0900",
-      "summary": "CafeBottomBar·OwnerBottomBar 가 WindowInsets.navigationBars 를 소비(배경 먼저 칠한 뒤 windowInsetsPadding)해 3버튼 시스템 네비바와 탭 겹침 제거; 높이·토큰·탭 구성 불변, AC(testDebugUnitTest/assembleDebug/compileDebugAndroidTestKotlin) 통과."
+      "summary": "CafeBottomBar·OwnerBottomBar 가 WindowInsets.navigationBars 를 소비(배경 먼저 칠한 뒤 windowInsetsPadding)해 3버튼 시스템 네비바와 탭 겹침 제거; 높이·토큰·탭 구성 불변, AC(testDebugUnitTest/assembleDebug/compileDebugAndroidTestKotlin) 통과.",
+      "completed_at": "2026-06-23T23:59:34+0900"
     },
     {
       "step": 1,
