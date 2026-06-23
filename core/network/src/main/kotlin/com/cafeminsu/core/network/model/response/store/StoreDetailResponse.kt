@@ -2,6 +2,7 @@ package com.cafeminsu.core.network.model.response.store
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import com.cafeminsu.core.model.store.StoreDetail
 
 @Serializable
 data class StoreDetailResponse(
@@ -14,3 +15,15 @@ data class StoreDetailResponse(
     @SerialName(value = "businessHours") val businessHours: String,
     @SerialName(value = "imageUrl") val imageUrl: String?,
 )
+
+fun StoreDetailResponse.asExternalModel(): StoreDetail =
+    StoreDetail(
+        id = id,
+        name = name,
+        address = address,
+        latitude = latitude,
+        longitude = longitude,
+        phone = phone,
+        businessHours = businessHours,
+        imageUrl = imageUrl,
+    )

@@ -6,4 +6,5 @@ enum class NotificationType {
     OrderCompleted,
     StampEarned,
     GifticonReceived,
+    System,
 }

@@ -2,6 +2,7 @@ package com.cafeminsu.core.network.model.response.menu
 
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
+import com.cafeminsu.core.model.menu.MenuDetail
 
 @Serializable
 data class MenuDetailResponse(
@@ -14,3 +15,15 @@ data class MenuDetailResponse(
     @SerialName(value = "isAvailable") val isAvailable: Boolean,
     @SerialName(value = "options") val options: List<MenuOptionResponse>,
 )
+
+fun MenuDetailResponse.asExternalModel(): MenuDetail =
+    MenuDetail(
+        id = id,
+        name = name,
+        description = description,
+        price = price,
+        category = category,
+        imageUrl = imageUrl,
+        isAvailable = isAvailable,
+        options = options.map(MenuOptionResponse::asExternalModel),
+    )
