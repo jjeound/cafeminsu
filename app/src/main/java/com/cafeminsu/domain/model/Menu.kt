@@ -46,4 +46,5 @@ data class NewMenuDraft(
     val description: String,
     val imageUrl: String?,
     val isSoldOut: Boolean,
+    val options: List<MenuOptionGroup> = emptyList(),
 )
