@@ -153,6 +153,12 @@
       "status": "completed",
       "summary": "서버 공통 응답 봉투(BaseResponse<T>) 폐지 대응 — API 가 DTO 직접 반환, 실패는 HTTP 상태로만 신호하도록 remote/repository/test 정렬 + 봉투 코드 삭제",
       "completed_at": "2026-06-22T21:09:54+0900"
+    },
+    {
+      "dir": "22-owner-live-integration",
+      "name": "owner-live-integration",
+      "status": "pending",
+      "summary": "점주 주문/메뉴·매출·추천 실서버 연동(Mock→Real, BASE_URL 키게이트) + opt-in 라이브 스모크 테스트(MockWebServer 단위테스트는 유지)"
     }
   ]
 }

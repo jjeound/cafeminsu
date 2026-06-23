@@ -1,0 +1,31 @@
+{
+  "project": "CafeMinsu",
+  "phase": "owner-live-integration",
+  "steps": [
+    {
+      "step": 0,
+      "name": "owner-order-real",
+      "status": "pending"
+    },
+    {
+      "step": 1,
+      "name": "owner-menu-real",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "live-smoke-tests",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "name": "sales-real",
+      "status": "pending"
+    },
+    {
+      "step": 4,
+      "name": "recommendation-real",
+      "status": "pending"
+    }
+  ]
+}
