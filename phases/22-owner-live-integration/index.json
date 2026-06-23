@@ -5,7 +5,9 @@
     {
       "step": 0,
       "name": "owner-order-real",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-06-23T16:01:02+0900",
+      "summary": "RealOwnerOrderRepository 실서버 연동(stores/my→storeId 해석, /stores/{id}/orders 목록, accept/ready/complete/cancel 상태전이, Preparing 로컬전이) + OwnerOrderApi/OwnerOrderMapper 신설 + BASE_URL 키게이트 DI 폴백(MockOwnerOrderRepository 유지). assembleDebug·androidTest 컴파일·신규 점주주문 단위테스트 통과(기존 무관 PaymentUiStateTest 실패는 본 step 이전부터 선존재)."
     },
     {
       "step": 1,
@@ -27,5 +29,6 @@
       "name": "recommendation-real",
       "status": "pending"
     }
-  ]
+  ],
+  "created_at": "2026-06-23T16:01:02+0900"
 }

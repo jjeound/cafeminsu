@@ -88,6 +88,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideOwnerOrderApi(retrofit: Retrofit): OwnerOrderApi =
+        retrofit.create(OwnerOrderApi::class.java)
+
+    @Provides
+    @Singleton
     fun providePaymentApi(retrofit: Retrofit): PaymentApi =
         retrofit.create(PaymentApi::class.java)
 

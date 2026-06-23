@@ -155,7 +155,7 @@ private fun String?.toOrderStatus(): OrderStatus? =
         else -> null
     }
 
-private fun String?.toEpochMillis(): Long =
+internal fun String?.toEpochMillis(): Long =
     this
         ?.let { value ->
             try {

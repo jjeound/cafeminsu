@@ -21,6 +21,7 @@ import com.cafeminsu.data.repository.RealGiftRepository
 import com.cafeminsu.data.repository.RealMenuRepository
 import com.cafeminsu.data.repository.RealNotificationRepository
 import com.cafeminsu.data.repository.RealOrderRepository
+import com.cafeminsu.data.repository.RealOwnerOrderRepository
 import com.cafeminsu.data.repository.RealPaymentRepository
 import com.cafeminsu.data.repository.RealRewardRepository
 import com.cafeminsu.data.repository.RealSessionRepository
@@ -53,10 +54,6 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindCartRepository(repository: MockCartRepository): CartRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindOwnerOrderRepository(repository: MockOwnerOrderRepository): OwnerOrderRepository
 
     @Binds
     @Singleton
@@ -130,6 +127,18 @@ abstract class RepositoryModule {
             mockRepository: Provider<MockOrderRepository>,
         ): OrderRepository =
             selectOrderRepository(
+                baseUrl = com.cafeminsu.BuildConfig.BASE_URL,
+                realFactory = { realRepository.get() },
+                mockFactory = { mockRepository.get() },
+            )
+
+        @Provides
+        @Singleton
+        fun provideOwnerOrderRepository(
+            realRepository: Provider<RealOwnerOrderRepository>,
+            mockRepository: Provider<MockOwnerOrderRepository>,
+        ): OwnerOrderRepository =
+            selectOwnerOrderRepository(
                 baseUrl = com.cafeminsu.BuildConfig.BASE_URL,
                 realFactory = { realRepository.get() },
                 mockFactory = { mockRepository.get() },
@@ -223,6 +232,17 @@ internal fun selectOrderRepository(
     realFactory: () -> OrderRepository,
     mockFactory: () -> OrderRepository,
 ): OrderRepository =
+    if (baseUrl.isNotBlank()) {
+        realFactory()
+    } else {
+        mockFactory()
+    }
+
+internal fun selectOwnerOrderRepository(
+    baseUrl: String,
+    realFactory: () -> OwnerOrderRepository,
+    mockFactory: () -> OwnerOrderRepository,
+): OwnerOrderRepository =
     if (baseUrl.isNotBlank()) {
         realFactory()
     } else {

@@ -14,6 +14,7 @@ import com.cafeminsu.data.repository.MockStoreRepository
 import com.cafeminsu.data.repository.RealFcmTokenRepository
 import com.cafeminsu.data.repository.RealGiftRepository
 import com.cafeminsu.data.repository.RealNotificationRepository
+import com.cafeminsu.data.repository.RealOwnerOrderRepository
 import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.CouponRepository
 import com.cafeminsu.domain.repository.FcmTokenRepository
@@ -36,11 +37,6 @@ class RepositoryModuleTest {
     @Test
     fun repositoryModuleBindsUnchangedRepositoryContractsToMockSingletons() {
         assertBinding("bindCartRepository", CartRepository::class.java, MockCartRepository::class.java)
-        assertBinding(
-            "bindOwnerOrderRepository",
-            OwnerOrderRepository::class.java,
-            MockOwnerOrderRepository::class.java,
-        )
         assertBinding(
             "bindOwnerMenuRepository",
             OwnerMenuRepository::class.java,
@@ -103,6 +99,47 @@ class RepositoryModuleTest {
         )
 
         assertEquals(realRepository, selected)
+    }
+
+    @Test
+    fun blankBaseUrlSelectsMockOwnerOrderRepositoryFallback() {
+        val realRepository = FakeOwnerOrderRepository()
+        val mockRepository = FakeOwnerOrderRepository()
+
+        val selected = selectOwnerOrderRepository(
+            baseUrl = "",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(mockRepository, selected)
+    }
+
+    @Test
+    fun configuredBaseUrlSelectsRealOwnerOrderRepository() {
+        val realRepository = FakeOwnerOrderRepository()
+        val mockRepository = FakeOwnerOrderRepository()
+
+        val selected = selectOwnerOrderRepository(
+            baseUrl = "https://cafeminsu.example/",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(realRepository, selected)
+    }
+
+    @Test
+    fun repositoryModuleProvidesOwnerOrderRepositoryWithRealAndMockProviders() {
+        val method = RepositoryModule.Companion::class.java.getDeclaredMethod(
+            "provideOwnerOrderRepository",
+            javax.inject.Provider::class.java,
+            javax.inject.Provider::class.java,
+        )
+
+        assertEquals(OwnerOrderRepository::class.java, method.returnType)
+        assertEquals(RealOwnerOrderRepository::class.java, method.genericParameterTypes.first().providerArgument())
+        assertEquals(MockOwnerOrderRepository::class.java, method.genericParameterTypes.last().providerArgument())
     }
 
     @Test
@@ -495,4 +532,17 @@ private class FakeNotificationRepository : NotificationRepository {
 private class FakeFcmTokenRepository : FcmTokenRepository {
     override suspend fun register(token: String): com.cafeminsu.core.AppResult<Unit> =
         com.cafeminsu.core.AppResult.Success(Unit)
+}
+
+private class FakeOwnerOrderRepository : OwnerOrderRepository {
+    override fun observeIncomingOrders(
+        filter: com.cafeminsu.domain.model.OrderStatus?,
+    ): kotlinx.coroutines.flow.Flow<com.cafeminsu.core.AppResult<List<com.cafeminsu.domain.model.Order>>> =
+        kotlinx.coroutines.flow.flowOf(com.cafeminsu.core.AppResult.Success(emptyList()))
+
+    override suspend fun advanceStatus(
+        orderId: String,
+        to: com.cafeminsu.domain.model.OrderStatus,
+    ): com.cafeminsu.core.AppResult<com.cafeminsu.domain.model.Order> =
+        com.cafeminsu.core.AppResult.Failure(com.cafeminsu.core.DomainError.NotFound)
 }
