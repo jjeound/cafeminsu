@@ -4,10 +4,15 @@ import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
+import com.cafeminsu.domain.model.Cart
+import com.cafeminsu.domain.model.CartItem
+import com.cafeminsu.domain.model.CartValidation
 import com.cafeminsu.domain.model.MenuCategory
 import com.cafeminsu.domain.model.MenuItem
+import com.cafeminsu.domain.model.SelectedOption
 import com.cafeminsu.domain.model.Store
 import com.cafeminsu.domain.model.StoreStatus
+import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.MenuRepository
 import com.cafeminsu.domain.repository.StoreRepository
 import kotlinx.coroutines.Dispatchers
@@ -47,6 +52,7 @@ class MenuViewModelTest {
         val viewModel = MenuViewModel(
             menuRepository = repository,
             storeRepository = FakeStoreRepository(),
+            cartRepository = FakeMenuCartRepository(),
         )
 
         viewModel.uiState.test {
@@ -80,6 +86,7 @@ class MenuViewModelTest {
         val viewModel = MenuViewModel(
             menuRepository = repository,
             storeRepository = FakeStoreRepository(),
+            cartRepository = FakeMenuCartRepository(),
         )
 
         viewModel.uiState.test {
@@ -103,6 +110,7 @@ class MenuViewModelTest {
                 menusByCategory = emptyMap(),
             ),
             storeRepository = FakeStoreRepository(),
+            cartRepository = FakeMenuCartRepository(),
         )
 
         viewModel.uiState.test {
@@ -124,6 +132,7 @@ class MenuViewModelTest {
                 menusByCategory = mapOf("coffee" to AppResult.Failure(DomainError.Timeout)),
             ),
             storeRepository = FakeStoreRepository(),
+            cartRepository = FakeMenuCartRepository(),
         )
 
         viewModel.uiState.test {
@@ -147,6 +156,7 @@ class MenuViewModelTest {
                 menusByCategory = emptyMap(),
             ),
             storeRepository = FakeStoreRepository(),
+            cartRepository = FakeMenuCartRepository(),
         )
 
         viewModel.uiState.test {
@@ -178,6 +188,7 @@ class MenuViewModelTest {
                 ),
             ),
             storeRepository = FakeStoreRepository(),
+            cartRepository = FakeMenuCartRepository(),
         )
 
         viewModel.uiState.test {
@@ -202,12 +213,64 @@ class MenuViewModelTest {
             storeRepository = FakeStoreRepository(
                 selectedStore = sampleStore(name = "카페민수 강남점"),
             ),
+            cartRepository = FakeMenuCartRepository(),
         )
 
         viewModel.uiState.test {
             val content = awaitSettledState() as MenuUiState.Content
             assertEquals("강남점", content.storeName)
 
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun emptyCartProducesZeroCartItemCount() = runTest {
+        val viewModel = MenuViewModel(
+            menuRepository = FakeMenuRepository(
+                categories = AppResult.Success(sampleCategories()),
+                menusByCategory = emptyMap(),
+            ),
+            storeRepository = FakeStoreRepository(),
+            cartRepository = FakeMenuCartRepository(cart = AppResult.Success(cartWithQuantities())),
+        )
+
+        viewModel.cartItemCount.test {
+            assertEquals(0, awaitCount(0))
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun cartItemCountSumsItemQuantities() = runTest {
+        val viewModel = MenuViewModel(
+            menuRepository = FakeMenuRepository(
+                categories = AppResult.Success(sampleCategories()),
+                menusByCategory = emptyMap(),
+            ),
+            storeRepository = FakeStoreRepository(),
+            cartRepository = FakeMenuCartRepository(cart = AppResult.Success(cartWithQuantities(2, 3))),
+        )
+
+        viewModel.cartItemCount.test {
+            assertEquals(5, awaitCount(5))
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun cartFailureProducesZeroCartItemCount() = runTest {
+        val viewModel = MenuViewModel(
+            menuRepository = FakeMenuRepository(
+                categories = AppResult.Success(sampleCategories()),
+                menusByCategory = emptyMap(),
+            ),
+            storeRepository = FakeStoreRepository(),
+            cartRepository = FakeMenuCartRepository(cart = AppResult.Failure(DomainError.Unknown)),
+        )
+
+        viewModel.cartItemCount.test {
+            assertEquals(0, awaitCount(0))
             cancelAndIgnoreRemainingEvents()
         }
     }
@@ -241,6 +304,14 @@ class MenuViewModelTest {
         } else {
             state
         }
+    }
+
+    private suspend fun ReceiveTurbine<Int>.awaitCount(expected: Int): Int {
+        var value = awaitItem()
+        while (value != expected) {
+            value = awaitItem()
+        }
+        return value
     }
 }
 
@@ -285,6 +356,47 @@ private class FakeStoreRepository(
 
     override fun observeSelectedStore(): Flow<Store?> = selectedStore
 }
+
+private class FakeMenuCartRepository(
+    cart: AppResult<Cart> = AppResult.Success(
+        Cart(items = emptyList(), subtotal = 0, validation = CartValidation.Valid),
+    ),
+) : CartRepository {
+    private val cart = MutableStateFlow(cart)
+
+    override fun observeCart(): Flow<AppResult<Cart>> = cart
+
+    override suspend fun addItem(
+        menuItemId: String,
+        options: List<SelectedOption>,
+        quantity: Int,
+    ): AppResult<Cart> = cart.value
+
+    override suspend fun updateQuantity(cartItemId: String, quantity: Int): AppResult<Cart> = cart.value
+
+    override suspend fun removeItem(cartItemId: String): AppResult<Cart> = cart.value
+
+    override suspend fun validateForCheckout(): AppResult<CartValidation> =
+        AppResult.Success(CartValidation.Valid)
+
+    override suspend fun clear(): AppResult<Unit> = AppResult.Success(Unit)
+}
+
+private fun cartWithQuantities(vararg quantities: Int): Cart =
+    Cart(
+        items = quantities.mapIndexed { index, quantity ->
+            CartItem(
+                id = "item-$index",
+                menuItemId = "menu-$index",
+                name = "민수 메뉴",
+                unitPrice = 5_000,
+                selectedOptions = emptyList(),
+                quantity = quantity,
+            )
+        },
+        subtotal = quantities.sum() * 5_000,
+        validation = CartValidation.Valid,
+    )
 
 private fun sampleStore(name: String): Store =
     Store(

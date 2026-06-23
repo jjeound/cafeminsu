@@ -26,6 +26,7 @@ class MenuScreenTest {
             CafeTheme {
                 MenuScreen(
                     state = sampleContentState(),
+                    cartItemCount = 0,
                     onCategorySelect = {},
                     onMenuClick = { clickedMenuId = it },
                     onVoiceClick = { voiceClicked = true },
@@ -59,6 +60,46 @@ class MenuScreenTest {
         composeRule.runOnIdle {
             assertTrue(cartClicked)
         }
+    }
+
+    @Test
+    fun showsCartCountBadgeWhenCartHasItems() {
+        composeRule.setContent {
+            CafeTheme {
+                MenuScreen(
+                    state = sampleContentState(),
+                    cartItemCount = 3,
+                    onCategorySelect = {},
+                    onMenuClick = {},
+                    onVoiceClick = {},
+                    onCartClick = {},
+                    onRetry = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("3").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("장바구니 3개").assertIsDisplayed()
+    }
+
+    @Test
+    fun hidesCartCountBadgeWhenCartEmpty() {
+        composeRule.setContent {
+            CafeTheme {
+                MenuScreen(
+                    state = sampleContentState(),
+                    cartItemCount = 0,
+                    onCategorySelect = {},
+                    onMenuClick = {},
+                    onVoiceClick = {},
+                    onCartClick = {},
+                    onRetry = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithContentDescription("장바구니").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("장바구니 0개").assertDoesNotExist()
     }
 
     private fun sampleContentState(): MenuUiState.Content =
