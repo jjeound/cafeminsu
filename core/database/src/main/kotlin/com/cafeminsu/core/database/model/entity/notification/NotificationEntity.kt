@@ -6,7 +6,7 @@ import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "notifications",
-    indices = [Index("createdAt")],
+    indices = [Index("createdAtMillis")],
 )
 data class NotificationEntity(
     @PrimaryKey val id: Long,
@@ -15,5 +15,5 @@ data class NotificationEntity(
     val type: String,
     val isRead: Boolean,
     val relatedEntityId: Long?,
-    val createdAt: String,
+    val createdAtMillis: Long,
 )

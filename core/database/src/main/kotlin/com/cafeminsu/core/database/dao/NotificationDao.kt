@@ -9,7 +9,7 @@ import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface NotificationDao {
-    @Query("SELECT * FROM notifications ORDER BY createdAt DESC")
+    @Query("SELECT * FROM notifications ORDER BY createdAtMillis DESC")
     fun getNotificationEntities(): Flow<List<NotificationEntity>>
 
     @Query("SELECT * FROM notifications WHERE id = :notificationId")

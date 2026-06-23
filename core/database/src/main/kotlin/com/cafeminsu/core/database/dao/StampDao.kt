@@ -16,7 +16,7 @@ interface StampDao {
     @Query("SELECT * FROM stamps WHERE storeId = :storeId")
     fun getStampEntity(storeId: Long): Flow<StampEntity>
 
-    @Query("SELECT * FROM stamp_histories WHERE storeId = :storeId ORDER BY createdAt DESC")
+    @Query("SELECT * FROM stamp_histories WHERE storeId = :storeId ORDER BY createdAtMillis DESC")
     fun getStampHistoryEntities(storeId: Long): Flow<List<StampHistoryEntity>>
 
     @Insert
