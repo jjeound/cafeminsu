@@ -8,6 +8,7 @@ import com.cafeminsu.data.remote.createMoshi
 import com.cafeminsu.data.remote.createOkHttpClient
 import com.cafeminsu.data.remote.createRetrofit
 import com.cafeminsu.domain.model.Store
+import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.model.StoreAmenity
 import com.cafeminsu.domain.model.StoreStatus
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -161,6 +162,27 @@ class RealStoreRepositoryTest {
     }
 
     @Test
+    fun selectStoreClearsCartOnlyWhenSwitchingToDifferentStore() = runTest(testDispatcher) {
+        server.enqueue(storeDetailResponse(id = 7)) // 첫 선택
+        server.enqueue(storeDetailResponse(id = 9)) // 다른 매장으로 전환
+        server.enqueue(storeDetailResponse(id = 9)) // 같은 매장 재선택
+        val cart = RecordingCartRepository()
+        val repository = realStoreRepository(cart = cart)
+
+        // 첫 선택: 이전 매장이 없으므로 장바구니를 비우지 않는다.
+        assertTrue(repository.selectStore("7") is AppResult.Success)
+        assertEquals(0, cart.clearCount)
+
+        // 다른 매장으로 전환: 매장별 메뉴가 달라 장바구니를 초기화한다.
+        assertTrue(repository.selectStore("9") is AppResult.Success)
+        assertEquals(1, cart.clearCount)
+
+        // 같은 매장 재선택: 장바구니를 유지한다.
+        assertTrue(repository.selectStore("9") is AppResult.Success)
+        assertEquals(1, cart.clearCount)
+    }
+
+    @Test
     fun observeNearbyStoresEmitsEmptySuccessForEmptyServerList() = runTest(testDispatcher) {
         server.enqueue(
             MockResponse()
@@ -229,11 +251,13 @@ class RealStoreRepositoryTest {
 
     private fun realStoreRepository(
         local: StoreLocalDataSource = FakeStoreLocalDataSource(),
+        cart: CartRepository = RecordingCartRepository(),
     ): RealStoreRepository =
         RealStoreRepository(
             storeApi = storeApi(),
             selectedStoreHolder = selectedStoreHolderForTest(),
             localDataSource = local,
+            cartRepository = cart,
             ioDispatcher = testDispatcher,
         )
 
@@ -277,13 +301,13 @@ class RealStoreRepositoryTest {
             okHttpClient = createOkHttpClient(debug = false),
         ).create(StoreApi::class.java)
 
-    private fun storeDetailResponse(): MockResponse =
+    private fun storeDetailResponse(id: Int = 7): MockResponse =
         MockResponse()
             .setResponseCode(200)
             .setBody(
                 """
                 {
-                  "id": 7,
+                  "id": $id,
                   "name": "카페민수 강남점",
                   "address": "서울 강남구 테헤란로 134",
                   "latitude": 37.498,

@@ -7,6 +7,9 @@ import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.Cart
 import com.cafeminsu.domain.model.CartItem
+import com.cafeminsu.domain.model.Coupon
+import com.cafeminsu.domain.model.CouponStatus
+import com.cafeminsu.domain.model.CouponType
 import com.cafeminsu.domain.model.Gifticon
 import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.OrderStatus
@@ -15,6 +18,7 @@ import com.cafeminsu.domain.model.PaymentResult
 import com.cafeminsu.domain.model.PaymentStatus
 import com.cafeminsu.domain.model.StampCard
 import com.cafeminsu.domain.model.StampEvent
+import com.cafeminsu.domain.repository.CouponRepository
 import com.cafeminsu.domain.repository.OrderRepository
 import com.cafeminsu.domain.repository.PaymentRepository
 import com.cafeminsu.domain.repository.RewardRepository
@@ -325,6 +329,53 @@ class PaymentViewModelTest {
         }
     }
 
+    @Test
+    fun applyingAmountCouponReducesPaidAmountAndRedeemsCoupon() = runTest {
+        val couponRepository = FakePaymentCouponRepository(
+            coupons = listOf(
+                Coupon(
+                    id = "coupon-3000",
+                    type = CouponType.Amount,
+                    title = "₩3,000",
+                    amount = 3_000,
+                    expiresAtMillis = 1_800_000_000_000L,
+                    status = CouponStatus.Available,
+                ),
+            ),
+        )
+        val paymentRepository = FakePaymentRepository(
+            payResults = mutableListOf(
+                AppResult.Success(paymentResult(status = PaymentStatus.Approved)),
+            ),
+        )
+        val viewModel = viewModel(
+            paymentRepository = paymentRepository,
+            couponRepository = couponRepository,
+        )
+
+        viewModel.uiState.test {
+            val content = awaitContentWithCoupons()
+            assertEquals(12_000, content.payableAmount)
+
+            viewModel.onToggleCoupon("coupon-3000")
+            val discounted = awaitContent()
+            assertEquals(3_000, discounted.discountAmount)
+            assertEquals(9_000, discounted.payableAmount)
+
+            viewModel.events.test {
+                viewModel.onPay()
+
+                assertEquals(PaymentEvent.PaymentApproved("order-1"), awaitItem())
+                assertEquals(9_000, paymentRepository.payRequests.single().amount)
+                assertEquals(listOf("coupon-3000"), couponRepository.usedCouponIds)
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     private fun viewModel(
         orderId: String = "order-1",
         orderRepository: FakePaymentOrderRepository = FakePaymentOrderRepository(
@@ -332,12 +383,14 @@ class PaymentViewModelTest {
         ),
         paymentRepository: FakePaymentRepository = FakePaymentRepository(),
         rewardRepository: FakePaymentRewardRepository = FakePaymentRewardRepository(),
+        couponRepository: FakePaymentCouponRepository = FakePaymentCouponRepository(),
     ): PaymentViewModel =
         PaymentViewModel(
             savedStateHandle = SavedStateHandle(mapOf(Routes.PAYMENT_ORDER_ID to orderId)),
             paymentRepository = paymentRepository,
             orderRepository = orderRepository,
             rewardRepository = rewardRepository,
+            couponRepository = couponRepository,
         )
 
     private suspend fun ReceiveTurbine<PaymentUiState>.awaitContent(): PaymentUiState.Content {
@@ -345,6 +398,15 @@ class PaymentViewModelTest {
             val state = awaitItem()
             if (state is PaymentUiState.Content) {
                 return state
+            }
+        }
+    }
+
+    private suspend fun ReceiveTurbine<PaymentUiState>.awaitContentWithCoupons(): PaymentUiState.Content {
+        while (true) {
+            val content = awaitContent()
+            if (content.coupons.isNotEmpty()) {
+                return content
             }
         }
     }
@@ -409,6 +471,22 @@ private data class StatusRequest(
     val orderId: String,
     val idempotencyKey: String,
 )
+
+private class FakePaymentCouponRepository(
+    coupons: List<Coupon> = emptyList(),
+) : CouponRepository {
+    private val couponsFlow = MutableStateFlow<AppResult<List<Coupon>>>(AppResult.Success(coupons))
+    val usedCouponIds = mutableListOf<String>()
+
+    override fun observeCoupons(): Flow<AppResult<List<Coupon>>> = couponsFlow
+
+    override suspend fun useCoupon(id: String): AppResult<Coupon> {
+        usedCouponIds += id
+        val coupon = (couponsFlow.value as? AppResult.Success)?.data?.firstOrNull { it.id == id }
+            ?: return AppResult.Failure(DomainError.NotFound)
+        return AppResult.Success(coupon.copy(status = CouponStatus.Used))
+    }
+}
 
 private class FakePaymentRewardRepository(
     private val grantResult: AppResult<StampCard> = AppResult.Success(sampleStampCard()),

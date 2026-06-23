@@ -14,9 +14,20 @@ sealed interface PaymentUiState {
         val methods: List<PaymentMethodUiModel>,
         val selectedMethodId: String,
         val paymentState: PaymentProgress,
+        val coupons: List<PaymentCouponUiModel> = emptyList(),
+        val selectedCouponId: String? = null,
     ) : PaymentUiState {
         val selectedMethod: PaymentMethodUiModel? =
             methods.firstOrNull { method -> method.id == selectedMethodId }
+
+        val selectedCoupon: PaymentCouponUiModel? =
+            coupons.firstOrNull { coupon -> coupon.id == selectedCouponId }
+
+        // 할인은 결제 금액을 넘지 못한다(음수 결제 방지).
+        val discountAmount: Int =
+            selectedCoupon?.let { coupon -> coupon.discountAmount.coerceAtMost(totalAmount) } ?: 0
+
+        val payableAmount: Int = (totalAmount - discountAmount).coerceAtLeast(0)
 
         val isPayEnabled: Boolean =
             selectedMethod != null &&
@@ -34,6 +45,12 @@ sealed interface PaymentUiState {
 data class PaymentMethodUiModel(
     val id: String,
     val label: String,
+)
+
+data class PaymentCouponUiModel(
+    val id: String,
+    val label: String,
+    val discountAmount: Int,
 )
 
 sealed interface PaymentProgress {
@@ -60,11 +77,7 @@ fun defaultPaymentMethods(): List<PaymentMethodUiModel> =
         PaymentMethodUiModel(
             id = "simple-pay",
             label = "간편결제",
-        ),
-        PaymentMethodUiModel(
-            id = "coupon",
-            label = "쿠폰",
-        ),
+        )
     )
 
 enum class PaymentFailureReason {

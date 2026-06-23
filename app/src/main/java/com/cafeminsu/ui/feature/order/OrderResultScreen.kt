@@ -2,6 +2,8 @@ package com.cafeminsu.ui.feature.order
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -191,30 +193,38 @@ private fun OrderSuccessContent(
             CloseButton(onClick = onCloseClick)
         }
 
-        Spacer(modifier = Modifier.height(spacing.space6))
-        SuccessIcon()
-        Spacer(modifier = Modifier.height(spacing.space8))
+        // 콘텐츠는 스크롤 영역에 두어 작은 화면에서도 하단 버튼이 잘리지 않게 한다.
+        Column(
+            modifier = Modifier
+                .weight(ContentBottomWeight)
+                .fillMaxWidth()
+                .verticalScroll(rememberScrollState()),
+            horizontalAlignment = Alignment.CenterHorizontally,
+        ) {
+            Spacer(modifier = Modifier.height(spacing.space6))
+            SuccessIcon()
+            Spacer(modifier = Modifier.height(spacing.space8))
 
-        Text(
-            text = "주문이 완료됐어요",
-            style = CafeTheme.typography.display,
-            color = CafeTheme.colors.ink,
-            textAlign = TextAlign.Center,
-        )
-        Text(
-            modifier = Modifier.padding(top = spacing.space2),
-            text = "준비가 끝나면 알림을 보내드릴게요",
-            style = CafeTheme.typography.body,
-            color = CafeTheme.colors.muted,
-            textAlign = TextAlign.Center,
-        )
+            Text(
+                text = "주문이 완료됐어요",
+                style = CafeTheme.typography.display,
+                color = CafeTheme.colors.ink,
+                textAlign = TextAlign.Center,
+            )
+            Text(
+                modifier = Modifier.padding(top = spacing.space2),
+                text = "준비가 끝나면 알림을 보내드릴게요",
+                style = CafeTheme.typography.body,
+                color = CafeTheme.colors.muted,
+                textAlign = TextAlign.Center,
+            )
 
-        Spacer(modifier = Modifier.height(spacing.space8))
-        OrderSummaryCard(summary = summary)
-        Spacer(modifier = Modifier.height(spacing.space5))
-        StampEarnedBanner(message = summary.stampMessage)
-
-        Spacer(modifier = Modifier.weight(ContentBottomWeight))
+            Spacer(modifier = Modifier.height(spacing.space8))
+            OrderSummaryCard(summary = summary)
+            Spacer(modifier = Modifier.height(spacing.space5))
+            StampEarnedBanner(message = summary.stampMessage)
+            Spacer(modifier = Modifier.height(spacing.space5))
+        }
 
         CafeButton(
             text = "주문 상태 보기",

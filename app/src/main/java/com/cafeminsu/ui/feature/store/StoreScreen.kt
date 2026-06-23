@@ -132,6 +132,7 @@ fun StoreScreen(
                     StoreUiState.Loading -> LoadingView()
                     is StoreUiState.Content -> StoreList(
                         stores = state.stores,
+                        selectedStoreId = selectedStore?.id,
                         onStoreClick = onStoreClick,
                     )
 
@@ -229,15 +230,16 @@ private fun NearbyStoresHeader() {
 @Composable
 private fun StoreList(
     stores: List<StoreUiModel>,
+    selectedStoreId: String?,
     onStoreClick: (String) -> Unit,
 ) {
     Column(
         verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space3),
     ) {
-        stores.forEachIndexed { index, store ->
+        stores.forEach { store ->
             StoreCard(
                 store = store,
-                selected = index == SelectedStoreCardIndex,
+                selected = store.id == selectedStoreId,
                 onClick = { onStoreClick(store.id) },
             )
         }
@@ -549,7 +551,6 @@ private fun LocationPinIcon(
     }
 }
 
-private const val SelectedStoreCardIndex = 0
 private const val StoreTextWeight = 1f
 private const val StoreNameMaxLines = 1
 private const val AddressMaxLines = 1
