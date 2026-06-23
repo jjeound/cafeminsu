@@ -29,8 +29,9 @@
     {
       "step": 3,
       "name": "sales-real",
-      "status": "blocked",
+      "status": "deferred",
       "started_at": "2026-06-23T16:52:52+0900",
+      "deferred_reason": "서버 측 한계로 연동 불가(코드 변경 없음, Mock 유지). docs/SERVER_INTEGRATION.md 에 기록함. 후속 step(추천)을 진행하기 위해 blocked→deferred 로 표기.",
       "blocked_reason": "라이브 스펙(/v3/api-docs) 확인 결과 GET api/stores/{storeId}/payments 의 StorePaymentsRes 는 {total:int64, payments:[Item]} 이고 payments 항목 Item 은 {menuId,quantity,optionIds} 제네릭 스키마라 집계용 금액·일시(amount/paidAt/createdAt) 필드가 전혀 없음. dailySales(일자별 버킷, 일시 필드 부재로 불가)·totalSales(결제금액 합, per-payment amount 부재)·topMenus(메뉴별 매출, 가격 부재) 등 SalesSummary 핵심값 산출 불가 → step 의 '억지 집계 금지·가짜 값 금지' 규칙에 따라 blocked. 전용 집계/매출 엔드포인트도 라이브 스펙에 없음. 엔드포인트는 owner Bearer 인증 필요(미인증 시 401)라 런타임 응답도 점주 자격증명 없이는 관측 불가. 서버가 payments 에 금액·일시 필드를 추가하거나 매출 집계 엔드포인트를 제공(또는 점주 자격증명으로 실제 응답 형태 확인)하면 재개 가능.",
       "blocked_at": "2026-06-23T16:56:21+0900"
     },
