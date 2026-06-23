@@ -30,12 +30,11 @@ android {
 }
 
 dependencies {
-    implementation(platform(libs.retrofit.bom))
-    implementation(platform(libs.okhttp.bom))
     implementation(libs.sandwich)
-    implementation(libs.okhttp)
-    implementation(libs.okhttp.logging.interceptor)
     implementation(libs.kotlinx.serialization.json)
+    implementation(libs.okhttp.logging.interceptor)
+    implementation(libs.retrofit)
+    implementation(libs.retrofit.kotlin.serialization)
 
     // json parsing
 
