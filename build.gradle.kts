@@ -10,4 +10,5 @@ plugins {
     alias(libs.plugins.compose.compiler) apply false
     alias(libs.plugins.hilt.plugin) apply false
     alias(libs.plugins.androidx.room) apply false
+    alias(libs.plugins.google.services) apply false
 }

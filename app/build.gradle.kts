@@ -5,6 +5,7 @@ plugins {
     alias(libs.plugins.compose.compiler)
     alias(libs.plugins.hilt.plugin)
     alias(libs.plugins.ksp)
+    alias(libs.plugins.google.services)
 }
 
 val localProperties = Properties().apply {
@@ -60,9 +61,20 @@ android {
     }
 }
 
+// litertlm-android는 더 최신 Kotlin(stdlib/reflect 2.2.x)을 transitive로 끌어온다.
+// Hilt 메타데이터 리더(≤2.1.0)·프로젝트 Kotlin(2.0.21)과 충돌하므로 프로젝트 버전으로 고정한다.
+configurations.all {
+    resolutionStrategy {
+        val kotlinVersion = libs.versions.kotlin.get()
+        force("org.jetbrains.kotlin:kotlin-stdlib:$kotlinVersion")
+        force("org.jetbrains.kotlin:kotlin-reflect:$kotlinVersion")
+    }
+}
+
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.core.ktx)
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -74,6 +86,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kakao.user)
     implementation(libs.kakao.map)
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.messaging)
     implementation(libs.hilt.android)
     implementation(libs.retrofit)
     implementation(libs.retrofit.converter.moshi)
@@ -82,10 +96,13 @@ dependencies {
     implementation(libs.moshi)
     implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.security.crypto)
+    implementation(libs.room.runtime)
+    implementation(libs.room.ktx)
     implementation(libs.coil.compose)
-    implementation(libs.mediapipe.tasks.genai)
+    implementation(libs.litertlm.android)
     ksp(libs.hilt.compiler)
     ksp(libs.moshi.kotlin.codegen)
+    ksp(libs.room.compiler)
     testImplementation(libs.junit)
     testImplementation(libs.mockk)
     testImplementation(libs.turbine)
@@ -93,6 +110,11 @@ dependencies {
     testImplementation(libs.okhttp.mockwebserver)
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
+    androidTestImplementation(libs.androidx.test.core)
+    androidTestImplementation(libs.androidx.test.ext.junit)
+    androidTestImplementation(libs.androidx.test.runner)
+    androidTestImplementation(libs.room.testing)
+    androidTestImplementation(libs.kotlinx.coroutines.test)
     debugImplementation(libs.androidx.compose.ui.tooling)
     debugImplementation(libs.androidx.compose.ui.test.manifest)
 }
