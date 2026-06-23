@@ -26,7 +26,7 @@ fun String.toBuildConfigLiteral(): String =
 
 android {
     namespace = "com.cafeminsu"
-    compileSdk = 35
+    compileSdk = 36
 
     defaultConfig {
         applicationId = "com.cafeminsu"
