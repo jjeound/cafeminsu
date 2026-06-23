@@ -1,13 +1,13 @@
 package com.cafeminsu.core.data.repository.reward
 
 import com.cafeminsu.core.model.reward.Gifticon
-import com.cafeminsu.core.model.reward.StampCard
+import com.cafeminsu.core.model.reward.Stamp
 import kotlinx.coroutines.flow.Flow
 
 interface RewardRepository {
-    fun observeStampCard(): Flow<StampCard>
+    fun observeStamps(): Flow<List<Stamp>>
 
-    fun grantStampsForPaidOrder(orderId: String): Flow<StampCard>
+    fun observeStamp(storeId: Long): Flow<Stamp>
 
     fun observeGifticons(): Flow<List<Gifticon>>
 

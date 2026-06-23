@@ -1,15 +1,15 @@
 package com.cafeminsu.core.data.repository.menu
 
-import com.cafeminsu.core.model.menu.MenuItem
+import com.cafeminsu.core.model.menu.MenuSummary
 import com.cafeminsu.core.model.menu.NewMenuDraft
 import kotlinx.coroutines.flow.Flow
 
 interface OwnerMenuRepository {
-    fun observeManagedMenus(categoryId: String? = null): Flow<List<MenuItem>>
+    fun observeManagedMenus(categoryId: String? = null): Flow<List<MenuSummary>>
 
-    fun setSoldOut(menuItemId: String, soldOut: Boolean): Flow<MenuItem>
+    fun setSoldOut(menuItemId: Long, soldOut: Boolean): Flow<MenuSummary>
 
-    fun setVisible(menuItemId: String, visible: Boolean): Flow<MenuItem>
+    fun setVisible(menuItemId: Long, visible: Boolean): Flow<MenuSummary>
 
-    fun addMenu(draft: NewMenuDraft): Flow<MenuItem>
+    fun addMenu(draft: NewMenuDraft): Flow<MenuSummary>
 }

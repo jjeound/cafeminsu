@@ -1,8 +1,9 @@
 package com.cafeminsu.core.model.menu
 
 data class MenuOption(
-    val id: String,
+    val id: Long,
+    val groupName: String,
     val name: String,
-    val extraPrice: Int,
-    val isAvailable: Boolean,
+    val additionalPrice: Int,
+    val isDefault: Boolean,
 )

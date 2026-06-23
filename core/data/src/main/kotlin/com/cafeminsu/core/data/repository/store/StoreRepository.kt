@@ -1,14 +1,13 @@
 package com.cafeminsu.core.data.repository.store
 
-import com.cafeminsu.core.model.store.Store
+import com.cafeminsu.core.model.store.StoreDetail
+import com.cafeminsu.core.model.store.StoreSummary
 import kotlinx.coroutines.flow.Flow
 
 interface StoreRepository {
-    fun observeNearbyStores(query: String? = null): Flow<List<Store>>
+    fun observeStores(query: String, page: Int): Flow<List<StoreSummary>>
 
-    fun getStore(storeId: String): Flow<Store>
+    fun getStore(storeId: Long): Flow<StoreDetail>
 
-    fun selectStore(storeId: String): Flow<Unit>
-
-    fun observeSelectedStore(): Flow<Store?>
+    fun refreshStores(query: String, page: Int): Flow<Unit>
 }
