@@ -39,7 +39,7 @@
       ],
       "started_at": "2026-06-24T00:20:46+0900",
       "summary": "마이 빠른메뉴 '알림설정' Toast(준비 중) 제거 → 실제 동작 화면 신설. Routes.NOTI_SETTINGS 추가, UserPreferencesDataStore 에 알림 카테고리 3종 boolean(주문상태 기본 on·혜택/이벤트 기본 on·마케팅 기본 off) observe/set 추가, NotificationSettingsUiState/ViewModel(@HiltViewModel, DataStore combine→StateFlow, onToggle 영속·낙관적) + NotificationSettingsScreen/Route(CafeTopBar '알림 설정', CafeCard 안 토글 3행 Material3 Switch 토큰색)를 신설하고 AppNavHost·MyRoute 콜백으로 배선. 토글은 로컬 설정 표시·영속까지이며 NotificationRepository·FCM 토큰/수신·서버 구독 게이팅은 불변(범위 밖). 테스트(RoutesTest·UserPreferencesDataStoreTest·NotificationSettingsUiStateTest·NotificationSettingsViewModelTest·NotificationSettingsScreenTest) 추가, AC(testDebugUnitTest/assembleDebug/compileDebugAndroidTestKotlin) 통과.",
-      "completed_at": "2026-06-24T00:35:00+0900"
+      "completed_at": "2026-06-24T00:26:47+0900"
     }
   ],
   "created_at": "2026-06-23T23:57:25+0900"
