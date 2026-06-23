@@ -13,12 +13,14 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardOptions
@@ -35,6 +37,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.key
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -43,6 +46,7 @@ import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.graphics.drawscope.Stroke
@@ -94,6 +98,15 @@ fun OwnerMenuAddRoute(
         onPriceChange = viewModel::onPriceChange,
         onDescriptionChange = viewModel::onDescriptionChange,
         onSaleToggle = viewModel::onSaleToggle,
+        optionActions = OwnerMenuOptionActions(
+            onAddGroup = viewModel::onAddOptionGroup,
+            onRemoveGroup = viewModel::onRemoveOptionGroup,
+            onGroupNameChange = viewModel::onOptionGroupNameChange,
+            onAddOption = viewModel::onAddOption,
+            onRemoveOption = viewModel::onRemoveOption,
+            onOptionNameChange = viewModel::onOptionNameChange,
+            onOptionPriceChange = viewModel::onOptionPriceChange,
+        ),
         onSubmit = viewModel::onSubmit,
         onBack = onBack,
         snackbarHostState = snackbarHostState,
@@ -110,6 +123,7 @@ fun OwnerMenuAddScreen(
     onPriceChange: (String) -> Unit,
     onDescriptionChange: (String) -> Unit,
     onSaleToggle: (Boolean) -> Unit,
+    optionActions: OwnerMenuOptionActions,
     onSubmit: () -> Unit,
     onBack: () -> Unit,
     modifier: Modifier = Modifier,
@@ -127,6 +141,8 @@ fun OwnerMenuAddScreen(
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = colors.canvas,
+        // 부모 AppNavHost Scaffold 가 이미 시스템바 인셋을 적용하므로 여기서 중복 적용하지 않는다.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
         snackbarHost = {
             SnackbarHost(hostState = snackbarHostState) { data ->
                 Snackbar(
@@ -204,6 +220,11 @@ fun OwnerMenuAddScreen(
                         minHeight = spacing.space18 + spacing.space8,
                     )
                 }
+
+                OwnerMenuOptionSection(
+                    optionGroups = uiState.optionGroups,
+                    actions = optionActions,
+                )
 
                 SaleStatusCard(
                     onSale = uiState.onSale,
@@ -378,11 +399,13 @@ private fun OwnerMenuAddField(
     singleLine: Boolean = true,
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     minHeight: Dp? = null,
+    containerColor: Color? = null,
     leading: (@Composable () -> Unit)? = null,
 ) {
     val colors = CafeTheme.colors
     val spacing = CafeTheme.spacing
     val resolvedMinHeight = minHeight ?: (spacing.space10 + spacing.space3)
+    val resolvedContainer = containerColor ?: colors.surfaceCard
     val verticalAlignment = if (singleLine) Alignment.CenterVertically else Alignment.Top
 
     BasicTextField(
@@ -391,7 +414,7 @@ private fun OwnerMenuAddField(
         modifier = modifier
             .fillMaxWidth()
             .heightIn(min = resolvedMinHeight)
-            .background(color = colors.surfaceCard, shape = CafeTheme.shapes.radiusMd),
+            .background(color = resolvedContainer, shape = CafeTheme.shapes.radiusMd),
         singleLine = singleLine,
         textStyle = CafeTheme.typography.bodyL.copy(color = colors.ink),
         cursorBrush = SolidColor(colors.primary),
@@ -494,6 +517,224 @@ private fun OwnerMenuAddBottomBar(
             onClick = onSubmit,
             modifier = Modifier.fillMaxWidth(),
             enabled = enabled,
+        )
+    }
+}
+
+/** 옵션 섹션 콜백 묶음. 화면 시그니처를 간결하게 유지하기 위해 한 데이터로 전달한다. */
+data class OwnerMenuOptionActions(
+    val onAddGroup: () -> Unit,
+    val onRemoveGroup: (String) -> Unit,
+    val onGroupNameChange: (String, String) -> Unit,
+    val onAddOption: (String) -> Unit,
+    val onRemoveOption: (String, String) -> Unit,
+    val onOptionNameChange: (String, String, String) -> Unit,
+    val onOptionPriceChange: (String, String, String) -> Unit,
+)
+
+@Composable
+private fun OwnerMenuOptionSection(
+    optionGroups: List<OwnerMenuOptionGroupInput>,
+    actions: OwnerMenuOptionActions,
+) {
+    val colors = CafeTheme.colors
+    val spacing = CafeTheme.spacing
+
+    Column(verticalArrangement = Arrangement.spacedBy(spacing.space3)) {
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            Text(
+                text = "옵션",
+                style = CafeTheme.typography.body.copy(fontWeight = FontWeight.Medium),
+                color = colors.ink,
+            )
+            Spacer(modifier = Modifier.size(spacing.space2))
+            Text(
+                text = "선택사항",
+                style = CafeTheme.typography.caption,
+                color = colors.muted,
+            )
+        }
+
+        optionGroups.forEach { group ->
+            key(group.id) {
+                OwnerMenuOptionGroupCard(group = group, actions = actions)
+            }
+        }
+
+        AddRowButton(
+            text = "+ 옵션 그룹 추가",
+            dashed = true,
+            onClick = actions.onAddGroup,
+        )
+    }
+}
+
+@Composable
+private fun OwnerMenuOptionGroupCard(
+    group: OwnerMenuOptionGroupInput,
+    actions: OwnerMenuOptionActions,
+) {
+    val colors = CafeTheme.colors
+    val spacing = CafeTheme.spacing
+
+    Column(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(CafeTheme.shapes.radiusLg)
+            .background(colors.surfaceCard)
+            .padding(spacing.space4),
+        verticalArrangement = Arrangement.spacedBy(spacing.space3),
+    ) {
+        Row(
+            horizontalArrangement = Arrangement.spacedBy(spacing.space2),
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(modifier = Modifier.weight(1f)) {
+                OwnerMenuAddField(
+                    value = group.name,
+                    onValueChange = { actions.onGroupNameChange(group.id, it) },
+                    placeholder = "옵션 그룹 이름 (예: 사이즈)",
+                    containerColor = colors.canvas,
+                )
+            }
+            DeleteIconButton(
+                onClick = { actions.onRemoveGroup(group.id) },
+                contentDescription = "옵션 그룹 삭제",
+            )
+        }
+
+        group.options.forEach { option ->
+            key(option.id) {
+                OwnerMenuOptionRow(
+                    groupId = group.id,
+                    option = option,
+                    actions = actions,
+                )
+            }
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(1.dp)
+                .background(colors.hairline),
+        )
+
+        AddRowButton(
+            text = "+ 옵션 추가",
+            dashed = false,
+            onClick = { actions.onAddOption(group.id) },
+        )
+    }
+}
+
+@Composable
+private fun OwnerMenuOptionRow(
+    groupId: String,
+    option: OwnerMenuOptionInput,
+    actions: OwnerMenuOptionActions,
+) {
+    val colors = CafeTheme.colors
+    val spacing = CafeTheme.spacing
+
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.spacedBy(spacing.space2),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Box(modifier = Modifier.weight(1f)) {
+            OwnerMenuAddField(
+                value = option.name,
+                onValueChange = { actions.onOptionNameChange(groupId, option.id, it) },
+                placeholder = "옵션 이름",
+                containerColor = colors.canvas,
+            )
+        }
+        Box(modifier = Modifier.width(spacing.space18 + spacing.space10 + spacing.space4)) {
+            OwnerMenuAddField(
+                value = option.priceInput,
+                onValueChange = { actions.onOptionPriceChange(groupId, option.id, it) },
+                placeholder = "0",
+                keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Number),
+                containerColor = colors.canvas,
+                leading = {
+                    Text(
+                        text = "₩",
+                        style = CafeTheme.typography.bodyL,
+                        color = colors.muted,
+                    )
+                },
+            )
+        }
+        DeleteIconButton(
+            onClick = { actions.onRemoveOption(groupId, option.id) },
+            contentDescription = "옵션 삭제",
+        )
+    }
+}
+
+@Composable
+private fun DeleteIconButton(
+    onClick: () -> Unit,
+    contentDescription: String,
+) {
+    val colors = CafeTheme.colors
+    val spacing = CafeTheme.spacing
+
+    Box(
+        modifier = Modifier
+            .size(spacing.space8)
+            .clip(CafeTheme.shapes.radiusSm)
+            .clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Icon(
+            painter = painterResource(R.drawable.ic_close),
+            contentDescription = contentDescription,
+            tint = colors.muted,
+            modifier = Modifier.size(spacing.space5),
+        )
+    }
+}
+
+@Composable
+private fun AddRowButton(
+    text: String,
+    dashed: Boolean,
+    onClick: () -> Unit,
+) {
+    val colors = CafeTheme.colors
+    val spacing = CafeTheme.spacing
+    val cornerRadius = spacing.space3
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = spacing.space10 + spacing.space2)
+            .clip(CafeTheme.shapes.radiusMd)
+            .then(
+                if (dashed) {
+                    Modifier.drawBehind {
+                        drawRoundRect(
+                            color = colors.hairline,
+                            cornerRadius = CornerRadius(cornerRadius.toPx()),
+                            style = Stroke(
+                                width = 1.dp.toPx(),
+                                pathEffect = PathEffect.dashPathEffect(floatArrayOf(DashOn, DashOff), 0f),
+                            ),
+                        )
+                    }
+                } else {
+                    Modifier
+                },
+            )
+            .clickable(role = Role.Button, onClick = onClick),
+        contentAlignment = Alignment.Center,
+    ) {
+        Text(
+            text = text,
+            style = CafeTheme.typography.body.copy(fontWeight = FontWeight.Medium),
+            color = colors.primary,
         )
     }
 }

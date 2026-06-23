@@ -4,9 +4,12 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
+import com.cafeminsu.domain.model.MenuOption
+import com.cafeminsu.domain.model.MenuOptionGroup
 import com.cafeminsu.domain.model.NewMenuDraft
 import com.cafeminsu.domain.repository.OwnerMenuRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import java.util.UUID
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableSharedFlow
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -52,6 +55,69 @@ class OwnerMenuAddViewModel @Inject constructor(
         _uiState.update { it.copy(onSale = onSale) }
     }
 
+    fun onAddOptionGroup() {
+        val newGroup = OwnerMenuOptionGroupInput(
+            id = newId(),
+            options = listOf(OwnerMenuOptionInput(id = newId())),
+        )
+        _uiState.update { it.copy(optionGroups = it.optionGroups + newGroup) }
+    }
+
+    fun onRemoveOptionGroup(groupId: String) {
+        _uiState.update { it.copy(optionGroups = it.optionGroups.filterNot { group -> group.id == groupId }) }
+    }
+
+    fun onOptionGroupNameChange(groupId: String, value: String) {
+        updateGroup(groupId) { it.copy(name = value.take(OwnerMenuAddUiState.MaxNameLength)) }
+    }
+
+    fun onAddOption(groupId: String) {
+        updateGroup(groupId) { it.copy(options = it.options + OwnerMenuOptionInput(id = newId())) }
+    }
+
+    fun onRemoveOption(groupId: String, optionId: String) {
+        updateGroup(groupId) { group ->
+            group.copy(options = group.options.filterNot { it.id == optionId })
+        }
+    }
+
+    fun onOptionNameChange(groupId: String, optionId: String, value: String) {
+        updateOption(groupId, optionId) { it.copy(name = value.take(OwnerMenuAddUiState.MaxNameLength)) }
+    }
+
+    fun onOptionPriceChange(groupId: String, optionId: String, value: String) {
+        val digits = value.filter(Char::isDigit).take(OwnerMenuAddUiState.MaxPriceLength)
+        updateOption(groupId, optionId) { it.copy(priceInput = digits) }
+    }
+
+    private fun updateGroup(
+        groupId: String,
+        transform: (OwnerMenuOptionGroupInput) -> OwnerMenuOptionGroupInput,
+    ) {
+        _uiState.update { state ->
+            state.copy(
+                optionGroups = state.optionGroups.map { group ->
+                    if (group.id == groupId) transform(group) else group
+                },
+                errorMessage = null,
+            )
+        }
+    }
+
+    private fun updateOption(
+        groupId: String,
+        optionId: String,
+        transform: (OwnerMenuOptionInput) -> OwnerMenuOptionInput,
+    ) {
+        updateGroup(groupId) { group ->
+            group.copy(
+                options = group.options.map { option ->
+                    if (option.id == optionId) transform(option) else option
+                },
+            )
+        }
+    }
+
     fun onSubmit() {
         val state = _uiState.value
         if (!state.canSubmit) return
@@ -65,6 +131,7 @@ class OwnerMenuAddViewModel @Inject constructor(
                 description = state.description.trim(),
                 imageUrl = state.imageUri,
                 isSoldOut = !state.onSale,
+                options = state.optionGroups.toOptionGroups(),
             )
 
             when (val result = ownerMenuRepository.addMenu(draft)) {
@@ -80,6 +147,27 @@ class OwnerMenuAddViewModel @Inject constructor(
             }
         }
     }
+
+    private fun List<OwnerMenuOptionGroupInput>.toOptionGroups(): List<MenuOptionGroup> =
+        map { group ->
+            MenuOptionGroup(
+                id = group.id,
+                name = group.trimmedName,
+                required = false,
+                minSelect = 0,
+                maxSelect = group.options.size,
+                options = group.options.map { option ->
+                    MenuOption(
+                        id = option.id,
+                        name = option.trimmedName,
+                        extraPrice = option.extraPrice,
+                        isAvailable = true,
+                    )
+                },
+            )
+        }
+
+    private fun newId(): String = UUID.randomUUID().toString()
 
     private fun DomainError.toAddMenuMessage(): String =
         when (this) {
