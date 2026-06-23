@@ -30,7 +30,6 @@ android {
 }
 
 dependencies {
-    implementation(projects.core.model)
     implementation(libs.sandwich)
     implementation(libs.kotlinx.serialization.json)
     implementation(libs.okhttp.logging.interceptor)

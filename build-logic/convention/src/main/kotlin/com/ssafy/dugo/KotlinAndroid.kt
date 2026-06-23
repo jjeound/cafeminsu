@@ -15,7 +15,7 @@ internal fun Project.configureKotlinAndroid(
   commonExtension.apply {
     compileSdk = 36
 
-    defaultConfig.minSdk = 24
+    defaultConfig.minSdk = 26
 
     compileOptions.apply {
       sourceCompatibility = JavaVersion.VERSION_17
@@ -39,7 +39,6 @@ internal fun Project.configureKotlinAndroid(
       freeCompilerArgs.set(
         freeCompilerArgs.getOrElse(emptyList()) + listOf(
           "-Xexplicit-backing-fields",
-          "-Xcontext-receivers",
           "-Xopt-in=kotlin.RequiresOptIn",
           // Enable experimental coroutines APIs, including Flow
           "-Xopt-in=kotlinx.coroutines.ExperimentalCoroutinesApi",

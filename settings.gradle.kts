@@ -46,7 +46,9 @@ pluginManagement {
                 releasesOnly()
             }
         }
-
+        maven {
+            url = uri("https://devrepo.kakao.com/nexus/content/groups/public/")
+        }
         // Maven Central 저장소
         // 여기서는 플러그인 중 com.google.dagger 그룹만 허용
         mavenCentral {
@@ -105,6 +107,9 @@ dependencyResolutionManagement {
                 // 예: com.google.android.gms:play-services-maps
                 // 예: com.google.android.gms:play-services-location
                 includeGroupByRegex("com\\.google\\.gms(\\..*|)")
+
+                // LiteRT-LM
+                includeGroupByRegex("com\\.google\\.ai\\.edge(\\..*|)")
             }
 
             // release 버전만 사용
@@ -113,6 +118,9 @@ dependencyResolutionManagement {
             }
         }
 
+        maven {
+            url = uri("https://devrepo.kakao.com/nexus/content/groups/public/")
+        }
         // Maven Central 저장소
         // Kotlin, Coroutine, Retrofit, OkHttp, Hilt 등 대부분의 일반 라이브러리가 여기서 내려옴
         mavenCentral {
