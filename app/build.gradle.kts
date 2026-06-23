@@ -79,6 +79,15 @@ configurations.all {
     }
 }
 
+// Opt-in 라이브 스모크 테스트(`com.cafeminsu.live.*`)용 시스템 프로퍼티를 forked 테스트 JVM 으로 전달한다.
+// Gradle 은 기본적으로 CLI `-D` 를 테스트 JVM 에 넘기지 않으므로, 게이트 프로퍼티만 surgical 하게 전달한다.
+// (미설정 시 라이브 테스트는 전부 skip — 기본 빌드 동작 불변.)
+tasks.withType<Test>().configureEach {
+    listOf("liveServer", "liveServer.baseUrl", "liveServer.token").forEach { key ->
+        System.getProperty(key)?.let { systemProperty(key, it) }
+    }
+}
+
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.core.ktx)

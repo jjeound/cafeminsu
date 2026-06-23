@@ -2,6 +2,7 @@ package com.cafeminsu.data.mapper
 
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
+import com.cafeminsu.data.remote.MenuCreateReq
 import com.cafeminsu.data.remote.MenuDetailRes
 import com.cafeminsu.data.remote.MenuListItemRes
 import com.cafeminsu.data.remote.MenuOptionRes
@@ -9,6 +10,7 @@ import com.cafeminsu.domain.model.MenuCategory
 import com.cafeminsu.domain.model.MenuItem
 import com.cafeminsu.domain.model.MenuOption
 import com.cafeminsu.domain.model.MenuOptionGroup
+import com.cafeminsu.domain.model.NewMenuDraft
 
 fun List<MenuListItemRes>.toMenuCategories(): List<MenuCategory> =
     mapNotNull { it.category.normalizedCategory() }
@@ -76,6 +78,31 @@ private fun MenuListItemRes.toMenuItem(): AppResult<MenuItem> {
         ),
     )
 }
+
+// 점주 메뉴 생성 요청. soldOut 은 서버 isAvailable 의 반전이다(품절=판매불가).
+fun NewMenuDraft.toMenuCreateReq(): MenuCreateReq =
+    MenuCreateReq(
+        name = name,
+        description = description,
+        price = basePrice,
+        category = categoryId,
+        imageUrl = imageUrl,
+        isAvailable = !isSoldOut,
+    )
+
+// 생성 응답의 서버 menuId 를 입혀 도메인 MenuItem 으로 확정한다(나머지 필드는 입력 draft 보존).
+fun NewMenuDraft.toMenuItem(serverMenuId: Long): MenuItem =
+    MenuItem(
+        id = serverMenuId.toString(),
+        categoryId = categoryId,
+        name = name,
+        description = description,
+        basePrice = basePrice,
+        imageUrl = imageUrl,
+        isSoldOut = isSoldOut,
+        options = options,
+        isVisible = true,
+    )
 
 private fun List<MenuOptionRes>.toOptionGroups(): List<MenuOptionGroup> =
     groupBy { it.group.normalizedOptionGroup() }
