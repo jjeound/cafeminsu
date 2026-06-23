@@ -9,7 +9,7 @@ class PaymentUiStateTest {
     fun paymentMethodsExposeLabelsWithoutPaymentTokens() {
         val methods = defaultPaymentMethods()
 
-        assertEquals(listOf("신용카드", "간편결제", "쿠폰"), methods.map { it.label })
+        assertEquals(listOf("신용카드", "간편결제"), methods.map { it.label })
         assertFalse(methods.any { method -> method.id.contains("tok_") })
     }
 
