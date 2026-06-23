@@ -1,0 +1,33 @@
+{
+  "project": "CafeMinsu",
+  "phase": "bugfix-ui",
+  "steps": [
+    {
+      "step": 0,
+      "name": "bottomnav-insets",
+      "status": "pending"
+    },
+    {
+      "step": 1,
+      "name": "cart-count-badge",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "gift-screen-fixes",
+      "status": "pending",
+      "images": [
+        "docs/screens/MY - 03 (선물하기).png"
+      ]
+    },
+    {
+      "step": 3,
+      "name": "notification-settings",
+      "status": "pending",
+      "images": [
+        "docs/screens/알림.png",
+        "docs/screens/MY - 01.png"
+      ]
+    }
+  ]
+}
