@@ -27,7 +27,7 @@
       ],
       "started_at": "2026-06-24T00:06:08+0900",
       "summary": "선물하기 GiftChannelCard 의 고정 height(64dp)를 heightIn(min = space18=72dp)로 바꿔 제목(bodyL)+부제(caption) 2줄 텍스트 클립 제거; Row 두 카드는 동일 min 높이로 일관 표시. GiftScreenTest 에 두 카드 제목/부제(카카오톡·친구 선택·문자 (SMS)·연락처 입력) 표시 검증 추가. 금액 표시·전송 로직·GiftUiState 불변, AC(testDebugUnitTest/assembleDebug/compileDebugAndroidTestKotlin) 통과.",
-      "completed_at": "2026-06-24T00:10:00+0900"
+      "completed_at": "2026-06-24T00:20:46+0900"
     },
     {
       "step": 3,
