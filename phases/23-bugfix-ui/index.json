@@ -16,7 +16,7 @@
       "status": "completed",
       "started_at": "2026-06-23T23:59:34+0900",
       "summary": "MenuViewModel 에 CartRepository 를 읽기전용 주입해 cartItemCount: StateFlow<Int>(담긴 총수량 합산, 실패·예외 시 0) 노출; MenuRoute→MenuScreen→CartFloatingButton 으로 배선해 수량>0 일 때만 카트 FAB 우상단에 토큰 기반 원형 뱃지(99 초과 \"99+\", surfaceDark/onDark, contentDescription \"장바구니 N개\")를 표시. 기존 uiState·MenuUiState 불변, AC(testDebugUnitTest/assembleDebug/compileDebugAndroidTestKotlin) 통과.",
-      "completed_at": "2026-06-24T00:18:00+0900"
+      "completed_at": "2026-06-24T00:06:08+0900"
     },
     {
       "step": 2,
