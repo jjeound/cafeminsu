@@ -8,6 +8,7 @@ import com.cafeminsu.data.repository.MockNotificationRepository
 import com.cafeminsu.data.repository.MockOrderRepository
 import com.cafeminsu.data.repository.MockOwnerMenuRepository
 import com.cafeminsu.data.repository.MockOwnerOrderRepository
+import com.cafeminsu.data.repository.MockRecommendationRepository
 import com.cafeminsu.data.repository.MockFcmTokenRepository
 import com.cafeminsu.data.repository.MockSessionRepository
 import com.cafeminsu.data.repository.MockStoreRepository
@@ -16,6 +17,7 @@ import com.cafeminsu.data.repository.RealGiftRepository
 import com.cafeminsu.data.repository.RealNotificationRepository
 import com.cafeminsu.data.repository.RealOwnerMenuRepository
 import com.cafeminsu.data.repository.RealOwnerOrderRepository
+import com.cafeminsu.data.repository.RealRecommendationRepository
 import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.CouponRepository
 import com.cafeminsu.domain.repository.FcmTokenRepository
@@ -26,6 +28,7 @@ import com.cafeminsu.domain.repository.OrderRepository
 import com.cafeminsu.domain.repository.OwnerMenuRepository
 import com.cafeminsu.domain.repository.OwnerOrderRepository
 import com.cafeminsu.domain.repository.PaymentRepository
+import com.cafeminsu.domain.repository.RecommendationRepository
 import com.cafeminsu.domain.repository.RewardRepository
 import com.cafeminsu.domain.repository.SessionRepository
 import com.cafeminsu.domain.repository.StoreRepository
@@ -233,6 +236,47 @@ class RepositoryModuleTest {
         )
 
         assertEquals(realRepository, selected)
+    }
+
+    @Test
+    fun blankBaseUrlSelectsMockRecommendationRepositoryFallback() {
+        val realRepository = FakeRecommendationRepository()
+        val mockRepository = FakeRecommendationRepository()
+
+        val selected = selectRecommendationRepository(
+            baseUrl = "",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(mockRepository, selected)
+    }
+
+    @Test
+    fun configuredBaseUrlSelectsRealRecommendationRepository() {
+        val realRepository = FakeRecommendationRepository()
+        val mockRepository = FakeRecommendationRepository()
+
+        val selected = selectRecommendationRepository(
+            baseUrl = "https://cafeminsu.example/",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(realRepository, selected)
+    }
+
+    @Test
+    fun repositoryModuleProvidesRecommendationRepositoryWithRealAndMockProviders() {
+        val method = RepositoryModule.Companion::class.java.getDeclaredMethod(
+            "provideRecommendationRepository",
+            javax.inject.Provider::class.java,
+            javax.inject.Provider::class.java,
+        )
+
+        assertEquals(RecommendationRepository::class.java, method.returnType)
+        assertEquals(RealRecommendationRepository::class.java, method.genericParameterTypes.first().providerArgument())
+        assertEquals(MockRecommendationRepository::class.java, method.genericParameterTypes.last().providerArgument())
     }
 
     @Test
@@ -543,6 +587,12 @@ private class FakeRewardRepository : RewardRepository {
         id: String,
     ): com.cafeminsu.core.AppResult<com.cafeminsu.domain.model.Gifticon> =
         com.cafeminsu.core.AppResult.Failure(com.cafeminsu.core.DomainError.NotFound)
+}
+
+private class FakeRecommendationRepository : RecommendationRepository {
+    override fun observeTodayRecommendation():
+        kotlinx.coroutines.flow.Flow<com.cafeminsu.core.AppResult<com.cafeminsu.domain.model.MenuItem?>> =
+        kotlinx.coroutines.flow.flowOf(com.cafeminsu.core.AppResult.Success(null))
 }
 
 private class FakeGiftRepository : GiftRepository {

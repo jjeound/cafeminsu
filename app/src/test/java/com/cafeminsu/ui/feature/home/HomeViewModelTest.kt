@@ -17,6 +17,7 @@ import com.cafeminsu.domain.model.StampCard
 import com.cafeminsu.domain.model.UserProfile
 import com.cafeminsu.domain.repository.OrderRepository
 import com.cafeminsu.domain.repository.MenuRepository
+import com.cafeminsu.domain.repository.RecommendationRepository
 import com.cafeminsu.domain.repository.RewardRepository
 import com.cafeminsu.domain.repository.SessionRepository
 import kotlinx.coroutines.Dispatchers
@@ -76,6 +77,7 @@ class HomeViewModelTest {
                     ),
                 ),
             ),
+            recommendationRepository = FakeRecommendationRepository(),
         )
 
         viewModel.uiState.test {
@@ -107,6 +109,7 @@ class HomeViewModelTest {
                 initialGifticons = AppResult.Success(emptyList()),
             ),
             sessionRepository = FakeSessionRepository(AuthState.Guest),
+            recommendationRepository = FakeRecommendationRepository(),
         )
 
         viewModel.uiState.test {
@@ -130,6 +133,7 @@ class HomeViewModelTest {
                 initialGifticons = AppResult.Success(emptyList()),
             ),
             sessionRepository = FakeSessionRepository(AuthState.Guest),
+            recommendationRepository = FakeRecommendationRepository(),
         )
 
         viewModel.uiState.test {
@@ -154,6 +158,7 @@ class HomeViewModelTest {
                 initialGifticons = AppResult.Success(emptyList()),
             ),
             sessionRepository = FakeSessionRepository(AuthState.Guest),
+            recommendationRepository = FakeRecommendationRepository(),
         )
 
         viewModel.uiState.test {
@@ -162,6 +167,63 @@ class HomeViewModelTest {
             val empty = state as HomeUiState.Empty
             assertEquals("안녕하세요, 민수님", empty.greeting)
             assertEquals("추천할 메뉴가 아직 없어요", empty.message)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun serverRecommendationOverridesMenuDerivedRecommendation() = runTest {
+        val serverRecommendation = sampleMenu(basePrice = 4_800).copy(
+            id = "menu-99",
+            name = "오늘의 추천 라떼",
+        )
+        val viewModel = HomeViewModel(
+            menuRepository = FakeMenuRepository(AppResult.Success(listOf(sampleMenu()))),
+            orderRepository = FakeOrderRepository(AppResult.Success(emptyList())),
+            rewardRepository = FakeRewardRepository(
+                initialStampCard = AppResult.Success(sampleStampCard()),
+                initialGifticons = AppResult.Success(emptyList()),
+            ),
+            sessionRepository = FakeSessionRepository(AuthState.Guest),
+            recommendationRepository = FakeRecommendationRepository(
+                AppResult.Success(serverRecommendation),
+            ),
+        )
+
+        viewModel.uiState.test {
+            val state = awaitSettledState()
+            assertTrue(state is HomeUiState.Content)
+            val content = state as HomeUiState.Content
+            assertEquals("menu-99", content.recommendedMenu.id)
+            assertEquals("오늘의 추천 라떼", content.recommendedMenu.name)
+            assertEquals(4_800, content.recommendedMenu.price)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun recommendationFailureFallsBackToMenuDerivedRecommendation() = runTest {
+        val viewModel = HomeViewModel(
+            menuRepository = FakeMenuRepository(AppResult.Success(listOf(sampleMenu()))),
+            orderRepository = FakeOrderRepository(AppResult.Success(emptyList())),
+            rewardRepository = FakeRewardRepository(
+                initialStampCard = AppResult.Success(sampleStampCard()),
+                initialGifticons = AppResult.Success(emptyList()),
+            ),
+            sessionRepository = FakeSessionRepository(AuthState.Guest),
+            recommendationRepository = FakeRecommendationRepository(
+                AppResult.Failure(DomainError.Network),
+            ),
+        )
+
+        viewModel.uiState.test {
+            val state = awaitSettledState()
+            assertTrue(state is HomeUiState.Content)
+            val content = state as HomeUiState.Content
+            // 추천 실패는 에러 화면이 아니라 메뉴 파생 추천으로 폴백한다.
+            assertEquals("menu-1", content.recommendedMenu.id)
 
             cancelAndIgnoreRemainingEvents()
         }
@@ -311,6 +373,14 @@ private class FakeRewardRepository(
 
     override suspend fun markGifticonUsed(id: String): AppResult<Gifticon> =
         AppResult.Failure(DomainError.NotFound)
+}
+
+private class FakeRecommendationRepository(
+    initialRecommendation: AppResult<MenuItem?> = AppResult.Success(null),
+) : RecommendationRepository {
+    private val recommendation = MutableStateFlow(initialRecommendation)
+
+    override fun observeTodayRecommendation(): Flow<AppResult<MenuItem?>> = recommendation
 }
 
 private class FakeSessionRepository(

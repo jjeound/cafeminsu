@@ -12,6 +12,7 @@ import com.cafeminsu.data.repository.MockOrderRepository
 import com.cafeminsu.data.repository.MockOwnerMenuRepository
 import com.cafeminsu.data.repository.MockOwnerOrderRepository
 import com.cafeminsu.data.repository.MockPaymentRepository
+import com.cafeminsu.data.repository.MockRecommendationRepository
 import com.cafeminsu.data.repository.MockRewardRepository
 import com.cafeminsu.data.repository.MockSalesRepository
 import com.cafeminsu.data.repository.MockSessionRepository
@@ -24,6 +25,7 @@ import com.cafeminsu.data.repository.RealOrderRepository
 import com.cafeminsu.data.repository.RealOwnerMenuRepository
 import com.cafeminsu.data.repository.RealOwnerOrderRepository
 import com.cafeminsu.data.repository.RealPaymentRepository
+import com.cafeminsu.data.repository.RealRecommendationRepository
 import com.cafeminsu.data.repository.RealRewardRepository
 import com.cafeminsu.data.repository.RealSessionRepository
 import com.cafeminsu.data.repository.RealStoreRepository
@@ -37,6 +39,7 @@ import com.cafeminsu.domain.repository.OrderRepository
 import com.cafeminsu.domain.repository.OwnerMenuRepository
 import com.cafeminsu.domain.repository.OwnerOrderRepository
 import com.cafeminsu.domain.repository.PaymentRepository
+import com.cafeminsu.domain.repository.RecommendationRepository
 import com.cafeminsu.domain.repository.RewardRepository
 import com.cafeminsu.domain.repository.SalesRepository
 import com.cafeminsu.domain.repository.SessionRepository
@@ -167,6 +170,18 @@ abstract class RepositoryModule {
 
         @Provides
         @Singleton
+        fun provideRecommendationRepository(
+            realRepository: Provider<RealRecommendationRepository>,
+            mockRepository: Provider<MockRecommendationRepository>,
+        ): RecommendationRepository =
+            selectRecommendationRepository(
+                baseUrl = com.cafeminsu.BuildConfig.BASE_URL,
+                realFactory = { realRepository.get() },
+                mockFactory = { mockRepository.get() },
+            )
+
+        @Provides
+        @Singleton
         fun provideRewardRepository(
             realRepository: Provider<RealRewardRepository>,
             mockRepository: Provider<MockRewardRepository>,
@@ -285,6 +300,17 @@ internal fun selectRewardRepository(
     realFactory: () -> RewardRepository,
     mockFactory: () -> RewardRepository,
 ): RewardRepository =
+    if (baseUrl.isNotBlank()) {
+        realFactory()
+    } else {
+        mockFactory()
+    }
+
+internal fun selectRecommendationRepository(
+    baseUrl: String,
+    realFactory: () -> RecommendationRepository,
+    mockFactory: () -> RecommendationRepository,
+): RecommendationRepository =
     if (baseUrl.isNotBlank()) {
         realFactory()
     } else {

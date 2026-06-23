@@ -12,6 +12,7 @@ import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.StampCard
 import com.cafeminsu.domain.repository.MenuRepository
 import com.cafeminsu.domain.repository.OrderRepository
+import com.cafeminsu.domain.repository.RecommendationRepository
 import com.cafeminsu.domain.repository.RewardRepository
 import com.cafeminsu.domain.repository.SessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -29,20 +30,27 @@ class HomeViewModel @Inject constructor(
     private val orderRepository: OrderRepository,
     private val rewardRepository: RewardRepository,
     private val sessionRepository: SessionRepository,
+    private val recommendationRepository: RecommendationRepository,
 ) : ViewModel() {
     val uiState: StateFlow<HomeUiState> = combine(
-        menuRepository.observeMenus(),
-        orderRepository.observeOrderHistory(),
-        rewardRepository.observeStampCard(),
-        rewardRepository.observeGifticons(),
-        sessionRepository.observeAuthState(),
-    ) { menuResult, orderResult, stampResult, gifticonResult, authState ->
+        combine(
+            menuRepository.observeMenus(),
+            orderRepository.observeOrderHistory(),
+            rewardRepository.observeStampCard(),
+            rewardRepository.observeGifticons(),
+            sessionRepository.observeAuthState(),
+        ) { menuResult, orderResult, stampResult, gifticonResult, authState ->
+            HomeInputs(menuResult, orderResult, stampResult, gifticonResult, authState)
+        },
+        recommendationRepository.observeTodayRecommendation(),
+    ) { inputs, recommendationResult ->
         mapHomeState(
-            menuResult = menuResult,
-            orderResult = orderResult,
-            stampResult = stampResult,
-            gifticonResult = gifticonResult,
-            authState = authState,
+            menuResult = inputs.menuResult,
+            orderResult = inputs.orderResult,
+            stampResult = inputs.stampResult,
+            gifticonResult = inputs.gifticonResult,
+            authState = inputs.authState,
+            recommendationResult = recommendationResult,
         )
     }.catch {
         emit(
@@ -72,6 +80,7 @@ class HomeViewModel @Inject constructor(
         stampResult: AppResult<StampCard>,
         gifticonResult: AppResult<List<Gifticon>>,
         authState: AuthState,
+        recommendationResult: AppResult<MenuItem?>,
     ): HomeUiState {
         val greeting = greetingFor(authState)
 
@@ -91,9 +100,12 @@ class HomeViewModel @Inject constructor(
             is AppResult.Success -> gifticonResult.data
             is AppResult.Failure -> return gifticonResult.error.toHomeError()
         }
-        val recommendedMenu = menus
-            .firstOrNull { !it.isSoldOut }
-            ?.toHomeRecommendedMenu()
+        // 서버 추천을 우선 사용하되, 실패/빈 결과/매장 미선택 시 기존 메뉴 파생으로 폴백한다.
+        val recommendedMenuItem = when (recommendationResult) {
+            is AppResult.Success -> recommendationResult.data ?: menus.firstOrNull { !it.isSoldOut }
+            is AppResult.Failure -> menus.firstOrNull { !it.isSoldOut }
+        }
+        val recommendedMenu = recommendedMenuItem?.toHomeRecommendedMenu()
 
         return if (recommendedMenu == null) {
             HomeUiState.Empty(
@@ -189,6 +201,14 @@ class HomeViewModel @Inject constructor(
             is DomainError.Validation,
             -> false
         }
+
+    private data class HomeInputs(
+        val menuResult: AppResult<List<MenuItem>>,
+        val orderResult: AppResult<List<Order>>,
+        val stampResult: AppResult<StampCard>,
+        val gifticonResult: AppResult<List<Gifticon>>,
+        val authState: AuthState,
+    )
 
     private companion object {
         const val StateStopTimeoutMillis = 5_000L

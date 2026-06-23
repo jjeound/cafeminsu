@@ -118,6 +118,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideRecommendationApi(retrofit: Retrofit): RecommendationApi =
+        retrofit.create(RecommendationApi::class.java)
+
+    @Provides
+    @Singleton
     fun provideFcmTokenApi(retrofit: Retrofit): FcmTokenApi =
         retrofit.create(FcmTokenApi::class.java)
 
