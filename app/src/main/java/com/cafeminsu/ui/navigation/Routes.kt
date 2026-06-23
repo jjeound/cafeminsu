@@ -23,6 +23,7 @@ object Routes {
     const val ORDER_OK = "$ORDER_OK_BASE/{$ORDER_OK_ORDER_ID}"
     const val ORDER_FAIL = "order_fail"
     const val MY = "my"
+    const val NOTI_SETTINGS = "noti_settings"
     const val COUPON = "coupon"
     const val GIFT = "gift"
     const val HISTORY = "history"

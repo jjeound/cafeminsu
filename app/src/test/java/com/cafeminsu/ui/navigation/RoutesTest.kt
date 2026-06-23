@@ -19,6 +19,7 @@ class RoutesTest {
         assertEquals("order_ok/{orderId}", Routes.ORDER_OK)
         assertEquals("order_fail", Routes.ORDER_FAIL)
         assertEquals("my", Routes.MY)
+        assertEquals("noti_settings", Routes.NOTI_SETTINGS)
         assertEquals("coupon", Routes.COUPON)
         assertEquals("gift", Routes.GIFT)
         assertEquals("history", Routes.HISTORY)

@@ -50,6 +50,7 @@ import com.cafeminsu.ui.feature.menu.MenuDetailRoute
 import com.cafeminsu.ui.feature.menu.MenuRoute
 import com.cafeminsu.ui.feature.my.MyRoute
 import com.cafeminsu.ui.feature.notification.NotiRoute
+import com.cafeminsu.ui.feature.notification.settings.NotificationSettingsRoute
 import com.cafeminsu.ui.feature.order.OrderFailureDialog
 import com.cafeminsu.ui.feature.order.OrderResultRoute
 import com.cafeminsu.ui.feature.owner.home.OwnerHomeRoute
@@ -319,7 +320,13 @@ fun AppNavHost(
                     onHistoryClick = { navController.navigate(Routes.HISTORY) },
                     onGiftClick = { navController.navigate(Routes.GIFT) },
                     onCouponClick = { navController.navigate(Routes.COUPON) },
+                    onNotificationSettingsClick = { navController.navigate(Routes.NOTI_SETTINGS) },
                     onLoginClick = { navController.navigate(Routes.LOGIN) },
+                )
+            }
+            composable(Routes.NOTI_SETTINGS) {
+                NotificationSettingsRoute(
+                    onBackClick = { navController.popBackStack() },
                 )
             }
             composable(Routes.COUPON) {
