@@ -38,7 +38,10 @@
     {
       "step": 4,
       "name": "recommendation-real",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-06-23T17:02:48+0900",
+      "summary": "RecommendationRepository(observeTodayRecommendation: Flow<AppResult<MenuItem?>>) 신설 + RealRecommendationRepository 실서버 연동(라이브 스펙 /v3/api-docs 확인: GET api/stores/{storeId}/recommendations/today 는 Bearer 인증 필요, TodayRecommendationRes{recommendations:[Item{menuId,quantity,optionIds}]}; 첫 추천 menuId 를 MenuApi.getMenu 로 메뉴 상세 보강해 MenuItem 으로 매핑, 매장 미선택/빈 추천 시 Success(null)) + RecommendationApi(인증 Retrofit) + MockRecommendationRepository(첫 비품절 MockData 메뉴) + BASE_URL 키게이트 DI(provide/selectRecommendationRepository). HomeViewModel 은 추천 Repository 주입·nested combine 으로 사용하되 실패/빈/미선택매장 시 기존 menus 파생 추천으로 폴백(HomeUiState/HomeScreen 공개형태·기존 카피 유지). 신규 단위테스트(Real 5/Mock 1/Api 1/도메인 2 + HomeViewModel 폴백·오버라이드 2 + RepositoryModule select/provide 3) 통과, AC(:app:testDebugUnitTest·assembleDebug·compileDebugAndroidTestKotlin) 전부 BUILD SUCCESSFUL.",
+      "completed_at": "2026-06-23T17:14:33+0900"
     }
   ],
   "created_at": "2026-06-23T16:01:02+0900"
