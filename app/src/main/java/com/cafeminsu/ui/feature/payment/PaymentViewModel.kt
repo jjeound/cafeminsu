@@ -5,10 +5,15 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
+import com.cafeminsu.domain.model.CartItem
+import com.cafeminsu.domain.model.Coupon
+import com.cafeminsu.domain.model.CouponStatus
+import com.cafeminsu.domain.model.CouponType
 import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.PaymentRequest
 import com.cafeminsu.domain.model.PaymentResult
 import com.cafeminsu.domain.model.PaymentStatus
+import com.cafeminsu.domain.repository.CouponRepository
 import com.cafeminsu.domain.repository.OrderRepository
 import com.cafeminsu.domain.repository.PaymentRepository
 import com.cafeminsu.domain.repository.RewardRepository
@@ -33,6 +38,7 @@ class PaymentViewModel @Inject constructor(
     private val paymentRepository: PaymentRepository,
     private val orderRepository: OrderRepository,
     private val rewardRepository: RewardRepository,
+    private val couponRepository: CouponRepository,
 ) : ViewModel() {
     private val orderId = savedStateHandle.get<String>(Routes.PAYMENT_ORDER_ID).orEmpty()
     private val _uiState = MutableStateFlow<PaymentUiState>(PaymentUiState.Loading)
@@ -40,12 +46,31 @@ class PaymentViewModel @Inject constructor(
     private var observeJob: Job? = null
     private var paymentInProgress = false
     private var idempotencyKey: String? = null
+    private var latestOrder: Order? = null
+    private var availableCoupons: List<Coupon> = emptyList()
+    private var selectedCouponId: String? = null
 
     val uiState: StateFlow<PaymentUiState> = _uiState.asStateFlow()
     val events: SharedFlow<PaymentEvent> = _events.asSharedFlow()
 
     init {
         observeOrder()
+        observeCoupons()
+    }
+
+    fun onToggleCoupon(couponId: String) {
+        if (paymentInProgress) {
+            return
+        }
+
+        val content = _uiState.value as? PaymentUiState.Content ?: return
+        if (content.coupons.none { coupon -> coupon.id == couponId }) {
+            return
+        }
+
+        // 이미 선택된 쿠폰을 다시 누르면 적용 해제한다.
+        selectedCouponId = if (selectedCouponId == couponId) null else couponId
+        _uiState.value = content.copy(selectedCouponId = selectedCouponId)
     }
 
     fun onSelectMethod(methodId: String) {
@@ -102,7 +127,7 @@ class PaymentViewModel @Inject constructor(
             }
             val request = PaymentRequest(
                 orderId = content.orderId,
-                amount = content.totalAmount,
+                amount = content.payableAmount,
                 paymentMethodToken = when (outcome) {
                     MockPaymentOutcome.Success -> method.token
                     MockPaymentOutcome.Failure -> MockFailureToken
@@ -145,8 +170,29 @@ class PaymentViewModel @Inject constructor(
                 .catch { emit(AppResult.Failure(DomainError.Unknown)) }
                 .collect { result ->
                     _uiState.value = when (result) {
-                        is AppResult.Success -> result.data.toPaymentContent()
+                        is AppResult.Success -> {
+                            latestOrder = result.data
+                            result.data.toPaymentContent()
+                        }
+
                         is AppResult.Failure -> result.error.toPaymentError()
+                    }
+                }
+        }
+    }
+
+    private fun observeCoupons() {
+        viewModelScope.launch {
+            couponRepository.observeCoupons()
+                .catch { /* 쿠폰은 선택 사항 — 실패해도 결제는 진행 가능 */ }
+                .collect { result ->
+                    availableCoupons = when (result) {
+                        is AppResult.Success -> result.data
+                        is AppResult.Failure -> emptyList()
+                    }
+                    val order = latestOrder ?: return@collect
+                    if (_uiState.value is PaymentUiState.Content) {
+                        _uiState.value = order.toPaymentContent()
                     }
                 }
         }
@@ -236,7 +282,19 @@ class PaymentViewModel @Inject constructor(
     private suspend fun approvePayment(approvedOrderId: String) {
         finishPayment(PaymentProgress.Approved)
         grantStampForApprovedOrder(approvedOrderId)
+        redeemSelectedCoupon()
         _events.emit(PaymentEvent.PaymentApproved(approvedOrderId))
+    }
+
+    private suspend fun redeemSelectedCoupon() {
+        val couponId = selectedCouponId ?: return
+        try {
+            couponRepository.useCoupon(couponId)
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Throwable) {
+            // 비치명적: 결제 승인이 우선이며 쿠폰 사용 처리는 추후 재시도로 정합화할 수 있다.
+        }
     }
 
     private suspend fun failPayment(
@@ -270,6 +328,13 @@ class PaymentViewModel @Inject constructor(
             ?.takeIf { selectedId -> methods.any { method -> method.id == selectedId } }
             ?: methods.first().id
 
+        val couponModels = availableCoupons
+            .filter { coupon -> coupon.status == CouponStatus.Available }
+            .map { coupon -> coupon.toPaymentCouponUiModel(items) }
+        // 더 이상 사용할 수 없는 쿠폰이 선택돼 있으면 선택을 해제한다.
+        val validCouponId = selectedCouponId?.takeIf { id -> couponModels.any { it.id == id } }
+        selectedCouponId = validCouponId
+
         return PaymentUiState.Content(
             orderId = id,
             orderNumber = orderNumber,
@@ -278,6 +343,21 @@ class PaymentViewModel @Inject constructor(
             methods = methods,
             selectedMethodId = selectedMethodId,
             paymentState = current?.paymentState ?: PaymentProgress.Idle,
+            coupons = couponModels,
+            selectedCouponId = validCouponId,
+        )
+    }
+
+    private fun Coupon.toPaymentCouponUiModel(items: List<CartItem>): PaymentCouponUiModel {
+        val discount = when (type) {
+            CouponType.Amount -> amount ?: 0
+            // 무료 음료 쿠폰은 가장 비싼 한 잔 가격만큼 할인한다.
+            CouponType.FreeDrink -> items.maxOfOrNull { item -> item.unitPrice } ?: 0
+        }
+        return PaymentCouponUiModel(
+            id = id,
+            label = title,
+            discountAmount = discount,
         )
     }
 

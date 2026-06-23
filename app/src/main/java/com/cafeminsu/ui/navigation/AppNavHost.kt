@@ -82,15 +82,7 @@ fun AppNavHost(
             if (shouldShowOwnerBottomBar(currentRoute)) {
                 OwnerBottomBar(
                     currentRoute = currentRoute,
-                    onTabSelected = { route ->
-                        navController.navigate(route) {
-                            popUpTo(Routes.OWNER_HOME) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
+                    onTabSelected = { route -> navController.navigateToOwnerTab(route) },
                 )
             } else if (shouldShowBottomBar(currentRoute)) {
                 CafeBottomBar(
@@ -175,7 +167,7 @@ fun AppNavHost(
             }
             composable(Routes.OWNER_HOME) {
                 OwnerHomeRoute(
-                    onViewAllOrders = { navController.navigate(Routes.OWNER_ORDERS) },
+                    onViewAllOrders = { navController.navigateToOwnerTab(Routes.OWNER_ORDERS) },
                 )
             }
             composable(Routes.OWNER_ORDERS) {
@@ -245,7 +237,7 @@ fun AppNavHost(
                 ),
             ) {
                 MenuDetailRoute(
-                    onAddedToCart = { navController.navigate(Routes.CART) },
+                    onAddedToCart = { navController.popBackStack() },
                     onBackClick = { navController.popBackStack() },
                 )
             }
@@ -449,6 +441,18 @@ private fun selectedOwnerTabRoute(currentRoute: String?): String? =
         Routes.OWNER_SALES -> Routes.OWNER_SALES
         else -> null
     }
+
+// 점주 최상위 탭 이동은 모두 동일한 옵션을 써야 saveState/restoreState 백스택이 일관된다.
+// (점주 홈 "전체 보기"처럼 평범한 navigate 를 섞으면 이후 탭 클릭이 무시되는 버그가 생긴다.)
+private fun NavHostController.navigateToOwnerTab(route: String) {
+    navigate(route) {
+        popUpTo(Routes.OWNER_HOME) {
+            saveState = true
+        }
+        launchSingleTop = true
+        restoreState = true
+    }
+}
 
 @Composable
 private fun CafeBottomBar(
