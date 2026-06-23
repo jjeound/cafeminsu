@@ -350,7 +350,7 @@ private fun GiftChannelCard(
 
     Surface(
         onClick = onClick,
-        modifier = modifier.height(spacing.space14 + spacing.space2),
+        modifier = modifier.heightIn(min = spacing.space18),
         shape = CafeTheme.shapes.radiusMd,
         color = containerColor,
         contentColor = colors.body,

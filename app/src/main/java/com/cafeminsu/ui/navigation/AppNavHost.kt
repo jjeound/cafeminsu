@@ -6,12 +6,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
@@ -47,6 +50,7 @@ import com.cafeminsu.ui.feature.menu.MenuDetailRoute
 import com.cafeminsu.ui.feature.menu.MenuRoute
 import com.cafeminsu.ui.feature.my.MyRoute
 import com.cafeminsu.ui.feature.notification.NotiRoute
+import com.cafeminsu.ui.feature.notification.settings.NotificationSettingsRoute
 import com.cafeminsu.ui.feature.order.OrderFailureDialog
 import com.cafeminsu.ui.feature.order.OrderResultRoute
 import com.cafeminsu.ui.feature.owner.home.OwnerHomeRoute
@@ -316,7 +320,13 @@ fun AppNavHost(
                     onHistoryClick = { navController.navigate(Routes.HISTORY) },
                     onGiftClick = { navController.navigate(Routes.GIFT) },
                     onCouponClick = { navController.navigate(Routes.COUPON) },
+                    onNotificationSettingsClick = { navController.navigate(Routes.NOTI_SETTINGS) },
                     onLoginClick = { navController.navigate(Routes.LOGIN) },
+                )
+            }
+            composable(Routes.NOTI_SETTINGS) {
+                NotificationSettingsRoute(
+                    onBackClick = { navController.popBackStack() },
                 )
             }
             composable(Routes.COUPON) {
@@ -467,8 +477,11 @@ private fun CafeBottomBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(spacing.space18)
+            // 배경을 먼저 칠해 인셋 영역(화면 맨 아래)까지 canvas 로 채운 뒤,
+            // windowInsetsPadding 으로 탭 콘텐츠를 시스템 내비게이션 바 위로 올린다.
             .background(colors.canvas)
+            .windowInsetsPadding(WindowInsets.navigationBars)
+            .height(spacing.space18)
             .drawWithContent {
                 drawContent()
                 drawLine(
@@ -529,8 +542,11 @@ private fun OwnerBottomBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(spacing.space18)
+            // 배경을 먼저 칠해 인셋 영역(화면 맨 아래)까지 canvas 로 채운 뒤,
+            // windowInsetsPadding 으로 탭 콘텐츠를 시스템 내비게이션 바 위로 올린다.
             .background(colors.canvas)
+            .windowInsetsPadding(WindowInsets.navigationBars)
+            .height(spacing.space18)
             .drawWithContent {
                 drawContent()
                 drawLine(

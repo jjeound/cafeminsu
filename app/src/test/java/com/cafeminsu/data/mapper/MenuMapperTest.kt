@@ -63,6 +63,9 @@ class MenuMapperTest {
         assertEquals(listOf("HOT", "ICE"), menu.options[0].options.map { it.name })
         assertEquals(listOf("1", "2"), menu.options[0].options.map { it.id })
         assertEquals(500, menu.options[1].options.single().extraPrice)
+        // 서버는 그룹별 선택 제약을 주지 않으므로 옵션 그룹은 단일 선택(maxSelect=1)이어야 한다.
+        assertEquals(1, menu.options[0].maxSelect)
+        assertEquals(1, menu.options[1].maxSelect)
     }
 
     @Test

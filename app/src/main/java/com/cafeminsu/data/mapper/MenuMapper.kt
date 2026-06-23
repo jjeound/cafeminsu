@@ -113,7 +113,9 @@ private fun List<MenuOptionRes>.toOptionGroups(): List<MenuOptionGroup> =
                 name = groupName,
                 required = false,
                 minSelect = 0,
-                maxSelect = mappedOptions.size.coerceAtLeast(MinOptionMaxSelect),
+                // 서버 응답에는 그룹별 선택 제약(maxSelect)이 없다. 옵션 그룹은 단일 선택(1개)으로
+                // 강제한다(Mock 데이터와 동일 정책). 다중 선택이 필요하면 서버 계약에 제약 필드가 추가돼야 한다.
+                maxSelect = SingleSelectMax,
                 options = mappedOptions,
             )
         }
@@ -139,5 +141,5 @@ private fun String?.normalize(): String =
 
 private const val SortOrderOffset = 1
 private const val DefaultPrice = 0
-private const val MinOptionMaxSelect = 1
+private const val SingleSelectMax = 1
 private const val DefaultOptionGroupName = "옵션"

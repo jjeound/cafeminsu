@@ -27,6 +27,9 @@ class UserPreferencesDataStoreTest {
         assertEquals(false, prefs.observeOnboardingShown().first())
         assertNull(prefs.observeLastCustomerTab().first())
         assertNull(prefs.readOwnerStoreOpenOrNull())
+        assertEquals(true, prefs.observeOrderStatusNotification().first())
+        assertEquals(true, prefs.observePromotionNotification().first())
+        assertEquals(false, prefs.observeMarketingNotification().first())
     }
 
     @Test
@@ -37,12 +40,18 @@ class UserPreferencesDataStoreTest {
         prefs.setOwnerStoreOpen(true)
         prefs.setOnboardingShown(true)
         prefs.setLastCustomerTab("home")
+        prefs.setOrderStatusNotification(false)
+        prefs.setPromotionNotification(false)
+        prefs.setMarketingNotification(true)
 
         assertEquals("""{"id":"7"}""", prefs.observeSelectedStore().first())
         assertEquals(true, prefs.observeOwnerStoreOpen().first())
         assertEquals(true, prefs.observeOnboardingShown().first())
         assertEquals("home", prefs.observeLastCustomerTab().first())
         assertEquals(true, prefs.readOwnerStoreOpenOrNull())
+        assertEquals(false, prefs.observeOrderStatusNotification().first())
+        assertEquals(false, prefs.observePromotionNotification().first())
+        assertEquals(true, prefs.observeMarketingNotification().first())
     }
 
     @Test

@@ -1,0 +1,47 @@
+{
+  "project": "CafeMinsu",
+  "phase": "bugfix-ui",
+  "steps": [
+    {
+      "step": 0,
+      "name": "bottomnav-insets",
+      "status": "completed",
+      "started_at": "2026-06-23T23:57:25+0900",
+      "summary": "CafeBottomBar·OwnerBottomBar 가 WindowInsets.navigationBars 를 소비(배경 먼저 칠한 뒤 windowInsetsPadding)해 3버튼 시스템 네비바와 탭 겹침 제거; 높이·토큰·탭 구성 불변, AC(testDebugUnitTest/assembleDebug/compileDebugAndroidTestKotlin) 통과.",
+      "completed_at": "2026-06-23T23:59:34+0900"
+    },
+    {
+      "step": 1,
+      "name": "cart-count-badge",
+      "status": "completed",
+      "started_at": "2026-06-23T23:59:34+0900",
+      "summary": "MenuViewModel 에 CartRepository 를 읽기전용 주입해 cartItemCount: StateFlow<Int>(담긴 총수량 합산, 실패·예외 시 0) 노출; MenuRoute→MenuScreen→CartFloatingButton 으로 배선해 수량>0 일 때만 카트 FAB 우상단에 토큰 기반 원형 뱃지(99 초과 \"99+\", surfaceDark/onDark, contentDescription \"장바구니 N개\")를 표시. 기존 uiState·MenuUiState 불변, AC(testDebugUnitTest/assembleDebug/compileDebugAndroidTestKotlin) 통과.",
+      "completed_at": "2026-06-24T00:06:08+0900"
+    },
+    {
+      "step": 2,
+      "name": "gift-screen-fixes",
+      "status": "completed",
+      "images": [
+        "docs/screens/MY - 03 (선물하기).png"
+      ],
+      "started_at": "2026-06-24T00:06:08+0900",
+      "summary": "선물하기 GiftChannelCard 의 고정 height(64dp)를 heightIn(min = space18=72dp)로 바꿔 제목(bodyL)+부제(caption) 2줄 텍스트 클립 제거; Row 두 카드는 동일 min 높이로 일관 표시. GiftScreenTest 에 두 카드 제목/부제(카카오톡·친구 선택·문자 (SMS)·연락처 입력) 표시 검증 추가. 금액 표시·전송 로직·GiftUiState 불변, AC(testDebugUnitTest/assembleDebug/compileDebugAndroidTestKotlin) 통과.",
+      "completed_at": "2026-06-24T00:20:46+0900"
+    },
+    {
+      "step": 3,
+      "name": "notification-settings",
+      "status": "completed",
+      "images": [
+        "docs/screens/알림.png",
+        "docs/screens/MY - 01.png"
+      ],
+      "started_at": "2026-06-24T00:20:46+0900",
+      "summary": "마이 빠른메뉴 '알림설정' Toast(준비 중) 제거 → 실제 동작 화면 신설. Routes.NOTI_SETTINGS 추가, UserPreferencesDataStore 에 알림 카테고리 3종 boolean(주문상태 기본 on·혜택/이벤트 기본 on·마케팅 기본 off) observe/set 추가, NotificationSettingsUiState/ViewModel(@HiltViewModel, DataStore combine→StateFlow, onToggle 영속·낙관적) + NotificationSettingsScreen/Route(CafeTopBar '알림 설정', CafeCard 안 토글 3행 Material3 Switch 토큰색)를 신설하고 AppNavHost·MyRoute 콜백으로 배선. 토글은 로컬 설정 표시·영속까지이며 NotificationRepository·FCM 토큰/수신·서버 구독 게이팅은 불변(범위 밖). 테스트(RoutesTest·UserPreferencesDataStoreTest·NotificationSettingsUiStateTest·NotificationSettingsViewModelTest·NotificationSettingsScreenTest) 추가, AC(testDebugUnitTest/assembleDebug/compileDebugAndroidTestKotlin) 통과.",
+      "completed_at": "2026-06-24T00:26:47+0900"
+    }
+  ],
+  "created_at": "2026-06-23T23:57:25+0900",
+  "completed_at": "2026-06-24T00:26:47+0900"
+}
