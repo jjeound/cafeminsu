@@ -4,6 +4,7 @@ import com.cafeminsu.data.payment.MockPgClient
 import com.cafeminsu.data.payment.PgClient
 import com.cafeminsu.data.repository.MockCartRepository
 import com.cafeminsu.data.repository.MockCouponRepository
+import com.cafeminsu.data.repository.MockFcmTokenRepository
 import com.cafeminsu.data.repository.MockGiftRepository
 import com.cafeminsu.data.repository.MockMenuRepository
 import com.cafeminsu.data.repository.MockNotificationRepository
@@ -15,6 +16,7 @@ import com.cafeminsu.data.repository.MockRewardRepository
 import com.cafeminsu.data.repository.MockSalesRepository
 import com.cafeminsu.data.repository.MockSessionRepository
 import com.cafeminsu.data.repository.MockStoreRepository
+import com.cafeminsu.data.repository.RealFcmTokenRepository
 import com.cafeminsu.data.repository.RealGiftRepository
 import com.cafeminsu.data.repository.RealMenuRepository
 import com.cafeminsu.data.repository.RealNotificationRepository
@@ -25,6 +27,7 @@ import com.cafeminsu.data.repository.RealSessionRepository
 import com.cafeminsu.data.repository.RealStoreRepository
 import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.CouponRepository
+import com.cafeminsu.domain.repository.FcmTokenRepository
 import com.cafeminsu.domain.repository.GiftRepository
 import com.cafeminsu.domain.repository.MenuRepository
 import com.cafeminsu.domain.repository.NotificationRepository
@@ -158,6 +161,18 @@ abstract class RepositoryModule {
 
         @Provides
         @Singleton
+        fun provideFcmTokenRepository(
+            realRepository: Provider<RealFcmTokenRepository>,
+            mockRepository: Provider<MockFcmTokenRepository>,
+        ): FcmTokenRepository =
+            selectFcmTokenRepository(
+                baseUrl = com.cafeminsu.BuildConfig.BASE_URL,
+                realFactory = { realRepository.get() },
+                mockFactory = { mockRepository.get() },
+            )
+
+        @Provides
+        @Singleton
         fun provideSessionRepository(
             realRepository: Provider<RealSessionRepository>,
             mockRepository: Provider<MockSessionRepository>,
@@ -252,6 +267,17 @@ internal fun selectNotificationRepository(
     realFactory: () -> NotificationRepository,
     mockFactory: () -> NotificationRepository,
 ): NotificationRepository =
+    if (baseUrl.isNotBlank()) {
+        realFactory()
+    } else {
+        mockFactory()
+    }
+
+internal fun selectFcmTokenRepository(
+    baseUrl: String,
+    realFactory: () -> FcmTokenRepository,
+    mockFactory: () -> FcmTokenRepository,
+): FcmTokenRepository =
     if (baseUrl.isNotBlank()) {
         realFactory()
     } else {

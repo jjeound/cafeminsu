@@ -1,7 +1,6 @@
 package com.cafeminsu.ui.navigation
 
 object Routes {
-    const val SPLASH = "splash"
     const val LOGIN = "login"
     const val SIGNUP = "signup"
     const val HOME = "home"
@@ -10,8 +9,10 @@ object Routes {
     const val STORE_DETAIL = "store_detail"
     const val MENU = "menu"
     const val MENU_DETAIL_MENU_ID = "menuItemId"
+    const val MENU_DETAIL_CART_ITEM_ID = "cartItemId"
     private const val MENU_DETAIL_BASE = "menu_detail"
-    const val MENU_DETAIL = "$MENU_DETAIL_BASE/{$MENU_DETAIL_MENU_ID}"
+    const val MENU_DETAIL =
+        "$MENU_DETAIL_BASE/{$MENU_DETAIL_MENU_ID}?$MENU_DETAIL_CART_ITEM_ID={$MENU_DETAIL_CART_ITEM_ID}"
     const val VOICE = "voice"
     const val CART = "cart"
     const val PAY_ORDER_ID = "orderId"
@@ -44,7 +45,12 @@ object Routes {
     private const val GIFTICON_DETAIL_BASE = GIFT
     const val GIFTICON_DETAIL = "$GIFTICON_DETAIL_BASE/{$GIFTICON_ID}"
 
-    fun menuDetail(menuItemId: String): String = "$MENU_DETAIL_BASE/$menuItemId"
+    fun menuDetail(menuItemId: String, cartItemId: String? = null): String =
+        if (cartItemId.isNullOrBlank()) {
+            "$MENU_DETAIL_BASE/$menuItemId"
+        } else {
+            "$MENU_DETAIL_BASE/$menuItemId?$MENU_DETAIL_CART_ITEM_ID=$cartItemId"
+        }
     fun pay(orderId: String): String = "$PAY_BASE/$orderId"
     fun payment(orderId: String): String = pay(orderId)
     fun orderOk(orderId: String): String = "$ORDER_OK_BASE/$orderId"

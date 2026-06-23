@@ -2,6 +2,7 @@ package com.cafeminsu.ui.feature.cart
 
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -52,6 +53,7 @@ import java.util.Locale
 fun CartRoute(
     onPaymentRequested: (String) -> Unit,
     onBrowseMenuClick: () -> Unit,
+    onItemClick: (menuItemId: String, cartItemId: String) -> Unit,
     onBackClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: CartViewModel = hiltViewModel(),
@@ -75,6 +77,7 @@ fun CartRoute(
         onCheckout = viewModel::onCheckout,
         onRetry = viewModel::retry,
         onBrowseMenuClick = onBrowseMenuClick,
+        onItemClick = onItemClick,
         modifier = modifier,
     )
 }
@@ -89,6 +92,7 @@ fun CartScreen(
     onCheckout: () -> Unit,
     onRetry: () -> Unit,
     onBrowseMenuClick: () -> Unit,
+    onItemClick: (menuItemId: String, cartItemId: String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = CafeTheme.colors
@@ -132,6 +136,7 @@ fun CartScreen(
                     onQuantityChange = onQuantityChange,
                     onOrderTypeSelected = onOrderTypeSelected,
                     onRequestNoteChange = onRequestNoteChange,
+                    onItemClick = onItemClick,
                 )
 
                 is CartUiState.Empty -> EmptyView(
@@ -158,6 +163,7 @@ private fun CartContent(
     onQuantityChange: (cartItemId: String, quantity: Int) -> Unit,
     onOrderTypeSelected: (OrderType) -> Unit,
     onRequestNoteChange: (String) -> Unit,
+    onItemClick: (menuItemId: String, cartItemId: String) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -182,6 +188,7 @@ private fun CartContent(
             CartItemCard(
                 item = item,
                 onQuantityChange = onQuantityChange,
+                onClick = { onItemClick(item.menuItemId, item.id) },
             )
         }
 
@@ -285,12 +292,15 @@ private fun OrderTypeSegment(
 private fun CartItemCard(
     item: CartItem,
     onQuantityChange: (cartItemId: String, quantity: Int) -> Unit,
+    onClick: () -> Unit,
 ) {
     val colors = CafeTheme.colors
     val spacing = CafeTheme.spacing
 
     CafeCard(
-        modifier = Modifier.fillMaxWidth(),
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick),
         type = CafeCardType.Default,
     ) {
         Row(
@@ -369,7 +379,7 @@ private fun QuantityStepper(
         ) {
             QuantityButton(
                 text = "−",
-                enabled = quantity > MinQuantity,
+                enabled = true,
                 onClick = { onQuantityChange(quantity - QuantityStep) },
             )
             Text(
@@ -574,7 +584,6 @@ private fun formatWon(amount: Int): String =
 
 private const val BorderWidthDivider = 4
 private const val ItemTextWeight = 1f
-private const val MinQuantity = 1
 private const val QuantityStep = 1
 private const val QuantityTextWeight = 1f
 private const val SegmentWeight = 1f

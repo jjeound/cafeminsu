@@ -1,0 +1,32 @@
+{
+  "project": "CafeMinsu",
+  "phase": "order-scheduling",
+  "steps": [
+    {
+      "step": 0,
+      "name": "scheduling-core",
+      "status": "completed",
+      "started_at": "2026-06-22T12:01:53+0900",
+      "summary": "순수 도메인 우선순위 스케줄링 엔진(OrderScheduler·RulePrepTimeEstimator·CongestionCalculator·Clock·SchedulingWeights) 추가, 대기/수량/근접(null슬롯)/픽업/혼잡 가중합·기아방지 뱃지·누적 ETA를 결정론적 단위테스트로 검증하고 OWNER_ORDERS 정렬을 FIFO→우선순위로 교체(카드에 긴급/곧도착 뱃지·'약 N분' ETA 표시).",
+      "completed_at": "2026-06-22T12:18:38+0900"
+    },
+    {
+      "step": 1,
+      "name": "beacon-proximity",
+      "status": "completed",
+      "started_at": "2026-06-22T13:11:57+0900",
+      "summary": "비콘(BLE) 근접 신호를 step0 스케줄러에 배선: domain/proximity(ProximitySignal·ProximityScanner·인메모리 ProximitySignalRepository·rssi→ProximityInput 매핑), data/proximity(내장 BluetoothLeScanner 기반 AndroidBeaconScanner는 권한/하드웨어 부재 시 AppResult.Failure 안전폴백·비로깅, 데모용 SimulatedProximityScanner), ProximityModule은 기본 시뮬레이터 @Binds(실 BLE 교체법 주석). OwnerOrdersViewModel이 근접 신호를 combine해 SchedulingSignals.proximity를 채워 임박 주문이 우선순위 상단+ArrivingSoon('곧 도착') 뱃지로 노출. 매니페스트 BLUETOOTH_SCAN(neverForLocation)/CONNECT 최소권한·SECURITY.md §9 추가. 단위테스트(스케줄러 근접 정렬/뱃지, repo, 시뮬레이터, 권한·rssi 헬퍼, ViewModel 근접 반응) 전부 통과.",
+      "completed_at": "2026-06-22T13:36:33+0900"
+    },
+    {
+      "step": 2,
+      "name": "ai-prediction",
+      "status": "completed",
+      "started_at": "2026-06-22T13:36:33+0900",
+      "summary": "스케줄러 입력값(제조시간·혼잡도·도착확률)을 온디바이스 AI로 보정하는 선택 레이어 추가: domain/scheduling에 OrderMetricsPredictor 인터페이스(추정치만 반환, AppResult)와 AiPrepTimeEstimator(step0 PrepTimeEstimator 구현, AI 우선·실패 시 RulePrepTimeEstimator 폴백), data/scheduling에 GemmaOrderMetricsPredictor(음성 GemmaVoiceOrderInterpreter 패턴 재사용 — VoiceLlmEngine+Moshi, buildPrompt→generate→코드펜스제거→파싱·검증, isReady=false면 규칙추정치 Success 폴백·추론 안함, 깨진응답/예외는 Failure로 호출측 규칙폴백, PII/주문정보 비로깅). SchedulingModule의 PrepTimeEstimator 바인딩을 AiPrepTimeEstimator로 교체(GemmaOrderMetricsPredictor→OrderMetricsPredictor, RulePrepTimeEstimator는 폴백 유지). AI는 OrderScheduler 점수식/정렬 결정로직을 바꾸지 않고 입력만 보정. 모델 미가용(기본) 시 step0 규칙값과 동일함을 테스트로 검증. 단위테스트 21개(predictor 폴백/파싱/클램프, AI우선-규칙폴백, 모듈 바인딩) 통과, testDebugUnitTest·assembleDebug·compileDebugAndroidTestKotlin 성공.",
+      "completed_at": "2026-06-22T13:46:38+0900"
+    }
+  ],
+  "created_at": "2026-06-22T00:00:00+0900",
+  "completed_at": "2026-06-22T13:46:38+0900"
+}

@@ -18,10 +18,7 @@ import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithContent
@@ -37,10 +34,7 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
 import com.cafeminsu.R
-import com.cafeminsu.core.AppResult
 import com.cafeminsu.domain.auth.OwnerAuthProvider
-import com.cafeminsu.domain.model.AuthState
-import com.cafeminsu.domain.model.UserRole
 import com.cafeminsu.domain.repository.SessionRepository
 import com.cafeminsu.ui.feature.cart.CartRoute
 import com.cafeminsu.ui.feature.coupon.CouponRoute
@@ -65,19 +59,18 @@ import com.cafeminsu.ui.feature.payment.PaymentFailureReason
 import com.cafeminsu.ui.feature.payment.PaymentRoute
 import com.cafeminsu.ui.feature.payment.paymentFailureUiModel
 import com.cafeminsu.ui.feature.signup.SignupRoute
-import com.cafeminsu.ui.feature.splash.SplashScreen
 import com.cafeminsu.ui.feature.store.StoreRoute
 import com.cafeminsu.ui.feature.voice.VoiceRoute
 import com.cafeminsu.ui.theme.CafeTheme
-import kotlinx.coroutines.delay
 
 @Composable
 fun AppNavHost(
     sessionRepository: SessionRepository,
     ownerAuthProvider: OwnerAuthProvider,
+    startDestination: String,
     modifier: Modifier = Modifier,
     navController: NavHostController = rememberNavController(),
-    splashDelayMillis: Long = SplashGateDelayMillis,
+    onCustomerTabSelected: (String) -> Unit = {},
 ) {
     val navBackStackEntry by navController.currentBackStackEntryAsState()
     val currentRoute = navBackStackEntry?.destination?.route
@@ -103,6 +96,7 @@ fun AppNavHost(
                 CafeBottomBar(
                     currentRoute = currentRoute,
                     onTabSelected = { route ->
+                        onCustomerTabSelected(route)
                         navController.navigate(route) {
                             popUpTo(Routes.HOME) {
                                 saveState = true
@@ -117,38 +111,11 @@ fun AppNavHost(
     ) { innerPadding ->
         NavHost(
             navController = navController,
-            startDestination = Routes.SPLASH,
+            startDestination = startDestination,
             modifier = Modifier
                 .padding(innerPadding)
                 .fillMaxSize(),
         ) {
-            composable(Routes.SPLASH) {
-                SplashGate(
-                    sessionRepository = sessionRepository,
-                    splashDelayMillis = splashDelayMillis,
-                    onAuthenticated = { authState ->
-                        val destination = if (authState.role == UserRole.Owner) {
-                            Routes.OWNER_HOME
-                        } else {
-                            Routes.HOME
-                        }
-                        navController.navigate(destination) {
-                            popUpTo(Routes.SPLASH) {
-                                inclusive = true
-                            }
-                            launchSingleTop = true
-                        }
-                    },
-                    onUnauthenticated = {
-                        navController.navigate(Routes.LOGIN) {
-                            popUpTo(Routes.SPLASH) {
-                                inclusive = true
-                            }
-                            launchSingleTop = true
-                        }
-                    },
-                )
-            }
             composable(Routes.LOGIN) {
                 LoginRoute(
                     sessionRepository = sessionRepository,
@@ -270,6 +237,11 @@ fun AppNavHost(
                     navArgument(Routes.MENU_DETAIL_MENU_ID) {
                         type = NavType.StringType
                     },
+                    navArgument(Routes.MENU_DETAIL_CART_ITEM_ID) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
                 ),
             ) {
                 MenuDetailRoute(
@@ -289,6 +261,9 @@ fun AppNavHost(
                         navController.navigate(Routes.pay(orderId))
                     },
                     onBrowseMenuClick = { navController.navigate(Routes.STORE) },
+                    onItemClick = { menuItemId, cartItemId ->
+                        navController.navigate(Routes.menuDetail(menuItemId, cartItemId))
+                    },
                     onBackClick = { navController.popBackStack() },
                 )
             }
@@ -401,41 +376,6 @@ fun AppNavHost(
             }
         }
     }
-}
-
-@Composable
-private fun SplashGate(
-    sessionRepository: SessionRepository,
-    splashDelayMillis: Long,
-    onAuthenticated: (AuthState.Authenticated) -> Unit,
-    onUnauthenticated: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
-    val authStateFlow = remember(sessionRepository) { sessionRepository.observeAuthState() }
-    val authState by authStateFlow.collectAsState(initial = AuthState.Unknown)
-
-    LaunchedEffect(authState, sessionRepository, splashDelayMillis) {
-        delay(splashDelayMillis)
-        val resolvedState = if (authState == AuthState.Unknown) {
-            when (val result = sessionRepository.refreshOnce()) {
-                is AppResult.Success -> result.data
-                is AppResult.Failure -> AuthState.Guest
-            }
-        } else {
-            authState
-        }
-
-        when (resolvedState) {
-            is AuthState.Authenticated -> onAuthenticated(resolvedState)
-            AuthState.Guest,
-            AuthState.Expired,
-            -> onUnauthenticated()
-
-            AuthState.Unknown -> Unit
-        }
-    }
-
-    SplashScreen(modifier = modifier)
 }
 
 @Composable
@@ -637,5 +577,3 @@ private fun OwnerBottomBar(
         }
     }
 }
-
-private const val SplashGateDelayMillis = 1_200L

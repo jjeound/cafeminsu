@@ -5,6 +5,7 @@ import com.cafeminsu.core.DomainError
 import com.cafeminsu.data.remote.MenuDetailRes
 import com.cafeminsu.data.remote.MenuListItemRes
 import com.cafeminsu.data.remote.MenuOptionRes
+import com.cafeminsu.domain.model.MenuItem
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Test
@@ -63,6 +64,22 @@ class MenuMapperTest {
     }
 
     @Test
+    fun cachedMenuItemsDeriveDistinctCategoriesByFirstAppearance() {
+        // 오프라인 폴백 시 캐시된 메뉴에서 도출한 카테고리가 라이브 목록 결과와 동일해야 한다.
+        val categories = listOf(
+            menuItem(id = "1", category = "디저트"),
+            menuItem(id = "2", category = "커피"),
+            menuItem(id = "3", category = "커피"),
+            menuItem(id = "4", category = "티"),
+            menuItem(id = "5", category = ""),
+        ).toMenuCategoriesFromCache()
+
+        assertEquals(listOf("디저트", "커피", "티"), categories.map { it.id })
+        assertEquals(listOf("디저트", "커피", "티"), categories.map { it.name })
+        assertEquals(listOf(1, 2, 3), categories.map { it.sortOrder })
+    }
+
+    @Test
     fun missingMenuIdMapsToUnknownError() {
         val result = listOf(menuListItem(id = null, category = "커피")).toMenuItems()
 
@@ -81,5 +98,17 @@ class MenuMapperTest {
             category = category,
             imageUrl = null,
             isAvailable = isAvailable,
+        )
+
+    private fun menuItem(id: String, category: String): MenuItem =
+        MenuItem(
+            id = id,
+            categoryId = category,
+            name = "메뉴",
+            description = "",
+            basePrice = 5_000,
+            imageUrl = null,
+            isSoldOut = false,
+            options = emptyList(),
         )
 }

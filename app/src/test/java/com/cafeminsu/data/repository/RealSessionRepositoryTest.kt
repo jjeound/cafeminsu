@@ -46,15 +46,10 @@ class RealSessionRepositoryTest {
                 .setBody(
                     """
                     {
-                      "isSuccess": true,
-                      "code": 200,
-                      "message": "OK",
-                      "result": {
-                        "accessToken": "app-access-token",
-                        "refreshToken": "app-refresh-token",
-                        "isNewUser": false,
-                        "nickname": "지원"
-                      }
+                      "accessToken": "app-access-token",
+                      "refreshToken": "app-refresh-token",
+                      "isNewUser": false,
+                      "nickname": "지원"
                     }
                     """.trimIndent(),
                 ),
@@ -93,15 +88,10 @@ class RealSessionRepositoryTest {
                 .setBody(
                     """
                     {
-                      "isSuccess": true,
-                      "code": 200,
-                      "message": "OK",
-                      "result": {
-                        "accessToken": "app-access-token",
-                        "refreshToken": "app-refresh-token",
-                        "isNewUser": true,
-                        "nickname": null
-                      }
+                      "accessToken": "app-access-token",
+                      "refreshToken": "app-refresh-token",
+                      "isNewUser": true,
+                      "nickname": null
                     }
                     """.trimIndent(),
                 ),
@@ -120,20 +110,7 @@ class RealSessionRepositoryTest {
 
     @Test
     fun loginExchangeFailureDoesNotStoreSessionTokens() = runTest {
-        server.enqueue(
-            MockResponse()
-                .setResponseCode(200)
-                .setBody(
-                    """
-                    {
-                      "isSuccess": false,
-                      "code": 401,
-                      "message": "invalid kakao token",
-                      "result": null
-                    }
-                    """.trimIndent(),
-                ),
-        )
+        server.enqueue(MockResponse().setResponseCode(401))
         val tokenStore = InMemorySessionTokenStore()
         val repository = realSessionRepository(tokenStore = tokenStore)
 
@@ -151,12 +128,7 @@ class RealSessionRepositoryTest {
                 .setBody(
                     """
                     {
-                      "isSuccess": true,
-                      "code": 200,
-                      "message": "OK",
-                      "result": {
-                        "accessToken": "new-access-token"
-                      }
+                      "accessToken": "new-access-token"
                     }
                     """.trimIndent(),
                 ),
@@ -185,12 +157,7 @@ class RealSessionRepositoryTest {
                 .setBody(
                     """
                     {
-                      "isSuccess": true,
-                      "code": 200,
-                      "message": "OK",
-                      "result": {
-                        "accessToken": "new-access-token"
-                      }
+                      "accessToken": "new-access-token"
                     }
                     """.trimIndent(),
                 ),
@@ -261,20 +228,7 @@ class RealSessionRepositoryTest {
         assertEquals(AppResult.Failure(DomainError.Validation("nickname")), repository.checkNickname("  "))
         assertEquals(0, server.requestCount)
 
-        server.enqueue(
-            MockResponse()
-                .setResponseCode(200)
-                .setBody(
-                    """
-                    {
-                      "isSuccess": false,
-                      "code": 404,
-                      "message": "not found",
-                      "result": null
-                    }
-                    """.trimIndent(),
-                ),
-        )
+        server.enqueue(MockResponse().setResponseCode(404))
 
         assertEquals(AppResult.Failure(DomainError.NotFound), repository.checkNickname("새민수"))
         assertEquals(1, server.requestCount)
@@ -329,20 +283,7 @@ class RealSessionRepositoryTest {
         )
         assertEquals(0, server.requestCount)
 
-        server.enqueue(
-            MockResponse()
-                .setResponseCode(200)
-                .setBody(
-                    """
-                    {
-                      "isSuccess": false,
-                      "code": 404,
-                      "message": "signup failed",
-                      "result": null
-                    }
-                    """.trimIndent(),
-                ),
-        )
+        server.enqueue(MockResponse().setResponseCode(404))
 
         assertEquals(AppResult.Failure(DomainError.NotFound), authenticatedRepository.completeSignup("새민수"))
         assertEquals(1, server.requestCount)
@@ -417,12 +358,7 @@ class RealSessionRepositoryTest {
             .setBody(
                 """
                 {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": {
-                    "available": $available
-                  }
+                  "available": $available
                 }
                 """.trimIndent(),
             )
@@ -433,13 +369,8 @@ class RealSessionRepositoryTest {
             .setBody(
                 """
                 {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": {
-                    "userId": $userId,
-                    "nickname": "$nickname"
-                  }
+                  "userId": $userId,
+                  "nickname": "$nickname"
                 }
                 """.trimIndent(),
             )

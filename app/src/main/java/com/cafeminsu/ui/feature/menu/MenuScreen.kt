@@ -27,7 +27,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
-import androidx.compose.ui.draw.clip
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
@@ -161,15 +160,28 @@ private fun MenuHeader(
 
         Spacer(modifier = Modifier.width(CafeTheme.spacing.space4))
 
-        Box(
-            modifier = Modifier
-                .size(CafeTheme.spacing.space10)
-                .clip(CafeTheme.shapes.radiusPill)
-                .clickable(onClick = onVoiceClick)
-                .semantics { contentDescription = "음성 주문" },
-            contentAlignment = Alignment.Center,
+        Surface(
+            onClick = onVoiceClick,
+            shape = CafeTheme.shapes.radiusPill,
+            color = CafeTheme.colors.primary,
+            contentColor = CafeTheme.colors.onPrimary,
+            modifier = Modifier.semantics { contentDescription = "음성 주문" },
         ) {
-            MicIcon(modifier = Modifier.size(CafeTheme.spacing.space6))
+            Row(
+                modifier = Modifier.padding(
+                    horizontal = CafeTheme.spacing.space3,
+                    vertical = CafeTheme.spacing.space2,
+                ),
+                horizontalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space1),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                MicIcon(modifier = Modifier.size(CafeTheme.spacing.space5))
+                Text(
+                    text = "음성주문",
+                    style = CafeTheme.typography.bodyL,
+                    color = CafeTheme.colors.onPrimary,
+                )
+            }
         }
     }
 }
@@ -397,7 +409,7 @@ private fun MicIcon(
     Icon(
         painter = painterResource(R.drawable.ic_mic),
         contentDescription = null,
-        tint = CafeTheme.colors.ink,
+        tint = CafeTheme.colors.onPrimary,
         modifier = modifier,
     )
 }

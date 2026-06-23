@@ -58,11 +58,7 @@ class RemoteResultTest {
 
     @Test
     fun runCatchingToAppResultMapsRetrofitHttpExceptionWithoutThrowing() = runTest {
-        server.enqueue(
-            MockResponse()
-                .setResponseCode(401)
-                .setBody("""{"isSuccess":false,"code":401,"message":"Unauthorized","result":{}}"""),
-        )
+        server.enqueue(MockResponse().setResponseCode(401))
         val api = createRetrofit(
             baseUrl = server.url("/").toString(),
             moshi = createMoshi(),
@@ -80,8 +76,7 @@ private fun httpException(code: Int): HttpException =
     HttpException(
         Response.error<Unit>(
             code,
-            """{"isSuccess":false,"code":$code,"message":"error","result":{}}"""
-                .toResponseBody("application/json".toMediaType()),
+            "error".toResponseBody("application/json".toMediaType()),
         ),
     )
 

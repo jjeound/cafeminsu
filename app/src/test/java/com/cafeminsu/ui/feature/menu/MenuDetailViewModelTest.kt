@@ -184,6 +184,87 @@ class MenuDetailViewModelTest {
     }
 
     @Test
+    fun editingPreSelectsExistingOptionsAndQuantity() = runTest {
+        val cartRepository = FakeCartRepository(
+            initialCart = cartWith(
+                CartItem(
+                    id = "cart-item-1",
+                    menuItemId = "latte",
+                    name = "바닐라라떼",
+                    unitPrice = 6_000,
+                    selectedOptions = listOf(
+                        SelectedOption("temperature", "temperature-ice", "ICE", 0),
+                        SelectedOption("size", "size-large", "Large", 500),
+                    ),
+                    quantity = 3,
+                ),
+            ),
+        )
+        val viewModel = viewModel(
+            menuItemId = "latte",
+            cartRepository = cartRepository,
+            cartItemId = "cart-item-1",
+        )
+
+        viewModel.uiState.test {
+            val content = awaitContent()
+            assertTrue(content.isEditing)
+            assertEquals(3, content.quantity)
+            assertEquals(setOf("temperature-ice"), content.selectedOptionIdsByGroup["temperature"])
+            assertEquals(setOf("size-large"), content.selectedOptionIdsByGroup["size"])
+            assertEquals(6_000, content.unitPrice)
+            assertEquals(18_000, content.totalPrice)
+            assertTrue(content.canAddToCart)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun editingSaveAddsUpdatedConfigAndRemovesOriginalItem() = runTest {
+        val cartRepository = FakeCartRepository(
+            initialCart = cartWith(
+                CartItem(
+                    id = "cart-item-1",
+                    menuItemId = "latte",
+                    name = "바닐라라떼",
+                    unitPrice = 5_500,
+                    selectedOptions = listOf(
+                        SelectedOption("temperature", "temperature-hot", "HOT", 0),
+                        SelectedOption("size", "size-regular", "Regular", 0),
+                    ),
+                    quantity = 1,
+                ),
+            ),
+        )
+        val viewModel = viewModel(
+            menuItemId = "latte",
+            cartRepository = cartRepository,
+            cartItemId = "cart-item-1",
+        )
+
+        viewModel.uiState.test {
+            awaitContent()
+
+            viewModel.onOptionToggle(groupId = "size", optionId = "size-large")
+            awaitContent()
+
+            viewModel.onAddToCart()
+
+            val saved = awaitContent()
+            assertEquals(MenuDetailAddStatus.Added, saved.addStatus)
+            assertEquals("latte", cartRepository.lastRequest?.menuItemId)
+            assertEquals(
+                listOf("temperature-hot", "size-large"),
+                cartRepository.lastRequest?.options?.map { it.optionId },
+            )
+            assertEquals(listOf("cart-item-1"), cartRepository.removedCartItemIds)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun missingMenuItemIdShowsError() = runTest {
         val viewModel = viewModel(
             menuItemId = "missing",
@@ -206,10 +287,14 @@ class MenuDetailViewModelTest {
         menu: MenuItem = sampleMenu(id = menuItemId),
         menuResult: AppResult<MenuItem> = AppResult.Success(menu),
         cartRepository: FakeCartRepository = FakeCartRepository(),
+        cartItemId: String? = null,
     ): MenuDetailViewModel =
         MenuDetailViewModel(
             savedStateHandle = SavedStateHandle(
-                mapOf(Routes.MENU_DETAIL_MENU_ID to menuItemId),
+                buildMap<String, Any?> {
+                    put(Routes.MENU_DETAIL_MENU_ID, menuItemId)
+                    cartItemId?.let { put(Routes.MENU_DETAIL_CART_ITEM_ID, it) }
+                },
             ),
             menuRepository = FakeMenuDetailMenuRepository(menuResult),
             cartRepository = cartRepository,
@@ -252,11 +337,14 @@ private class FakeMenuDetailMenuRepository(
 
 private class FakeCartRepository(
     private val addResult: AppResult<Cart> = AppResult.Success(emptyCart()),
+    initialCart: Cart = emptyCart(),
 ) : CartRepository {
     var lastRequest: AddRequest? = null
         private set
+    val removedCartItemIds = mutableListOf<String>()
+    private val cart = MutableStateFlow<AppResult<Cart>>(AppResult.Success(initialCart))
 
-    override fun observeCart(): Flow<AppResult<Cart>> = MutableStateFlow(AppResult.Success(emptyCart()))
+    override fun observeCart(): Flow<AppResult<Cart>> = cart
 
     override suspend fun addItem(
         menuItemId: String,
@@ -274,8 +362,10 @@ private class FakeCartRepository(
     override suspend fun updateQuantity(cartItemId: String, quantity: Int): AppResult<Cart> =
         AppResult.Success(emptyCart())
 
-    override suspend fun removeItem(cartItemId: String): AppResult<Cart> =
-        AppResult.Success(emptyCart())
+    override suspend fun removeItem(cartItemId: String): AppResult<Cart> {
+        removedCartItemIds += cartItemId
+        return AppResult.Success(emptyCart())
+    }
 
     override suspend fun validateForCheckout(): AppResult<CartValidation> =
         AppResult.Success(CartValidation.Invalid(listOf(CartInvalidReason.Empty)))
@@ -344,4 +434,11 @@ private fun emptyCart(): Cart =
         items = emptyList<CartItem>(),
         subtotal = 0,
         validation = CartValidation.Invalid(listOf(CartInvalidReason.Empty)),
+    )
+
+private fun cartWith(vararg items: CartItem): Cart =
+    Cart(
+        items = items.toList(),
+        subtotal = items.sumOf { item -> item.unitPrice * item.quantity },
+        validation = CartValidation.Valid,
     )

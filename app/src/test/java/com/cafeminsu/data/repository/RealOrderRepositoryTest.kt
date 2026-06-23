@@ -4,6 +4,7 @@ import app.cash.turbine.test
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.data.auth.SessionStateHolder
+import com.cafeminsu.data.local.order.OrderHistoryLocalDataSource
 import com.cafeminsu.data.remote.OrderApi
 import com.cafeminsu.data.remote.createMoshi
 import com.cafeminsu.data.remote.createOkHttpClient
@@ -12,6 +13,7 @@ import com.cafeminsu.domain.model.AuthState
 import com.cafeminsu.domain.model.Cart
 import com.cafeminsu.domain.model.CartItem
 import com.cafeminsu.domain.model.CartValidation
+import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.OrderStatus
 import com.cafeminsu.domain.model.SelectedOption
 import com.cafeminsu.domain.model.Store
@@ -116,21 +118,8 @@ class RealOrderRepositoryTest {
     }
 
     @Test
-    fun serverEnvelopeErrorMapsToAppResultFailure() = runTest(testDispatcher) {
-        server.enqueue(
-            MockResponse()
-                .setResponseCode(200)
-                .setBody(
-                    """
-                    {
-                      "isSuccess": false,
-                      "code": 404,
-                      "message": "주문 없음",
-                      "result": null
-                    }
-                    """.trimIndent(),
-                ),
-        )
+    fun serverHttpErrorMapsToAppResultFailure() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setResponseCode(404))
         val repository = realOrderRepository()
 
         repository.observeOrder("404").test {
@@ -149,18 +138,125 @@ class RealOrderRepositoryTest {
         assertEquals(0, server.requestCount)
     }
 
+    @Test
+    fun observeOrderHistoryWritesThroughToCacheOnSuccess() = runTest(testDispatcher) {
+        server.enqueue(orderHistoryResponse())
+        val cache = FakeOrderHistoryLocalDataSource()
+        val repository = realOrderRepository(local = cache)
+
+        repository.observeOrderHistory().test {
+            awaitItem()
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        assertEquals(1, cache.replaceCount)
+        assertEquals(listOf("77", "78"), cache.stored().map { it.id })
+    }
+
+    @Test
+    fun observeOrderHistoryFallsBackToCacheOnNetworkFailure() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setResponseCode(500))
+        val cache = FakeOrderHistoryLocalDataSource(initial = cachedOrders())
+        val repository = realOrderRepository(local = cache)
+
+        repository.observeOrderHistory().test {
+            val result = awaitItem()
+            assertTrue(result is AppResult.Success)
+            assertEquals(listOf("91", "92"), (result as AppResult.Success).data.map { it.id })
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun observeOrderHistoryEmitsFailureWhenNetworkFailsAndCacheEmpty() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setResponseCode(500))
+        val repository = realOrderRepository(local = FakeOrderHistoryLocalDataSource())
+
+        repository.observeOrderHistory().test {
+            assertTrue(awaitItem() is AppResult.Failure)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun observeOrderHistoryGuestSessionBlocksCacheAndNetwork() = runTest(testDispatcher) {
+        val cache = FakeOrderHistoryLocalDataSource(initial = cachedOrders())
+        val repository = realOrderRepository(authState = AuthState.Guest, local = cache)
+
+        repository.observeOrderHistory().test {
+            assertEquals(AppResult.Failure(DomainError.Unauthorized), awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        // 미인증이면 네트워크는 물론 캐시도 읽지 않는다(다른 사용자 데이터 누출 방지).
+        assertEquals(0, server.requestCount)
+        assertEquals(0, cache.cachedCount)
+        assertEquals(0, cache.replaceCount)
+    }
+
+    @Test
+    fun observeOrderDoesNotTouchHistoryCache() = runTest(testDispatcher) {
+        // 주문 단건 조회는 캐시 경로(금전/실시간 상태)와 무관하다.
+        server.enqueue(orderDetailResponse())
+        val cache = FakeOrderHistoryLocalDataSource(initial = cachedOrders())
+        val repository = realOrderRepository(local = cache)
+
+        repository.observeOrder("77").test {
+            awaitItem()
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        assertEquals(0, cache.cachedCount)
+        assertEquals(0, cache.replaceCount)
+    }
+
+    @Test
+    fun createOrderFromCartDoesNotTouchHistoryCache() = runTest(testDispatcher) {
+        // 주문 생성은 금전 액션이라 캐시/낙관 적용 금지.
+        server.enqueue(orderCreateResponse(totalAmount = 13_000))
+        val cache = FakeOrderHistoryLocalDataSource()
+        val repository = realOrderRepository(local = cache)
+
+        repository.createOrderFromCart(sampleCart())
+
+        assertEquals(0, cache.cachedCount)
+        assertEquals(0, cache.replaceCount)
+    }
+
     private fun realOrderRepository(
         authState: AuthState = authenticatedState(),
+        local: OrderHistoryLocalDataSource = FakeOrderHistoryLocalDataSource(),
     ): RealOrderRepository {
-        val holder = SelectedStoreHolder()
+        val holder = selectedStoreHolderForTest()
         holder.select(sampleStore())
         return RealOrderRepository(
             orderApi = orderApi(),
             selectedStoreHolder = holder,
             sessionStateHolder = SessionStateHolder(authState),
+            localDataSource = local,
             ioDispatcher = testDispatcher,
         )
     }
+
+    private fun cachedOrders(): List<Order> =
+        listOf(
+            Order(
+                id = "91",
+                orderNumber = "A-9100",
+                items = emptyList(),
+                totalAmount = 10_000,
+                status = OrderStatus.Completed,
+                createdAtMillis = 20L,
+            ),
+            Order(
+                id = "92",
+                orderNumber = "A-9200",
+                items = emptyList(),
+                totalAmount = 8_500,
+                status = OrderStatus.Accepted,
+                createdAtMillis = 10L,
+            ),
+        )
 
     private fun orderApi(): OrderApi =
         createRetrofit(
@@ -175,15 +271,10 @@ class RealOrderRepositoryTest {
             .setBody(
                 """
                 {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": {
-                    "orderId": 77,
-                    "orderNumber": "A-2543",
-                    "totalAmount": $totalAmount,
-                    "status": "PENDING"
-                  }
+                  "orderId": 77,
+                  "orderNumber": "A-2543",
+                  "totalAmount": $totalAmount,
+                  "status": "PENDING"
                 }
                 """.trimIndent(),
             )
@@ -194,39 +285,34 @@ class RealOrderRepositoryTest {
             .setBody(
                 """
                 {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": {
-                    "orderId": 77,
-                    "orderNumber": "A-2543",
-                    "storeId": 11,
-                    "storeName": "카페민수 강남점",
-                    "orderType": "MOBILE",
-                    "orderMethod": "MANUAL",
-                    "status": "READY",
-                    "totalAmount": 10000,
-                    "cancelReason": null,
-                    "items": [
-                      {
-                        "menuId": 101,
-                        "menuName": "바닐라라떼",
-                        "quantity": 1,
-                        "unitPrice": 5500,
-                        "options": [
-                          {
-                            "optionId": 1,
-                            "optionGroup": "온도",
-                            "optionName": "ICE",
-                            "optionPrice": 0
-                          }
-                        ],
-                        "subtotal": 5500
-                      }
-                    ],
-                    "payment": null,
-                    "createdAt": "2026-06-20T01:15:30Z"
-                  }
+                  "orderId": 77,
+                  "orderNumber": "A-2543",
+                  "storeId": 11,
+                  "storeName": "카페민수 강남점",
+                  "orderType": "MOBILE",
+                  "orderMethod": "MANUAL",
+                  "status": "READY",
+                  "totalAmount": 10000,
+                  "cancelReason": null,
+                  "items": [
+                    {
+                      "menuId": 101,
+                      "menuName": "바닐라라떼",
+                      "quantity": 1,
+                      "unitPrice": 5500,
+                      "options": [
+                        {
+                          "optionId": 1,
+                          "optionGroup": "온도",
+                          "optionName": "ICE",
+                          "optionPrice": 0
+                        }
+                      ],
+                      "subtotal": 5500
+                    }
+                  ],
+                  "payment": null,
+                  "createdAt": "2026-06-20T01:15:30Z"
                 }
                 """.trimIndent(),
             )
@@ -236,29 +322,24 @@ class RealOrderRepositoryTest {
             .setResponseCode(200)
             .setBody(
                 """
-                {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": [
-                    {
-                      "orderId": 77,
-                      "orderNumber": "A-2543",
-                      "storeName": "카페민수 강남점",
-                      "totalAmount": 10000,
-                      "status": "DONE",
-                      "createdAt": "2026-06-20T01:15:30Z"
-                    },
-                    {
-                      "orderId": 78,
-                      "orderNumber": "A-2544",
-                      "storeName": "카페민수 강남점",
-                      "totalAmount": 8500,
-                      "status": "ACCEPTED",
-                      "createdAt": "2026-06-20T01:20:30Z"
-                    }
-                  ]
-                }
+                [
+                  {
+                    "orderId": 77,
+                    "orderNumber": "A-2543",
+                    "storeName": "카페민수 강남점",
+                    "totalAmount": 10000,
+                    "status": "DONE",
+                    "createdAt": "2026-06-20T01:15:30Z"
+                  },
+                  {
+                    "orderId": 78,
+                    "orderNumber": "A-2544",
+                    "storeName": "카페민수 강남점",
+                    "totalAmount": 8500,
+                    "status": "ACCEPTED",
+                    "createdAt": "2026-06-20T01:20:30Z"
+                  }
+                ]
                 """.trimIndent(),
             )
 
@@ -316,4 +397,26 @@ class RealOrderRepositoryTest {
                 phoneLast4 = null,
             ),
         )
+}
+
+private class FakeOrderHistoryLocalDataSource(
+    initial: List<Order> = emptyList(),
+) : OrderHistoryLocalDataSource {
+    private var store: List<Order> = initial
+    var replaceCount: Int = 0
+        private set
+    var cachedCount: Int = 0
+        private set
+
+    override suspend fun cachedHistory(): List<Order> {
+        cachedCount++
+        return store
+    }
+
+    override suspend fun replaceHistory(orders: List<Order>) {
+        store = orders
+        replaceCount++
+    }
+
+    fun stored(): List<Order> = store
 }

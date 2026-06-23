@@ -86,20 +86,7 @@ class RealRewardRepositoryTest {
 
     @Test
     fun observeStampCardReturnsEmptyCardWhenSelectedStoreHasNoStamps() = runTest(testDispatcher) {
-        server.enqueue(
-            MockResponse()
-                .setResponseCode(404)
-                .setBody(
-                    """
-                    {
-                      "isSuccess": false,
-                      "code": 2800,
-                      "message": "스탬프 정보가 없습니다.",
-                      "result": null
-                    }
-                    """.trimIndent(),
-                ),
-        )
+        server.enqueue(MockResponse().setResponseCode(404))
         val repository = realRewardRepository(selectedStore = sampleStore(id = "6"))
 
         repository.observeStampCard().test {
@@ -196,21 +183,8 @@ class RealRewardRepositoryTest {
     }
 
     @Test
-    fun serverEnvelopeErrorMapsToFailure() = runTest(testDispatcher) {
-        server.enqueue(
-            MockResponse()
-                .setResponseCode(200)
-                .setBody(
-                    """
-                    {
-                      "isSuccess": false,
-                      "code": 404,
-                      "message": "기프티콘 없음",
-                      "result": null
-                    }
-                    """.trimIndent(),
-                ),
-        )
+    fun notFoundHttpStatusMapsToFailure() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setResponseCode(404))
         val repository = realRewardRepository()
 
         val result = repository.getGifticon("404")
@@ -245,7 +219,7 @@ class RealRewardRepositoryTest {
         authState: AuthState = authenticatedState(),
         selectedStore: Store? = sampleStore(id = "11"),
     ): RealRewardRepository {
-        val holder = SelectedStoreHolder()
+        val holder = selectedStoreHolderForTest()
         if (selectedStore != null) {
             holder.select(selectedStore)
         }
@@ -277,23 +251,18 @@ class RealRewardRepositoryTest {
             .setResponseCode(200)
             .setBody(
                 """
-                {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": [
-                    {
-                      "storeId": 12,
-                      "storeName": "카페민수 역삼점",
-                      "count": 6
-                    },
-                    {
-                      "storeId": 11,
-                      "storeName": "카페민수 강남점",
-                      "count": 7
-                    }
-                  ]
-                }
+                [
+                  {
+                    "storeId": 12,
+                    "storeName": "카페민수 역삼점",
+                    "count": 6
+                  },
+                  {
+                    "storeId": 11,
+                    "storeName": "카페민수 강남점",
+                    "count": 7
+                  }
+                ]
                 """.trimIndent(),
             )
 
@@ -303,20 +272,15 @@ class RealRewardRepositoryTest {
             .setBody(
                 """
                 {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": {
-                    "storeId": 11,
-                    "storeName": "카페민수 강남점",
-                    "count": $count,
-                    "histories": [
-                      {
-                        "earnedCount": 2,
-                        "createdAt": "2026-06-20T01:15:30Z"
-                      }
-                    ]
-                  }
+                  "storeId": 11,
+                  "storeName": "카페민수 강남점",
+                  "count": $count,
+                  "histories": [
+                    {
+                      "earnedCount": 2,
+                      "createdAt": "2026-06-20T01:15:30Z"
+                    }
+                  ]
                 }
                 """.trimIndent(),
             )
@@ -326,23 +290,18 @@ class RealRewardRepositoryTest {
             .setResponseCode(200)
             .setBody(
                 """
-                {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": [
-                    {
-                      "gifticonId": 31,
-                      "balance": 10000,
-                      "expiresAt": "2026-08-31T15:00:00Z"
-                    },
-                    {
-                      "gifticonId": 32,
-                      "balance": 5000,
-                      "expiresAt": "2026-07-31T15:00:00Z"
-                    }
-                  ]
-                }
+                [
+                  {
+                    "gifticonId": 31,
+                    "balance": 10000,
+                    "expiresAt": "2026-08-31T15:00:00Z"
+                  },
+                  {
+                    "gifticonId": 32,
+                    "balance": 5000,
+                    "expiresAt": "2026-07-31T15:00:00Z"
+                  }
+                ]
                 """.trimIndent(),
             )
 
@@ -355,18 +314,13 @@ class RealRewardRepositoryTest {
             .setBody(
                 """
                 {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": {
-                    "gifticonId": 31,
-                    "amount": 10000,
-                    "balance": $balance,
-                    "qrCode": "sensitive-qr-value",
-                    "status": "$status",
-                    "expiresAt": "2026-08-31T15:00:00Z",
-                    "message": "고마워"
-                  }
+                  "gifticonId": 31,
+                  "amount": 10000,
+                  "balance": $balance,
+                  "qrCode": "sensitive-qr-value",
+                  "status": "$status",
+                  "expiresAt": "2026-08-31T15:00:00Z",
+                  "message": "고마워"
                 }
                 """.trimIndent(),
             )
@@ -380,13 +334,8 @@ class RealRewardRepositoryTest {
             .setBody(
                 """
                 {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": {
-                    "balanceAfter": $balanceAfter,
-                    "status": "$status"
-                  }
+                  "balanceAfter": $balanceAfter,
+                  "status": "$status"
                 }
                 """.trimIndent(),
             )

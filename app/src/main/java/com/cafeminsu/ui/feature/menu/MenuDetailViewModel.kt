@@ -5,6 +5,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
+import com.cafeminsu.domain.model.Cart
+import com.cafeminsu.domain.model.CartItem
 import com.cafeminsu.domain.model.MenuItem
 import com.cafeminsu.domain.model.MenuOptionGroup
 import com.cafeminsu.domain.model.SelectedOption
@@ -19,6 +21,7 @@ import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
@@ -29,6 +32,8 @@ class MenuDetailViewModel @Inject constructor(
     private val cartRepository: CartRepository,
 ) : ViewModel() {
     private val menuItemId = savedStateHandle.get<String>(Routes.MENU_DETAIL_MENU_ID).orEmpty()
+    private val editingCartItemId = savedStateHandle.get<String>(Routes.MENU_DETAIL_CART_ITEM_ID)
+        ?.takeIf { it.isNotBlank() }
     private val _uiState = MutableStateFlow<MenuDetailUiState>(MenuDetailUiState.Loading)
     private val _events = MutableSharedFlow<MenuDetailEvent>(extraBufferCapacity = EventBufferCapacity)
 
@@ -106,13 +111,7 @@ class MenuDetailViewModel @Inject constructor(
         }
 
         viewModelScope.launch {
-            when (
-                val result = cartRepository.addItem(
-                    menuItemId = content.menuItemId,
-                    options = content.selectedOptions(),
-                    quantity = content.quantity,
-                )
-            ) {
+            when (val result = content.commitToCart()) {
                 is AppResult.Success -> {
                     _uiState.update { state ->
                         (state as? MenuDetailUiState.Content)?.copy(
@@ -133,6 +132,19 @@ class MenuDetailViewModel @Inject constructor(
         }
     }
 
+    // 편집(장바구니에서 진입)일 때는 새 항목으로 담은 뒤 기존 항목을 제거해 "수정"처럼 동작시킨다.
+    private suspend fun MenuDetailUiState.Content.commitToCart(): AppResult<Cart> {
+        val result = cartRepository.addItem(
+            menuItemId = menuItemId,
+            options = selectedOptions(),
+            quantity = quantity,
+        )
+        if (result is AppResult.Success) {
+            editingCartItemId?.let { cartRepository.removeItem(it) }
+        }
+        return result
+    }
+
     private fun loadMenu() {
         if (menuItemId.isBlank()) {
             _uiState.value = DomainError.NotFound.toMenuDetailError()
@@ -142,14 +154,27 @@ class MenuDetailViewModel @Inject constructor(
         _uiState.value = MenuDetailUiState.Loading
         viewModelScope.launch {
             _uiState.value = when (val result = menuRepository.getMenu(menuItemId)) {
-                is AppResult.Success -> result.data.toContent()
+                is AppResult.Success -> result.data.toContent(editingCartItemId?.let { findCartItem(it) })
                 is AppResult.Failure -> result.error.toMenuDetailError()
             }
         }
     }
 
-    private fun MenuItem.toContent(): MenuDetailUiState.Content =
-        MenuDetailUiState.Content(
+    private suspend fun findCartItem(cartItemId: String): CartItem? =
+        when (val result = cartRepository.observeCart().first()) {
+            is AppResult.Success -> result.data.items.firstOrNull { it.id == cartItemId }
+            is AppResult.Failure -> null
+        }
+
+    private fun MenuItem.toContent(editingItem: CartItem?): MenuDetailUiState.Content {
+        val initialSelections = editingItem
+            ?.selectedOptions
+            ?.groupBy { option -> option.groupId }
+            ?.mapValues { (_, options) -> options.map { it.optionId }.toSet() }
+            .orEmpty()
+        val initialQuantity = editingItem?.quantity?.coerceIn(MinQuantity, MaxQuantity) ?: MinQuantity
+
+        return MenuDetailUiState.Content(
             menuItemId = id,
             name = name,
             description = description,
@@ -157,17 +182,19 @@ class MenuDetailViewModel @Inject constructor(
             isSoldOut = isSoldOut,
             optionGroups = emptyList(),
             selectedOptionIdsByGroup = emptyMap(),
-            quantity = MinQuantity,
+            quantity = initialQuantity,
             unitPrice = basePrice,
             totalPrice = basePrice,
             canAddToCart = !isSoldOut,
             addStatus = MenuDetailAddStatus.Idle,
+            isEditing = editingItem != null,
         ).recalculate(
-            selectedOptionIdsByGroup = emptyMap(),
-            quantity = MinQuantity,
+            selectedOptionIdsByGroup = initialSelections,
+            quantity = initialQuantity,
             addStatus = MenuDetailAddStatus.Idle,
             sourceMenu = this,
         )
+    }
 
     private fun MenuDetailUiState.Content.recalculate(
         selectedOptionIdsByGroup: Map<String, Set<String>> = this.selectedOptionIdsByGroup,

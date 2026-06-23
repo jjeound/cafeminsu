@@ -108,6 +108,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideFcmTokenApi(retrofit: Retrofit): FcmTokenApi =
+        retrofit.create(FcmTokenApi::class.java)
+
+    @Provides
+    @Singleton
     @Unauthenticated
     fun provideStoreApi(
         @Unauthenticated retrofit: Retrofit,
@@ -194,6 +199,6 @@ private val SensitiveHeaderRegex = Regex(
 )
 
 private val SensitiveJsonValueRegex = Regex(
-    pattern = "(\"(?:accessToken|refreshToken|qrCode|barcodeValue|qrValue)\"\\s*:\\s*\")[^\"]*(\")",
+    pattern = "(\"(?:accessToken|refreshToken|password|qrCode|barcodeValue|qrValue)\"\\s*:\\s*\")[^\"]*(\")",
     options = setOf(RegexOption.IGNORE_CASE),
 )

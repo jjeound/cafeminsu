@@ -6,14 +6,13 @@ import org.junit.Test
 class RoutesTest {
     @Test
     fun routesMatchRedesignScreenCodeContract() {
-        assertEquals("splash", Routes.SPLASH)
         assertEquals("login", Routes.LOGIN)
         assertEquals("home", Routes.HOME)
         assertEquals("noti", Routes.NOTI)
         assertEquals("store", Routes.STORE)
         assertEquals("store_detail", Routes.STORE_DETAIL)
         assertEquals("menu", Routes.MENU)
-        assertEquals("menu_detail/{menuItemId}", Routes.MENU_DETAIL)
+        assertEquals("menu_detail/{menuItemId}?cartItemId={cartItemId}", Routes.MENU_DETAIL)
         assertEquals("voice", Routes.VOICE)
         assertEquals("cart", Routes.CART)
         assertEquals("pay/{orderId}", Routes.PAY)
@@ -33,6 +32,14 @@ class RoutesTest {
     @Test
     fun menuDetailRouteCarriesMenuItemId() {
         assertEquals("menu_detail/americano", Routes.menuDetail("americano"))
+    }
+
+    @Test
+    fun menuDetailRouteCarriesCartItemIdWhenEditing() {
+        assertEquals(
+            "menu_detail/americano?cartItemId=cart-item-1",
+            Routes.menuDetail("americano", "cart-item-1"),
+        )
     }
 
     @Test

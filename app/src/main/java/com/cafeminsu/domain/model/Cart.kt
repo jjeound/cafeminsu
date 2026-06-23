@@ -1,5 +1,7 @@
 package com.cafeminsu.domain.model
 
+import com.squareup.moshi.JsonClass
+
 data class Cart(
     val items: List<CartItem>,
     val subtotal: Int,
@@ -13,6 +15,8 @@ enum class OrderType {
     Takeout,
 }
 
+// 주문 내역 캐시 시 한 컬럼에 Moshi JSON 으로 직렬화하므로 codegen 어댑터를 생성한다(Menu 옵션과 동일 패턴).
+@JsonClass(generateAdapter = true)
 data class CartItem(
     val id: String,
     val menuItemId: String,
@@ -22,6 +26,7 @@ data class CartItem(
     val quantity: Int,
 )
 
+@JsonClass(generateAdapter = true)
 data class SelectedOption(
     val groupId: String,
     val optionId: String,

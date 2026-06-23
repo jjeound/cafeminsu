@@ -94,20 +94,7 @@ class RealGiftRepositoryTest {
 
     @Test
     fun purchaseFailureReturnsFailureAndDoesNotShare() = runTest(testDispatcher) {
-        server.enqueue(
-            MockResponse()
-                .setResponseCode(200)
-                .setBody(
-                    """
-                    {
-                      "isSuccess": false,
-                      "code": 404,
-                      "message": "수신자 없음",
-                      "result": null
-                    }
-                    """.trimIndent(),
-                ),
-        )
+        server.enqueue(MockResponse().setResponseCode(404))
         val repository = realGiftRepository()
 
         val result = repository.sendGift(giftRequest())
@@ -188,14 +175,9 @@ class RealGiftRepositoryTest {
             .setBody(
                 """
                 {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": {
-                    "gifticonId": $gifticonId,
-                    "qrCode": "qr-sensitive-value",
-                    "merchantUid": "merchant-sensitive-value"
-                  }
+                  "gifticonId": $gifticonId,
+                  "qrCode": "qr-sensitive-value",
+                  "merchantUid": "merchant-sensitive-value"
                 }
                 """.trimIndent(),
             )
@@ -206,13 +188,8 @@ class RealGiftRepositoryTest {
             .setBody(
                 """
                 {
-                  "isSuccess": true,
-                  "code": 200,
-                  "message": "OK",
-                  "result": {
-                    "shareLink": "https://cafeminsu.example/gift/secret",
-                    "deepLink": "cafeminsu://gift/secret"
-                  }
+                  "shareLink": "https://cafeminsu.example/gift/secret",
+                  "deepLink": "cafeminsu://gift/secret"
                 }
                 """.trimIndent(),
             )

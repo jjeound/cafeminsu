@@ -3,6 +3,7 @@ package com.cafeminsu.data.repository
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.data.auth.SessionStateHolder
+import com.cafeminsu.data.local.order.OrderHistoryLocalDataSource
 import com.cafeminsu.data.mapper.toOrder
 import com.cafeminsu.data.mapper.toOrderCreateReq
 import com.cafeminsu.data.mapper.toOrders
@@ -10,7 +11,6 @@ import com.cafeminsu.data.remote.DefaultOrderPage
 import com.cafeminsu.data.remote.DefaultOrderPageSize
 import com.cafeminsu.data.remote.OrderApi
 import com.cafeminsu.data.remote.runCatchingToAppResult
-import com.cafeminsu.data.remote.unwrap
 import com.cafeminsu.di.IoDispatcher
 import com.cafeminsu.domain.model.AuthState
 import com.cafeminsu.domain.model.Cart
@@ -30,6 +30,7 @@ class RealOrderRepository @Inject constructor(
     private val orderApi: OrderApi,
     private val selectedStoreHolder: SelectedStoreHolder,
     private val sessionStateHolder: SessionStateHolder,
+    private val localDataSource: OrderHistoryLocalDataSource,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : OrderRepository {
     override suspend fun createOrderFromCart(cart: Cart): AppResult<Order> =
@@ -56,12 +57,10 @@ class RealOrderRepository @Inject constructor(
                     orderApi.createOrder(request = request)
                 }
             ) {
-                is AppResult.Success -> response.data.unwrap {
-                    it.toOrder(
-                        cartItems = cart.items,
-                        createdAtMillis = System.currentTimeMillis(),
-                    )
-                }
+                is AppResult.Success -> response.data.toOrder(
+                    cartItems = cart.items,
+                    createdAtMillis = System.currentTimeMillis(),
+                )
 
                 is AppResult.Failure -> response
             }
@@ -89,7 +88,7 @@ class RealOrderRepository @Inject constructor(
                         orderApi.getOrder(orderId = serverOrderId)
                     }
                 ) {
-                    is AppResult.Success -> response.data.unwrap { it.toOrder() }
+                    is AppResult.Success -> response.data.toOrder()
                     is AppResult.Failure -> response
                 },
             )
@@ -97,6 +96,7 @@ class RealOrderRepository @Inject constructor(
 
     override fun observeOrderHistory(): Flow<AppResult<List<Order>>> =
         flow {
+            // 인증 게이트를 먼저 통과해야만 캐시도 조회한다 — 미인증 시 다른 사용자 캐시 노출 금지(보안).
             when (val result = ensureAuthenticated()) {
                 is AppResult.Success -> Unit
                 is AppResult.Failure -> {
@@ -114,8 +114,20 @@ class RealOrderRepository @Inject constructor(
                         )
                     }
                 ) {
-                    is AppResult.Success -> response.data.unwrap { it.toOrders() }
-                    is AppResult.Failure -> response
+                    is AppResult.Success ->
+                        when (val mapped = response.data.toOrders()) {
+                            is AppResult.Success -> {
+                                // 성공 시 write-through 후 그대로 방출.
+                                localDataSource.replaceHistory(mapped.data)
+                                mapped
+                            }
+                            is AppResult.Failure -> mapped
+                        }
+                    is AppResult.Failure -> {
+                        // 오프라인 폴백: 캐시가 있으면 읽기 전용으로 노출, 없으면 실패 전파.
+                        val cached = localDataSource.cachedHistory()
+                        if (cached.isEmpty()) response else AppResult.Success(cached)
+                    }
                 },
             )
         }.flowOn(ioDispatcher)

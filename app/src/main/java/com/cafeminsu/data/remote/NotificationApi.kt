@@ -6,10 +6,10 @@ import retrofit2.http.PATCH
 
 interface NotificationApi {
     @GET("api/notifications")
-    suspend fun getNotifications(): BaseResponse<List<NotificationListItemRes>>
+    suspend fun getNotifications(): List<NotificationListItemRes>
 
     @PATCH("api/notifications/read-all")
-    suspend fun markAllRead(): BaseResponse<NotificationReadAllRes>
+    suspend fun markAllRead(): NotificationReadAllRes
 }
 
 @JsonClass(generateAdapter = true)

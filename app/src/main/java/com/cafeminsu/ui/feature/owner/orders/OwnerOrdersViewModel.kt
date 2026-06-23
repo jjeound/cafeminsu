@@ -7,13 +7,25 @@ import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.CartItem
 import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.OrderStatus
+import com.cafeminsu.domain.proximity.ProximitySignal
+import com.cafeminsu.domain.proximity.ProximitySignalRepository
+import com.cafeminsu.domain.proximity.toProximityInput
 import com.cafeminsu.domain.repository.OwnerOrderRepository
+import com.cafeminsu.domain.scheduling.CongestionCalculator
+import com.cafeminsu.domain.scheduling.CongestionLevel
+import com.cafeminsu.domain.scheduling.OrderScheduler
+import com.cafeminsu.domain.scheduling.PrepTimeEstimator
+import com.cafeminsu.domain.scheduling.ProximityInput
+import com.cafeminsu.domain.scheduling.ScheduledOrder
+import com.cafeminsu.domain.scheduling.SchedulingSignals
+import com.cafeminsu.domain.time.Clock
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Instant
 import java.time.ZoneId
 import java.time.format.DateTimeFormatter
 import java.util.Locale
 import javax.inject.Inject
+import kotlin.math.ceil
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
@@ -25,6 +37,11 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class OwnerOrdersViewModel @Inject constructor(
     private val ownerOrderRepository: OwnerOrderRepository,
+    private val orderScheduler: OrderScheduler,
+    private val congestionCalculator: CongestionCalculator,
+    private val prepTimeEstimator: PrepTimeEstimator,
+    private val proximitySignalRepository: ProximitySignalRepository,
+    private val clock: Clock,
 ) : ViewModel() {
     private val selectedFilter = MutableStateFlow(OwnerOrdersFilter.New)
     private val operationError = MutableStateFlow<DomainError?>(null)
@@ -35,12 +52,14 @@ class OwnerOrdersViewModel @Inject constructor(
         selectedFilter,
         operationError,
         processingOrderIds,
-    ) { orderResult, filter, actionError, processingIds ->
+        proximitySignalRepository.observe(),
+    ) { orderResult, filter, actionError, processingIds, proximitySignals ->
         mapOwnerOrdersState(
             orderResult = orderResult,
             selectedFilter = filter,
             operationError = actionError,
             processingOrderIds = processingIds,
+            proximitySignals = proximitySignals,
         )
     }.catch {
         emit(
@@ -96,6 +115,7 @@ class OwnerOrdersViewModel @Inject constructor(
         selectedFilter: OwnerOrdersFilter,
         operationError: DomainError?,
         processingOrderIds: Set<String>,
+        proximitySignals: Map<String, ProximitySignal>,
     ): OwnerOrdersUiState {
         operationError?.let { return it.toOwnerOrdersError() }
 
@@ -104,10 +124,20 @@ class OwnerOrdersViewModel @Inject constructor(
             is AppResult.Failure -> return orderResult.error.toOwnerOrdersError()
         }
         val counts = orders.toOwnerOrdersCounts()
-        val filteredOrders = orders
-            .filter { it.status == selectedFilter.status }
-            .sortedByDescending { it.createdAtMillis }
-            .map { it.toOwnerOrdersOrderUiModel(processingOrderIds) }
+        val nowMillis = clock.nowMillis()
+        val congestion = congestionCalculator.level(orders.activeOrderCount())
+        val filtered = orders.filter { it.status == selectedFilter.status }
+        val signals = filtered.associate { order ->
+            order.id to order.toSchedulingSignals(
+                nowMillis = nowMillis,
+                congestion = congestion,
+                // 비콘 근접 신호가 있으면 스케줄러 입력으로 변환해 우선순위·ArrivingSoon 뱃지에 반영.
+                proximity = proximitySignals[order.id]?.toProximityInput(),
+            )
+        }
+        val filteredOrders = orderScheduler
+            .schedule(orders = filtered, signals = signals, nowMillis = nowMillis)
+            .map { it.toOwnerOrdersOrderUiModel(processingOrderIds, nowMillis) }
 
         if (filteredOrders.isEmpty()) {
             return OwnerOrdersUiState.Empty(
@@ -131,19 +161,48 @@ class OwnerOrdersViewModel @Inject constructor(
             readyCount = count { it.status == OrderStatus.Ready },
         )
 
-    private fun Order.toOwnerOrdersOrderUiModel(processingOrderIds: Set<String>): OwnerOrdersOrderUiModel =
-        OwnerOrdersOrderUiModel(
-            id = id,
-            orderNumberLabel = "#$orderNumber",
-            timeLabel = createdAtMillis.toOwnerTimeLabel(),
-            status = status,
-            statusLabel = status.ownerOrdersStatusLabel(),
-            itemsLabel = items.joinToString(separator = "\n") { it.toOwnerOrderItemLine() },
-            requestLabel = OwnerRequestLabel,
-            totalAmount = totalAmount,
-            actionLabel = status.ownerOrdersActionLabel(),
-            isActionInProgress = processingOrderIds.contains(id),
+    private fun List<Order>.activeOrderCount(): Int =
+        count { it.status == OrderStatus.Accepted || it.status == OrderStatus.Preparing }
+
+    private fun Order.toSchedulingSignals(
+        nowMillis: Long,
+        congestion: CongestionLevel,
+        proximity: ProximityInput?,
+    ): SchedulingSignals =
+        SchedulingSignals(
+            orderId = id,
+            waitingSeconds = ((nowMillis - createdAtMillis) / MillisPerSecond).coerceAtLeast(0L),
+            prepSeconds = prepTimeEstimator.estimateSeconds(this),
+            quantity = items.sumOf { it.quantity },
+            congestion = congestion,
+            proximity = proximity,
         )
+
+    private fun ScheduledOrder.toOwnerOrdersOrderUiModel(
+        processingOrderIds: Set<String>,
+        nowMillis: Long,
+    ): OwnerOrdersOrderUiModel =
+        OwnerOrdersOrderUiModel(
+            id = order.id,
+            orderNumberLabel = "#${order.orderNumber}",
+            timeLabel = order.createdAtMillis.toOwnerTimeLabel(),
+            status = order.status,
+            statusLabel = order.status.ownerOrdersStatusLabel(),
+            itemsLabel = order.items.joinToString(separator = "\n") { it.toOwnerOrderItemLine() },
+            requestLabel = OwnerRequestLabel,
+            totalAmount = order.totalAmount,
+            actionLabel = order.status.ownerOrdersActionLabel(),
+            isActionInProgress = processingOrderIds.contains(order.id),
+            priorityBadge = badge,
+            etaLabel = estimatedReadyAtMillis.toEtaLabel(nowMillis),
+        )
+
+    private fun Long.toEtaLabel(nowMillis: Long): String? {
+        val remainingMillis = this - nowMillis
+        if (remainingMillis <= 0L) return null
+        val minutes = ceil(remainingMillis.toDouble() / MillisPerMinute).toInt().coerceAtLeast(1)
+        return "약 ${minutes}분"
+    }
 
     private fun CartItem.toOwnerOrderItemLine(): String {
         val normalizedName = name
@@ -234,6 +293,8 @@ class OwnerOrdersViewModel @Inject constructor(
     private companion object {
         const val StateStopTimeoutMillis = 5_000L
         const val OwnerRequestLabel = "포장 · 요청: 얼음 적게"
+        const val MillisPerSecond = 1_000L
+        const val MillisPerMinute = 60_000L
 
         val SeoulZoneId: ZoneId = ZoneId.of("Asia/Seoul")
         val TimeFormatter: DateTimeFormatter = DateTimeFormatter.ofPattern("a h:mm", Locale.KOREAN)

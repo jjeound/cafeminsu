@@ -63,6 +63,52 @@ class AuthApiTest {
     }
 
     @Test
+    fun ownerLoginResponseMapsToTokensAndOwnerProfileWithStoreNameFromNickname() {
+        val response = OwnerLoginRes(
+            accessToken = "owner-access",
+            refreshToken = "owner-refresh",
+            nickname = "강남점장",
+        )
+
+        val result = response.toOwnerLoginExchange(loginId = "owner02")
+
+        assertTrue(result is AppResult.Success)
+        val exchange = (result as AppResult.Success).data
+        assertEquals(SessionTokens("owner-access", "owner-refresh"), exchange.tokens)
+        assertEquals("owner02", exchange.ownerProfile.loginId)
+        assertEquals("강남점장", exchange.ownerProfile.storeName)
+        assertEquals(true, exchange.ownerProfile.isStoreOpen)
+    }
+
+    @Test
+    fun ownerLoginResponseFallsBackToLoginIdWhenNicknameBlank() {
+        val response = OwnerLoginRes(
+            accessToken = "owner-access",
+            refreshToken = "owner-refresh",
+            nickname = "  ",
+        )
+
+        val result = response.toOwnerLoginExchange(loginId = "owner02")
+
+        assertTrue(result is AppResult.Success)
+        assertEquals("owner02", (result as AppResult.Success).data.ownerProfile.storeName)
+    }
+
+    @Test
+    fun ownerLoginResponseWithMissingTokenMapsToUnknownError() {
+        val response = OwnerLoginRes(
+            accessToken = null,
+            refreshToken = "owner-refresh",
+            nickname = "강남점장",
+        )
+
+        assertEquals(
+            AppResult.Failure(DomainError.Unknown),
+            response.toOwnerLoginExchange(loginId = "owner02"),
+        )
+    }
+
+    @Test
     fun nicknameCheckResponseMapsAvailability() {
         val available = NicknameCheckRes(available = true)
         val duplicated = NicknameCheckRes(available = false)
@@ -81,19 +127,5 @@ class AuthApiTest {
         assertEquals("새민수", authState.user.displayName)
         assertEquals(UserRole.Customer, authState.role)
         assertEquals(false, authState.isNewUser)
-    }
-
-    @Test
-    fun failedBaseResponseMapsCodeToDomainError() {
-        val response = BaseResponse<KakaoLoginRes>(
-            isSuccess = false,
-            code = 401,
-            message = "unauthorized",
-            result = null,
-        )
-
-        val result = response.unwrap { it.toLoginExchange() }
-
-        assertEquals(AppResult.Failure(DomainError.Unauthorized), result)
     }
 }

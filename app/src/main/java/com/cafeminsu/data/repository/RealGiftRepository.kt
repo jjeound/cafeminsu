@@ -8,7 +8,6 @@ import com.cafeminsu.data.remote.GifticonApi
 import com.cafeminsu.data.remote.GifticonPurchaseReq
 import com.cafeminsu.data.remote.GifticonPurchaseRes
 import com.cafeminsu.data.remote.runCatchingToAppResult
-import com.cafeminsu.data.remote.unwrap
 import com.cafeminsu.di.IoDispatcher
 import com.cafeminsu.domain.model.AuthState
 import com.cafeminsu.domain.model.GiftChannel
@@ -60,25 +59,18 @@ class RealGiftRepository(
                     gifticonApi.shareGifticon(gifticonId = gifticonId)
                 }
             ) {
-                is AppResult.Success -> response.data.unwrap {
-                    it.toGiftSendResult(
-                        purchase = purchase,
-                        sentAtMillis = nowMillis(),
-                    )
-                }
+                is AppResult.Success -> response.data.toGiftSendResult(
+                    purchase = purchase,
+                    sentAtMillis = nowMillis(),
+                )
 
                 is AppResult.Failure -> response
             }
         }
 
     private suspend fun purchaseGifticon(request: GiftSendRequest): AppResult<GifticonPurchaseRes> =
-        when (
-            val response = runCatchingToAppResult {
-                gifticonApi.purchaseGifticon(request = request.toPurchaseReq())
-            }
-        ) {
-            is AppResult.Success -> response.data.unwrap { AppResult.Success(it) }
-            is AppResult.Failure -> response
+        runCatchingToAppResult {
+            gifticonApi.purchaseGifticon(request = request.toPurchaseReq())
         }
 
     private fun GiftSendRequest.toPurchaseReq(): GifticonPurchaseReq =

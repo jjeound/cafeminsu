@@ -59,7 +59,7 @@ class SessionAuthenticator @Inject constructor(
         }
 
         val result = when (response) {
-            is AppResult.Success -> response.data.unwrap { it.toAccessToken() }
+            is AppResult.Success -> response.data.toAccessToken()
             is AppResult.Failure -> response
         }
 
@@ -99,6 +99,7 @@ private fun Request.isAuthEndpoint(): Boolean =
 
 private val AuthEndpointPaths = setOf(
     "/api/user/kakao-login",
+    "/api/user/owner-login",
     "/api/user/refresh",
     "/api/user/logout",
 )

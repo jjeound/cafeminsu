@@ -3,13 +3,10 @@ package com.cafeminsu.data.repository
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.data.auth.SessionStateHolder
+import com.cafeminsu.data.local.notification.NotificationLocalDataSource
 import com.cafeminsu.data.mapper.toAppNotifications
-import com.cafeminsu.data.remote.BaseResponse
 import com.cafeminsu.data.remote.NotificationApi
-import com.cafeminsu.data.remote.NotificationReadAllRes
 import com.cafeminsu.data.remote.runCatchingToAppResult
-import com.cafeminsu.data.remote.toDomainError
-import com.cafeminsu.data.remote.unwrap
 import com.cafeminsu.di.IoDispatcher
 import com.cafeminsu.domain.model.AppNotification
 import com.cafeminsu.domain.model.AuthState
@@ -26,10 +23,12 @@ import kotlinx.coroutines.withContext
 class RealNotificationRepository @Inject constructor(
     private val notificationApi: NotificationApi,
     private val sessionStateHolder: SessionStateHolder,
+    private val localDataSource: NotificationLocalDataSource,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : NotificationRepository {
     override fun observeNotifications(): Flow<AppResult<List<AppNotification>>> =
         flow {
+            // 인증 게이트를 먼저 통과해야만 캐시도 조회한다 — 미인증 시 다른 사용자 캐시 노출 금지(보안).
             when (val auth = ensureAuthenticated()) {
                 is AppResult.Success -> Unit
                 is AppResult.Failure -> {
@@ -44,8 +43,20 @@ class RealNotificationRepository @Inject constructor(
                         notificationApi.getNotifications()
                     }
                 ) {
-                    is AppResult.Success -> response.data.unwrap { it.toAppNotifications() }
-                    is AppResult.Failure -> response
+                    is AppResult.Success ->
+                        when (val mapped = response.data.toAppNotifications()) {
+                            is AppResult.Success -> {
+                                // 성공 시 write-through 후 그대로 방출.
+                                localDataSource.replaceNotifications(mapped.data)
+                                mapped
+                            }
+                            is AppResult.Failure -> mapped
+                        }
+                    is AppResult.Failure -> {
+                        // 오프라인 폴백: 캐시가 있으면 읽기 전용으로 노출, 없으면 실패 전파.
+                        val cached = localDataSource.cachedNotifications()
+                        if (cached.isEmpty()) response else AppResult.Success(cached)
+                    }
                 },
             )
         }.flowOn(ioDispatcher)
@@ -62,7 +73,7 @@ class RealNotificationRepository @Inject constructor(
                     notificationApi.markAllRead()
                 }
             ) {
-                is AppResult.Success -> response.data.toUnitResult()
+                is AppResult.Success -> AppResult.Success(Unit)
                 is AppResult.Failure -> response
             }
         }
@@ -74,14 +85,4 @@ class RealNotificationRepository @Inject constructor(
         }
         return AppResult.Success(Unit)
     }
-
-    private fun BaseResponse<NotificationReadAllRes>.toUnitResult(): AppResult<Unit> =
-        if (isSuccess == true) {
-            AppResult.Success(Unit)
-        } else {
-            AppResult.Failure(code.toDomainErrorOrUnknown())
-        }
-
-    private fun Int?.toDomainErrorOrUnknown(): DomainError =
-        this?.toDomainError() ?: DomainError.Unknown
 }

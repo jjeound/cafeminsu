@@ -7,6 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onAllNodesWithText
+import androidx.compose.ui.test.onNodeWithTag
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.cafeminsu.core.DataUiState
@@ -32,23 +33,9 @@ class StateComponentsTest {
             }
         }
 
-        composeRule.onNodeWithText("메뉴 정보를 불러오고 있어요").assertIsDisplayed()
-        composeRule.onNodeWithText("잠시만 기다려주세요").assertIsDisplayed()
-    }
-
-    @Test
-    fun loadingViewAllowsScreenSpecificMessages() {
-        composeRule.setContent {
-            CafeTheme {
-                LoadingView(
-                    title = "쿠폰 정보를 불러오고 있어요",
-                    message = "잠시 후 다시 보여드릴게요",
-                )
-            }
-        }
-
-        composeRule.onNodeWithText("쿠폰 정보를 불러오고 있어요").assertIsDisplayed()
-        composeRule.onNodeWithText("잠시 후 다시 보여드릴게요").assertIsDisplayed()
+        composeRule.onNodeWithTag("loading_view").assertIsDisplayed()
+        composeRule.onNodeWithText("메뉴 정보를 불러오고 있어요").assertDoesNotExist()
+        composeRule.onNodeWithText("잠시만 기다려주세요").assertDoesNotExist()
     }
 
     @Test

@@ -10,12 +10,12 @@ interface MenuApi {
     suspend fun listByStore(
         @Path("storeId") storeId: Long,
         @Query("category") category: String? = null,
-    ): BaseResponse<List<MenuListItemRes>>
+    ): List<MenuListItemRes>
 
     @GET("api/menus/{menuId}")
     suspend fun getMenu(
         @Path("menuId") menuId: Long,
-    ): BaseResponse<MenuDetailRes>
+    ): MenuDetailRes
 }
 
 @JsonClass(generateAdapter = true)
