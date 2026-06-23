@@ -14,6 +14,7 @@ import com.cafeminsu.data.repository.MockStoreRepository
 import com.cafeminsu.data.repository.RealFcmTokenRepository
 import com.cafeminsu.data.repository.RealGiftRepository
 import com.cafeminsu.data.repository.RealNotificationRepository
+import com.cafeminsu.data.repository.RealOwnerMenuRepository
 import com.cafeminsu.data.repository.RealOwnerOrderRepository
 import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.CouponRepository
@@ -37,11 +38,6 @@ class RepositoryModuleTest {
     @Test
     fun repositoryModuleBindsUnchangedRepositoryContractsToMockSingletons() {
         assertBinding("bindCartRepository", CartRepository::class.java, MockCartRepository::class.java)
-        assertBinding(
-            "bindOwnerMenuRepository",
-            OwnerMenuRepository::class.java,
-            MockOwnerMenuRepository::class.java,
-        )
         assertBinding("bindCouponRepository", CouponRepository::class.java, MockCouponRepository::class.java)
     }
 
@@ -140,6 +136,47 @@ class RepositoryModuleTest {
         assertEquals(OwnerOrderRepository::class.java, method.returnType)
         assertEquals(RealOwnerOrderRepository::class.java, method.genericParameterTypes.first().providerArgument())
         assertEquals(MockOwnerOrderRepository::class.java, method.genericParameterTypes.last().providerArgument())
+    }
+
+    @Test
+    fun blankBaseUrlSelectsMockOwnerMenuRepositoryFallback() {
+        val realRepository = FakeOwnerMenuRepository()
+        val mockRepository = FakeOwnerMenuRepository()
+
+        val selected = selectOwnerMenuRepository(
+            baseUrl = "",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(mockRepository, selected)
+    }
+
+    @Test
+    fun configuredBaseUrlSelectsRealOwnerMenuRepository() {
+        val realRepository = FakeOwnerMenuRepository()
+        val mockRepository = FakeOwnerMenuRepository()
+
+        val selected = selectOwnerMenuRepository(
+            baseUrl = "https://cafeminsu.example/",
+            realFactory = { realRepository },
+            mockFactory = { mockRepository },
+        )
+
+        assertEquals(realRepository, selected)
+    }
+
+    @Test
+    fun repositoryModuleProvidesOwnerMenuRepositoryWithRealAndMockProviders() {
+        val method = RepositoryModule.Companion::class.java.getDeclaredMethod(
+            "provideOwnerMenuRepository",
+            javax.inject.Provider::class.java,
+            javax.inject.Provider::class.java,
+        )
+
+        assertEquals(OwnerMenuRepository::class.java, method.returnType)
+        assertEquals(RealOwnerMenuRepository::class.java, method.genericParameterTypes.first().providerArgument())
+        assertEquals(MockOwnerMenuRepository::class.java, method.genericParameterTypes.last().providerArgument())
     }
 
     @Test
@@ -544,5 +581,29 @@ private class FakeOwnerOrderRepository : OwnerOrderRepository {
         orderId: String,
         to: com.cafeminsu.domain.model.OrderStatus,
     ): com.cafeminsu.core.AppResult<com.cafeminsu.domain.model.Order> =
+        com.cafeminsu.core.AppResult.Failure(com.cafeminsu.core.DomainError.NotFound)
+}
+
+private class FakeOwnerMenuRepository : OwnerMenuRepository {
+    override fun observeManagedMenus(
+        categoryId: String?,
+    ): kotlinx.coroutines.flow.Flow<com.cafeminsu.core.AppResult<List<com.cafeminsu.domain.model.MenuItem>>> =
+        kotlinx.coroutines.flow.flowOf(com.cafeminsu.core.AppResult.Success(emptyList()))
+
+    override suspend fun setSoldOut(
+        menuItemId: String,
+        soldOut: Boolean,
+    ): com.cafeminsu.core.AppResult<com.cafeminsu.domain.model.MenuItem> =
+        com.cafeminsu.core.AppResult.Failure(com.cafeminsu.core.DomainError.NotFound)
+
+    override suspend fun setVisible(
+        menuItemId: String,
+        visible: Boolean,
+    ): com.cafeminsu.core.AppResult<com.cafeminsu.domain.model.MenuItem> =
+        com.cafeminsu.core.AppResult.Failure(com.cafeminsu.core.DomainError.NotFound)
+
+    override suspend fun addMenu(
+        draft: com.cafeminsu.domain.model.NewMenuDraft,
+    ): com.cafeminsu.core.AppResult<com.cafeminsu.domain.model.MenuItem> =
         com.cafeminsu.core.AppResult.Failure(com.cafeminsu.core.DomainError.NotFound)
 }

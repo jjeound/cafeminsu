@@ -21,6 +21,7 @@ import com.cafeminsu.data.repository.RealGiftRepository
 import com.cafeminsu.data.repository.RealMenuRepository
 import com.cafeminsu.data.repository.RealNotificationRepository
 import com.cafeminsu.data.repository.RealOrderRepository
+import com.cafeminsu.data.repository.RealOwnerMenuRepository
 import com.cafeminsu.data.repository.RealOwnerOrderRepository
 import com.cafeminsu.data.repository.RealPaymentRepository
 import com.cafeminsu.data.repository.RealRewardRepository
@@ -54,10 +55,6 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindCartRepository(repository: MockCartRepository): CartRepository
-
-    @Binds
-    @Singleton
-    abstract fun bindOwnerMenuRepository(repository: MockOwnerMenuRepository): OwnerMenuRepository
 
     @Binds
     @Singleton
@@ -139,6 +136,18 @@ abstract class RepositoryModule {
             mockRepository: Provider<MockOwnerOrderRepository>,
         ): OwnerOrderRepository =
             selectOwnerOrderRepository(
+                baseUrl = com.cafeminsu.BuildConfig.BASE_URL,
+                realFactory = { realRepository.get() },
+                mockFactory = { mockRepository.get() },
+            )
+
+        @Provides
+        @Singleton
+        fun provideOwnerMenuRepository(
+            realRepository: Provider<RealOwnerMenuRepository>,
+            mockRepository: Provider<MockOwnerMenuRepository>,
+        ): OwnerMenuRepository =
+            selectOwnerMenuRepository(
                 baseUrl = com.cafeminsu.BuildConfig.BASE_URL,
                 realFactory = { realRepository.get() },
                 mockFactory = { mockRepository.get() },
@@ -243,6 +252,17 @@ internal fun selectOwnerOrderRepository(
     realFactory: () -> OwnerOrderRepository,
     mockFactory: () -> OwnerOrderRepository,
 ): OwnerOrderRepository =
+    if (baseUrl.isNotBlank()) {
+        realFactory()
+    } else {
+        mockFactory()
+    }
+
+internal fun selectOwnerMenuRepository(
+    baseUrl: String,
+    realFactory: () -> OwnerMenuRepository,
+    mockFactory: () -> OwnerMenuRepository,
+): OwnerMenuRepository =
     if (baseUrl.isNotBlank()) {
         realFactory()
     } else {

@@ -6,7 +6,9 @@ import com.cafeminsu.data.remote.MenuDetailRes
 import com.cafeminsu.data.remote.MenuListItemRes
 import com.cafeminsu.data.remote.MenuOptionRes
 import com.cafeminsu.domain.model.MenuItem
+import com.cafeminsu.domain.model.NewMenuDraft
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Test
 
@@ -84,6 +86,45 @@ class MenuMapperTest {
         val result = listOf(menuListItem(id = null, category = "커피")).toMenuItems()
 
         assertEquals(AppResult.Failure(DomainError.Unknown), result)
+    }
+
+    @Test
+    fun draftMapsToCreateRequestWithAvailabilityInverted() {
+        val request = NewMenuDraft(
+            name = "콜드브루",
+            categoryId = "coffee",
+            basePrice = 5_500,
+            description = "깊고 진한 콜드브루",
+            imageUrl = "https://cdn.example/coldbrew.png",
+            isSoldOut = true,
+        ).toMenuCreateReq()
+
+        assertEquals("콜드브루", request.name)
+        assertEquals("깊고 진한 콜드브루", request.description)
+        assertEquals(5_500, request.price)
+        assertEquals("coffee", request.category)
+        assertEquals("https://cdn.example/coldbrew.png", request.imageUrl)
+        // 품절(isSoldOut=true) → 서버 isAvailable=false.
+        assertFalse(request.isAvailable)
+    }
+
+    @Test
+    fun draftMapsToMenuItemWithServerId() {
+        val menu = NewMenuDraft(
+            name = "콜드브루",
+            categoryId = "coffee",
+            basePrice = 5_500,
+            description = "깊고 진한 콜드브루",
+            imageUrl = null,
+            isSoldOut = false,
+        ).toMenuItem(serverMenuId = 555)
+
+        assertEquals("555", menu.id)
+        assertEquals("콜드브루", menu.name)
+        assertEquals(5_500, menu.basePrice)
+        assertEquals("coffee", menu.categoryId)
+        assertFalse(menu.isSoldOut)
+        assertTrue(menu.isVisible)
     }
 
     private fun menuListItem(
