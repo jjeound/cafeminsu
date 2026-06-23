@@ -157,9 +157,10 @@
     {
       "dir": "22-owner-live-integration",
       "name": "owner-live-integration",
-      "status": "blocked",
+      "status": "completed",
       "summary": "점주 주문/메뉴·매출·추천 실서버 연동(Mock→Real, BASE_URL 키게이트) + opt-in 라이브 스모크 테스트(MockWebServer 단위테스트는 유지)",
-      "blocked_at": "2026-06-23T16:56:21+0900"
+      "blocked_at": "2026-06-23T16:56:21+0900",
+      "completed_at": "2026-06-23T17:15:36+0900"
     }
   ]
 }
