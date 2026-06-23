@@ -5,5 +5,5 @@ data class Cart(
     val subtotal: Int,
     val validation: CartValidation,
     val orderType: OrderType = OrderType.DineIn,
-    val requestNote: String? = null,
+    val requestNote: String = "",
 )

@@ -3,6 +3,7 @@ package com.cafeminsu.core.network.model.response.store
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.cafeminsu.core.model.store.StoreSummary
+import com.cafeminsu.core.model.media.ImageSource
 
 @Serializable
 data class StoreSearchItemResponse(
@@ -13,4 +14,9 @@ data class StoreSearchItemResponse(
 )
 
 fun StoreSearchItemResponse.asExternalModel(): StoreSummary =
-    StoreSummary(id = id, name = name, address = address, imageUrl = imageUrl)
+    StoreSummary(
+        id = id,
+        name = name,
+        address = address,
+        image = imageUrl?.let(ImageSource::Remote) ?: ImageSource.None,
+    )

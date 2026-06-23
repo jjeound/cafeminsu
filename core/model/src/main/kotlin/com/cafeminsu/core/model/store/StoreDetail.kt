@@ -1,5 +1,7 @@
 package com.cafeminsu.core.model.store
 
+import com.cafeminsu.core.model.media.ImageSource
+
 data class StoreDetail(
     val id: Long,
     val name: String,
@@ -8,5 +10,5 @@ data class StoreDetail(
     val longitude: Double,
     val phone: String,
     val businessHours: String,
-    val imageUrl: String?,
+    val image: ImageSource,
 )

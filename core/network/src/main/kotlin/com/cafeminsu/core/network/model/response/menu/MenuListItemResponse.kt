@@ -3,6 +3,7 @@ package com.cafeminsu.core.network.model.response.menu
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.cafeminsu.core.model.menu.MenuSummary
+import com.cafeminsu.core.model.media.ImageSource
 
 @Serializable
 data class MenuListItemResponse(
@@ -20,6 +21,6 @@ fun MenuListItemResponse.asExternalModel(): MenuSummary =
         name = name,
         price = price,
         category = category,
-        imageUrl = imageUrl,
+        image = imageUrl?.let(ImageSource::Remote) ?: ImageSource.None,
         isAvailable = isAvailable,
     )

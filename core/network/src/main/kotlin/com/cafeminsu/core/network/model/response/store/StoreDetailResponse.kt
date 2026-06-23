@@ -3,6 +3,7 @@ package com.cafeminsu.core.network.model.response.store
 import kotlinx.serialization.SerialName
 import kotlinx.serialization.Serializable
 import com.cafeminsu.core.model.store.StoreDetail
+import com.cafeminsu.core.model.media.ImageSource
 
 @Serializable
 data class StoreDetailResponse(
@@ -25,5 +26,5 @@ fun StoreDetailResponse.asExternalModel(): StoreDetail =
         longitude = longitude,
         phone = phone,
         businessHours = businessHours,
-        imageUrl = imageUrl,
+        image = imageUrl?.let(ImageSource::Remote) ?: ImageSource.None,
     )

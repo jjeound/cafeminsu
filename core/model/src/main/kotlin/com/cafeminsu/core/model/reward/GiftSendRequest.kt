@@ -4,5 +4,5 @@ data class GiftSendRequest(
     val amount: Int,
     val channel: GiftChannel,
     val recipientRef: String,
-    val message: String?,
+    val message: String = "",
 )
