@@ -16,7 +16,7 @@
       "status": "completed",
       "started_at": "2026-06-23T16:27:40+0900",
       "summary": "RealOwnerMenuRepository 실서버 연동(stores/my→storeId 해석 후 MenuApi.listByStore 목록 매핑, POST stores/{id}/menus 생성→menuId 반영, PATCH menus/{id}/availability 판매토글) + OwnerMenuApi(MenuCreate/Availability DTO)·MenuMapper draft 매퍼 신설. setVisible 은 서버 엔드포인트 부재로 로컬 스냅샷만 갱신, 외부호출 runCatchingToAppResult 래핑. BASE_URL 키게이트 DI 폴백(MockOwnerMenuRepository 유지, @Binds→provide/select 전환). testDebugUnitTest(신규 17테스트 통과)·assembleDebug·androidTest 컴파일 통과(기존 무관 PaymentUiStateTest 실패는 선존재).",
-      "completed_at": "2026-06-23T16:45:00+0900"
+      "completed_at": "2026-06-23T16:44:59+0900"
     },
     {
       "step": 2,
