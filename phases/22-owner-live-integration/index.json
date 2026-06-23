@@ -21,7 +21,10 @@
     {
       "step": 2,
       "name": "live-smoke-tests",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-06-23T16:44:59+0900",
+      "summary": "Opt-in 라이브 스모크 테스트 추가(com.cafeminsu.live): LiveServer 게이트 유틸(liveServer=true + baseUrl/token 시스템프로퍼티·env, assumeLiveServer/assumeLiveAuth, NetworkModule createOkHttpClient/createMoshi/createRetrofit 재사용 liveRetrofit) + PublicEndpointsLiveTest(health 2xx, stores/store detail/menus/menu detail 파싱) + AuthedEndpointsLiveTest(profile/orders·my/notifications, Bearer 헤더) — 읽기전용·토큰/PII 비하드코딩. app/build.gradle.kts 테스트 JVM 에 liveServer* 시스템프로퍼티 forward(forked JVM 미전달 이슈 해결). SERVER_INTEGRATION.md 실행법 절 추가. AC: 게이트 off 시 두 라이브 스위트 전부 skip(3/3·5/5, 0 failures), assembleDebug·androidTest 컴파일 통과(기존 무관 PaymentUiStateTest 실패는 HEAD부터 선존재).",
+      "completed_at": "2026-06-23T17:05:00+0900"
     },
     {
       "step": 3,
