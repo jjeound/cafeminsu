@@ -14,6 +14,7 @@ import com.cafeminsu.core.network.service.GifticonService
 import com.cafeminsu.core.network.service.MenuService
 import com.cafeminsu.core.network.service.NotificationService
 import com.cafeminsu.core.network.service.OrderService
+import com.cafeminsu.core.network.service.OwnerOrderService
 import com.cafeminsu.core.network.service.PaymentService
 import com.cafeminsu.core.network.service.StampService
 import com.cafeminsu.core.network.service.StoreService
@@ -81,6 +82,11 @@ internal object NetworkModule {
     @Singleton
     fun provideOrderService(retrofit: Retrofit): OrderService =
         retrofit.create(OrderService::class.java)
+
+    @Provides
+    @Singleton
+    fun provideOwnerOrderService(retrofit: Retrofit): OwnerOrderService =
+        retrofit.create(OwnerOrderService::class.java)
 
     @Provides
     @Singleton
