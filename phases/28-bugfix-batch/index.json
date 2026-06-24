@@ -56,7 +56,7 @@
       "status": "completed",
       "started_at": "2026-06-25T00:08:51+0900",
       "summary": "점주 메뉴 추가 이미지 업로드 실연동. 스웨거에 POST /api/images/menu(multipart, part=file → ImageUploadRes{imageUrl}) 존재 확인. OwnerMenuApi.uploadMenuImage 멀티파트 엔드포인트 + ImageUploadRes 추가. MenuImageReader(데이터 계약)+AndroidMenuImageReader(ContentResolver로 content:// 바이트 읽기, 실패 시 null 폴백) 추가하고 RepositoryModule @Binds로 연결. RealOwnerMenuRepository.addMenu가 draft.imageUrl이 로컬 URI(content://·file://)면 업로드해 받은 원격 URL로 교체 후 createMenu·로컬 스냅샷에 반영(http URL/null은 통과, 읽기불가는 이미지없이 진행, 업로드 실패는 생성 전 Failure로 낙관금지). content:// 가 서버로 새지 않도록 정리. OwnerMenuAddViewModelTest(이미지 있음/없음)·RealOwnerMenuRepositoryTest(업로드 성공/실패/읽기불가)·MenuImageReaderTest·AndroidMenuImageReaderTest 추가. 이미지 바이너리/토큰 로깅은 기존 redact+okhttp 바이너리 생략으로 미노출.",
-      "completed_at": "2026-06-25T00:18:00+0900"
+      "completed_at": "2026-06-25T00:17:27+0900"
     }
   ],
   "created_at": "2026-06-24T23:37:22+0900"
