@@ -1,0 +1,8 @@
+{
+  "project": "CafeMinsu",
+  "phase": "kakaopay-payment",
+  "steps": [
+    { "step": 0, "name": "kakaopay-pg-client", "status": "pending" },
+    { "step": 1, "name": "redirect-bridge-and-pay-ui", "status": "pending" }
+  ]
+}

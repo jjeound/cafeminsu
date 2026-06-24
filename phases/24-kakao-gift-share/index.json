@@ -1,0 +1,8 @@
+{
+  "project": "CafeMinsu",
+  "phase": "kakao-gift-share",
+  "steps": [
+    { "step": 0, "name": "share-link-plumbing", "status": "pending" },
+    { "step": 1, "name": "kakao-share-launch", "status": "pending" }
+  ]
+}
