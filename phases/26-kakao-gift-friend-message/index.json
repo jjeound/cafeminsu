@@ -1,0 +1,8 @@
+{
+  "project": "CafeMinsu",
+  "phase": "kakao-gift-friend-message",
+  "steps": [
+    { "step": 0, "name": "friend-picker-deps-and-scope", "status": "pending" },
+    { "step": 1, "name": "friend-pick-and-send", "status": "pending" }
+  ]
+}

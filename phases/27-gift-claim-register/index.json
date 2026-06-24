@@ -1,0 +1,8 @@
+{
+  "project": "CafeMinsu",
+  "phase": "gift-claim-register",
+  "steps": [
+    { "step": 0, "name": "claim-data-layer", "status": "pending" },
+    { "step": 1, "name": "claim-screen-and-deeplink", "status": "pending" }
+  ]
+}

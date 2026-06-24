@@ -179,6 +179,16 @@
       "dir": "25-kakaopay-payment",
       "name": "kakaopay-payment",
       "status": "pending"
+    },
+    {
+      "dir": "26-kakao-gift-friend-message",
+      "name": "kakao-gift-friend-message",
+      "status": "pending"
+    },
+    {
+      "dir": "27-gift-claim-register",
+      "name": "gift-claim-register",
+      "status": "pending"
     }
   ]
 }
