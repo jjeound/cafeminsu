@@ -80,6 +80,41 @@ class OwnerMenuAddViewModelTest {
     }
 
     @Test
+    fun submitWithoutPickedImageSendsNullImageUrl() = runTest {
+        val repository = FakeAddRepository()
+        val viewModel = OwnerMenuAddViewModel(repository)
+        viewModel.onNameChange("아메리카노")
+        viewModel.onPriceChange("4500")
+
+        viewModel.events.test {
+            viewModel.onSubmit()
+            assertEquals(OwnerMenuAddEvent.Saved, awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        // 이미지를 고르지 않으면 imageUrl 은 null 로 전달돼야 한다(잘못된 빈 값/경로 금지).
+        assertEquals(null, requireNotNull(repository.lastDraft).imageUrl)
+    }
+
+    @Test
+    fun submitWithPickedImageForwardsLocalUriToRepository() = runTest {
+        val repository = FakeAddRepository()
+        val viewModel = OwnerMenuAddViewModel(repository)
+        viewModel.onNameChange("아메리카노")
+        viewModel.onPriceChange("4500")
+        viewModel.onImagePicked("content://media/external/images/7")
+
+        viewModel.events.test {
+            viewModel.onSubmit()
+            assertEquals(OwnerMenuAddEvent.Saved, awaitItem())
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        // 고른 로컬 URI 는 그대로 draft 로 전달되고, 업로드는 데이터 레이어에서 처리한다.
+        assertEquals("content://media/external/images/7", requireNotNull(repository.lastDraft).imageUrl)
+    }
+
+    @Test
     fun submitFailureEmitsSnackbarAndClearsSubmitting() = runTest {
         val repository = FakeAddRepository(result = AppResult.Failure(DomainError.Network))
         val viewModel = OwnerMenuAddViewModel(repository)
