@@ -20,6 +20,9 @@ import com.cafeminsu.domain.repository.OrderRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
+import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -117,9 +120,11 @@ class RealOrderRepository @Inject constructor(
                     is AppResult.Success ->
                         when (val mapped = response.data.toOrders()) {
                             is AppResult.Success -> {
-                                // 성공 시 write-through 후 그대로 방출.
-                                localDataSource.replaceHistory(mapped.data)
-                                mapped
+                                // 목록 API는 라인아이템을 주지 않아 메뉴명·재주문이 비활성된다 →
+                                // 상세 API로 각 주문의 items를 병렬 보강한 뒤 write-through·방출한다.
+                                val enriched = mapped.data.withItems()
+                                localDataSource.replaceHistory(enriched)
+                                AppResult.Success(enriched)
                             }
                             is AppResult.Failure -> mapped
                         }
@@ -131,6 +136,29 @@ class RealOrderRepository @Inject constructor(
                 },
             )
         }.flowOn(ioDispatcher)
+
+    // 목록의 각 주문을 상세 API(items 포함)로 병렬 보강한다. 상세가 실패하면 원본(빈 items)을 유지하고
+    // 예외는 전파하지 않는다(runCatchingToAppResult). 페이지 크기가 작아(20) 병렬 조회 비용은 허용된다.
+    private suspend fun List<Order>.withItems(): List<Order> = coroutineScope {
+        map { order ->
+            async {
+                val serverId = order.id.toLongOrNull() ?: return@async order
+                when (
+                    val response = runCatchingToAppResult {
+                        orderApi.getOrder(orderId = serverId)
+                    }
+                ) {
+                    is AppResult.Success ->
+                        when (val detail = response.data.toOrder()) {
+                            is AppResult.Success -> order.copy(items = detail.data.items)
+                            is AppResult.Failure -> order
+                        }
+
+                    is AppResult.Failure -> order
+                }
+            }
+        }.awaitAll()
+    }
 
     private fun ensureAuthenticated(): AppResult<Unit> {
         val authState = sessionStateHolder.authState.value
