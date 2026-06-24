@@ -189,7 +189,8 @@
     {
       "dir": "27-gift-claim-register",
       "name": "gift-claim-register",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-24T11:45:38+0900"
     }
   ]
 }
