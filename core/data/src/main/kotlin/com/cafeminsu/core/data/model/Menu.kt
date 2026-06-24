@@ -12,16 +12,69 @@ import com.cafeminsu.core.network.model.response.menu.MenuListItemResponse
 import com.cafeminsu.core.network.model.response.menu.MenuOptionResponse
 
 fun MenuListItemResponse.asEntity(storeId: Long): MenuEntity =
-    MenuEntity(id = id, storeId = storeId, name = name, price = price, category = category, imageUrl = imageUrl, isAvailable = isAvailable)
+    MenuEntity(
+        id = id,
+        storeId = storeId,
+        name = name,
+        price = price,
+        category = category,
+        imageUrl = imageUrl,
+        isAvailable = isAvailable
+    )
 
 fun MenuDetailResponse.asEntity(): MenuDetailEntity =
-    MenuDetailEntity(menuId = id, name = name, description = description, price = price, category = category, imageUrl = imageUrl, isAvailable = isAvailable)
+    MenuDetailEntity(
+        menuId = id,
+        name = name,
+        description = description,
+        price = price,
+        category = category,
+        imageUrl = imageUrl,
+        isAvailable = isAvailable
+    )
 
 fun MenuOptionResponse.asEntity(menuId: Long): MenuOptionEntity =
-    MenuOptionEntity(id = id, menuId = menuId, groupName = group, name = name, additionalPrice = additionalPrice, isDefault = isDefault)
+    MenuOptionEntity(
+        id = optionId,
+        menuId = menuId,
+        groupName = optionGroup,
+        name = optionName,
+        additionalPrice = optionPrice,
+        isDefault = isDefault
+    )
+
+fun MenuListItemResponse.asExternalModel() = MenuSummary(
+    id,
+    name,
+    price,
+    category,
+    imageUrl?.let(ImageSource::Remote) ?: ImageSource.None,
+    isAvailable
+)
+
+fun MenuDetailResponse.asExternalModel() = MenuDetail(
+    id,
+    name,
+    description,
+    price,
+    category,
+    imageUrl?.let(ImageSource::Remote) ?: ImageSource.None,
+    isAvailable,
+    options.map(MenuOptionResponse::asExternalModel)
+)
+
+fun MenuOptionResponse.asExternalModel() =
+    MenuOption(optionId, optionGroup, optionName, optionPrice, isDefault)
 
 fun MenuEntity.asExternalModel(): MenuSummary =
-    MenuSummary(id = id, name = name, price = price, category = category, image = imageUrl?.let(ImageSource::Remote) ?: ImageSource.None, isAvailable = isAvailable)
+    MenuSummary(
+        id = id,
+        name = name,
+        price = price,
+        category = category,
+        image = imageUrl?.let(ImageSource::Remote) ?: ImageSource.None,
+        isAvailable = isAvailable
+    )
 
 fun MenuDetailEntity.asExternalModel(options: List<MenuOptionEntity>): MenuDetail =
     MenuDetail(
@@ -36,4 +89,10 @@ fun MenuDetailEntity.asExternalModel(options: List<MenuOptionEntity>): MenuDetai
     )
 
 fun MenuOptionEntity.asExternalModel(): MenuOption =
-    MenuOption(id = id, groupName = groupName, name = name, additionalPrice = additionalPrice, isDefault = isDefault)
+    MenuOption(
+        id = id,
+        groupName = groupName,
+        name = name,
+        additionalPrice = additionalPrice,
+        isDefault = isDefault
+    )

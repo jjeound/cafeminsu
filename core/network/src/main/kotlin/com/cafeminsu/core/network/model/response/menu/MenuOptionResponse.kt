@@ -5,9 +5,9 @@ import kotlinx.serialization.Serializable
 
 @Serializable
 data class MenuOptionResponse(
-    @SerialName(value = "id") val id: Long,
-    @SerialName(value = "group") val group: String,
-    @SerialName(value = "name") val name: String,
-    @SerialName(value = "additionalPrice") val additionalPrice: Int,
+    @SerialName(value = "optionId") val optionId: Long,
+    @SerialName(value = "optionGroup") val optionGroup: String,
+    @SerialName(value = "optionName") val optionName: String,
+    @SerialName(value = "optionPrice") val optionPrice: Int,
     @SerialName(value = "isDefault") val isDefault: Boolean,
 )
