@@ -241,38 +241,16 @@ private fun ProfileCard(
                         )
                     }
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(spacing.space2)) {
-                    Text(
-                        text = "${profile.displayName} 님",
-                        style = CafeTheme.typography.h2,
-                        color = colors.onDark,
-                    )
-                    TierBadge(label = profile.tierLabel)
-                }
+                Text(
+                    text = "${profile.displayName} 님",
+                    style = CafeTheme.typography.h2,
+                    color = colors.onDark,
+                )
             }
 
             HorizontalDivider(color = colors.ink.copy(alpha = DarkDividerAlpha))
             StatsRow(stats = stats)
         }
-    }
-}
-
-@Composable
-private fun TierBadge(label: String) {
-    Surface(
-        shape = CafeTheme.shapes.radiusPill,
-        color = CafeTheme.colors.accentSoft,
-        contentColor = CafeTheme.colors.primary,
-    ) {
-        Text(
-            modifier = Modifier.padding(
-                horizontal = CafeTheme.spacing.space3,
-                vertical = CafeTheme.spacing.space1,
-            ),
-            text = label,
-            style = CafeTheme.typography.caption,
-            color = CafeTheme.colors.primary,
-        )
     }
 }
 

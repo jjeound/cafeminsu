@@ -65,6 +65,28 @@ class NotificationMapperTest {
     }
 
     @Test
+    fun zonelessCreatedAtMapsToNonZeroMillis() {
+        val expected = java.time.LocalDateTime.parse("2026-06-20T10:20:30")
+            .atZone(java.time.ZoneId.of("Asia/Seoul"))
+            .toInstant()
+            .toEpochMilli()
+
+        val result = listOf(
+            notification(
+                id = 91,
+                title = "주문이 접수됐어요",
+                type = "ORDER_ACCEPTED",
+                createdAt = "2026-06-20T10:20:30",
+            ),
+        ).toAppNotifications()
+
+        assertTrue(result is AppResult.Success)
+        val notification = (result as AppResult.Success).data.single()
+        assertTrue(notification.createdAtMillis > 0L)
+        assertEquals(expected, notification.createdAtMillis)
+    }
+
+    @Test
     fun orderNotificationFallsBackToAcceptedWhenServerTypeIsCoarse() {
         val result = listOf(
             notification(

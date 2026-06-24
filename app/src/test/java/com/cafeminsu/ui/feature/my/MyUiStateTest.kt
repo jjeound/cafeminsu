@@ -11,7 +11,7 @@ class MyUiStateTest {
             profile = MyProfileUiModel(
                 displayName = "진지원",
                 initial = "진",
-                tierLabel = "GOLD",
+                tierLabel = "",
             ),
             stats = MyStatsUiModel(
                 orderCount = 12,
@@ -27,7 +27,7 @@ class MyUiStateTest {
 
         assertEquals("진지원", state.profile.displayName)
         assertEquals("진", state.profile.initial)
-        assertEquals("GOLD", state.profile.tierLabel)
+        assertEquals("", state.profile.tierLabel)
         assertEquals(12, state.stats.orderCount)
         assertEquals(7, state.stats.stampCount)
         assertEquals(3, state.stats.couponCount)

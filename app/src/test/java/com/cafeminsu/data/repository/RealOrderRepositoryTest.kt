@@ -21,8 +21,10 @@ import com.cafeminsu.domain.model.StoreStatus
 import com.cafeminsu.domain.model.UserProfile
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
+import okhttp3.mockwebserver.Dispatcher
 import okhttp3.mockwebserver.MockResponse
 import okhttp3.mockwebserver.MockWebServer
+import okhttp3.mockwebserver.RecordedRequest
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -97,7 +99,16 @@ class RealOrderRepositoryTest {
 
     @Test
     fun observeOrderHistoryFetchesMyOrdersPageAndMapsList() = runTest(testDispatcher) {
-        server.enqueue(orderHistoryResponse())
+        var myOrdersRequest: RecordedRequest? = null
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse =
+                when (request.requestUrl?.encodedPath) {
+                    "/api/orders/my" -> orderHistoryResponse().also { myOrdersRequest = request }
+                    "/api/orders/77" -> orderDetailResponse()
+                    "/api/orders/78" -> orderDetailResponse(orderId = 78, menuId = 202)
+                    else -> MockResponse().setResponseCode(404)
+                }
+        }
         val repository = realOrderRepository()
 
         repository.observeOrderHistory().test {
@@ -107,15 +118,72 @@ class RealOrderRepositoryTest {
             val orders = (result as AppResult.Success).data
             assertEquals(listOf("77", "78"), orders.map { it.id })
             assertEquals(listOf(OrderStatus.Completed, OrderStatus.Accepted), orders.map { it.status })
-            assertTrue(orders.all { it.items.isEmpty() })
+            // 목록 총액 등 리스트 필드는 상세 보강 후에도 보존된다.
+            assertEquals(listOf(10_000, 8_500), orders.map { it.totalAmount })
             cancelAndIgnoreRemainingEvents()
         }
 
-        val request = server.takeRequest()
-        assertEquals("/api/orders/my", request.requestUrl?.encodedPath)
-        assertEquals("0", request.requestUrl?.queryParameter("page"))
-        assertEquals("20", request.requestUrl?.queryParameter("size"))
+        assertEquals("/api/orders/my", myOrdersRequest?.requestUrl?.encodedPath)
+        assertEquals("0", myOrdersRequest?.requestUrl?.queryParameter("page"))
+        assertEquals("20", myOrdersRequest?.requestUrl?.queryParameter("size"))
     }
+
+    @Test
+    fun observeOrderHistoryEnrichesItemsFromDetailSoReorderWorks() = runTest(testDispatcher) {
+        server.dispatcher = orderHistoryWithDetailsDispatcher()
+        val repository = realOrderRepository()
+
+        repository.observeOrderHistory().test {
+            val result = awaitItem()
+
+            assertTrue(result is AppResult.Success)
+            val orders = (result as AppResult.Success).data
+            // 상세 보강으로 라인아이템·메뉴명이 채워져 재주문/메뉴 요약이 동작한다.
+            assertTrue(orders.all { it.items.isNotEmpty() })
+            val first = orders.first { it.id == "77" }
+            assertEquals("101", first.items.first().menuItemId)
+            assertEquals("바닐라라떼", first.items.first().name)
+            assertEquals("202", orders.first { it.id == "78" }.items.first().menuItemId)
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun observeOrderHistoryKeepsEmptyItemsWhenDetailFailsButEnrichesOthers() = runTest(testDispatcher) {
+        // 78번 상세는 500으로 실패 → 원본(빈 items) 유지, 77번은 정상 보강, 예외는 전파되지 않는다.
+        server.dispatcher = object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse =
+                when (request.requestUrl?.encodedPath) {
+                    "/api/orders/my" -> orderHistoryResponse()
+                    "/api/orders/77" -> orderDetailResponse()
+                    "/api/orders/78" -> MockResponse().setResponseCode(500)
+                    else -> MockResponse().setResponseCode(404)
+                }
+        }
+        val repository = realOrderRepository()
+
+        repository.observeOrderHistory().test {
+            val result = awaitItem()
+
+            assertTrue(result is AppResult.Success)
+            val orders = (result as AppResult.Success).data
+            assertEquals(listOf("77", "78"), orders.map { it.id })
+            assertTrue(orders.first { it.id == "77" }.items.isNotEmpty())
+            assertTrue(orders.first { it.id == "78" }.items.isEmpty())
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    private fun orderHistoryWithDetailsDispatcher(): Dispatcher =
+        object : Dispatcher() {
+            override fun dispatch(request: RecordedRequest): MockResponse =
+                when (request.requestUrl?.encodedPath) {
+                    "/api/orders/my" -> orderHistoryResponse()
+                    "/api/orders/77" -> orderDetailResponse()
+                    "/api/orders/78" -> orderDetailResponse(orderId = 78, menuId = 202)
+                    else -> MockResponse().setResponseCode(404)
+                }
+        }
 
     @Test
     fun serverHttpErrorMapsToAppResultFailure() = runTest(testDispatcher) {
@@ -140,7 +208,7 @@ class RealOrderRepositoryTest {
 
     @Test
     fun observeOrderHistoryWritesThroughToCacheOnSuccess() = runTest(testDispatcher) {
-        server.enqueue(orderHistoryResponse())
+        server.dispatcher = orderHistoryWithDetailsDispatcher()
         val cache = FakeOrderHistoryLocalDataSource()
         val repository = realOrderRepository(local = cache)
 
@@ -151,6 +219,8 @@ class RealOrderRepositoryTest {
 
         assertEquals(1, cache.replaceCount)
         assertEquals(listOf("77", "78"), cache.stored().map { it.id })
+        // write-through 는 보강된(라인아이템 포함) 목록을 저장한다.
+        assertTrue(cache.stored().all { it.items.isNotEmpty() })
     }
 
     @Test
@@ -279,13 +349,13 @@ class RealOrderRepositoryTest {
                 """.trimIndent(),
             )
 
-    private fun orderDetailResponse(): MockResponse =
+    private fun orderDetailResponse(orderId: Long = 77, menuId: Long = 101): MockResponse =
         MockResponse()
             .setResponseCode(200)
             .setBody(
                 """
                 {
-                  "orderId": 77,
+                  "orderId": $orderId,
                   "orderNumber": "A-2543",
                   "storeId": 11,
                   "storeName": "카페민수 강남점",
@@ -296,7 +366,7 @@ class RealOrderRepositoryTest {
                   "cancelReason": null,
                   "items": [
                     {
-                      "menuId": 101,
+                      "menuId": $menuId,
                       "menuName": "바닐라라떼",
                       "quantity": 1,
                       "unitPrice": 5500,

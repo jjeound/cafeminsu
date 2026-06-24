@@ -4,6 +4,7 @@ import app.cash.turbine.ReceiveTurbine
 import app.cash.turbine.test
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
+import com.cafeminsu.domain.location.LocationProvider
 import com.cafeminsu.domain.model.Store
 import com.cafeminsu.domain.model.StoreAmenity
 import com.cafeminsu.domain.model.StoreStatus
@@ -31,16 +32,18 @@ class StoreViewModelTest {
     val mainDispatcherRule = StoreMainDispatcherRule()
 
     @Test
-    fun initialLoadShowsNearbyStores() = runTest {
+    fun initialLoadWithoutUserLocationPreservesServerOrderAndEmptyDistanceLabels() = runTest {
+        // 내 위치를 알 수 없으면 거리 계산 불가 → 서버 순서를 유지하고 거리 라벨은 비운다("0m" 노출 금지).
         val viewModel = StoreViewModel(
             FakeStoreRepository(
                 stores = AppResult.Success(
                     listOf(
-                        sampleStore(id = "gangnam", distanceMeters = 120),
-                        sampleStore(id = "yeoksam", name = "카페민수 역삼점", distanceMeters = 340),
+                        sampleStore(id = "gangnam", latitude = 37.498, longitude = 127.028),
+                        sampleStore(id = "yeoksam", name = "카페민수 역삼점", latitude = 37.500, longitude = 127.036),
                     ),
                 ),
             ),
+            locationProvider = FakeLocationProvider(null),
         )
 
         viewModel.uiState.test {
@@ -48,10 +51,63 @@ class StoreViewModelTest {
 
             assertEquals("", content.query)
             assertEquals(listOf("gangnam", "yeoksam"), content.stores.map { it.id })
-            assertEquals("120m", content.stores.first().distanceLabel)
+            assertEquals("", content.stores.first().distanceLabel)
             assertEquals("영업중", content.stores.first().statusLabel)
             assertEquals(37.498, content.stores.first().latitude, 0.0)
             assertEquals(127.028, content.stores.first().longitude, 0.0)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun userLocationComputesDistancesAndSortsNearestFirst() = runTest {
+        // 사용자 위치가 yeoksam 에 더 가깝다 → yeoksam 이 먼저, 거리 라벨은 비어 있지 않다.
+        val userLat = 37.5005
+        val userLng = 127.0360
+        val viewModel = StoreViewModel(
+            FakeStoreRepository(
+                stores = AppResult.Success(
+                    listOf(
+                        sampleStore(id = "gangnam", latitude = 37.498, longitude = 127.028),
+                        sampleStore(id = "yeoksam", name = "카페민수 역삼점", latitude = 37.500, longitude = 127.036),
+                    ),
+                ),
+            ),
+            locationProvider = FakeLocationProvider(userLat to userLng),
+        )
+
+        viewModel.uiState.test {
+            val content = awaitSettledState() as StoreUiState.Content
+
+            assertEquals(listOf("yeoksam", "gangnam"), content.stores.map { it.id })
+            assertTrue(content.stores.all { it.distanceLabel.isNotBlank() })
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun storesWithoutValidCoordinatesKeepEmptyLabelsAndGoLast() = runTest {
+        // 유효 좌표가 없는 매장은 거리 계산 불가 → 라벨 비우고 정렬에서 뒤로 보낸다.
+        val viewModel = StoreViewModel(
+            FakeStoreRepository(
+                stores = AppResult.Success(
+                    listOf(
+                        sampleStore(id = "unknown", latitude = 0.0, longitude = 0.0),
+                        sampleStore(id = "gangnam", latitude = 37.498, longitude = 127.028),
+                    ),
+                ),
+            ),
+            locationProvider = FakeLocationProvider(37.5005 to 127.0360),
+        )
+
+        viewModel.uiState.test {
+            val content = awaitSettledState() as StoreUiState.Content
+
+            assertEquals(listOf("gangnam", "unknown"), content.stores.map { it.id })
+            assertTrue(content.stores.first { it.id == "gangnam" }.distanceLabel.isNotBlank())
+            assertEquals("", content.stores.first { it.id == "unknown" }.distanceLabel)
 
             cancelAndIgnoreRemainingEvents()
         }
@@ -62,6 +118,7 @@ class StoreViewModelTest {
         // TextField가 묶이는 searchQuery는 비동기 매장 로딩과 무관하게 입력 즉시 반영돼야 한다.
         val viewModel = StoreViewModel(
             FakeStoreRepository(stores = AppResult.Success(listOf(sampleStore(id = "gangnam")))),
+            locationProvider = FakeLocationProvider(null),
         )
 
         viewModel.onQueryChange("강남")
@@ -75,6 +132,7 @@ class StoreViewModelTest {
             FakeStoreRepository(
                 stores = AppResult.Success(listOf(sampleStore(id = "gangnam"))),
             ),
+            locationProvider = FakeLocationProvider(null),
         )
 
         viewModel.uiState.test {
@@ -94,6 +152,7 @@ class StoreViewModelTest {
     fun failureProducesErrorState() = runTest {
         val viewModel = StoreViewModel(
             FakeStoreRepository(stores = AppResult.Failure(DomainError.Network)),
+            locationProvider = FakeLocationProvider(null),
         )
 
         viewModel.uiState.test {
@@ -109,9 +168,14 @@ class StoreViewModelTest {
     }
 
     @Test
-    fun storeClickLoadsBottomSheetDetail() = runTest {
+    fun storeClickLoadsBottomSheetDetailWithComputedDistance() = runTest {
         val viewModel = StoreViewModel(
-            FakeStoreRepository(stores = AppResult.Success(listOf(sampleStore(id = "gangnam")))),
+            FakeStoreRepository(
+                stores = AppResult.Success(
+                    listOf(sampleStore(id = "gangnam", latitude = 37.498, longitude = 127.028)),
+                ),
+            ),
+            locationProvider = FakeLocationProvider(37.5005 to 127.0360),
         )
 
         viewModel.uiState.test {
@@ -123,8 +187,32 @@ class StoreViewModelTest {
             val detail = content.selectedStore
             assertEquals("카페민수 강남점", detail?.name)
             assertEquals("영업중 · 22:00 마감", detail?.statusLabel)
-            assertEquals("현재 위치에서 120m", detail?.distanceLabel)
+            assertTrue(detail?.distanceLabel?.startsWith("현재 위치에서 ") == true)
+            assertTrue(detail?.distanceLabel?.isNotBlank() == true)
             assertEquals(listOf("콘센트", "Wi-Fi", "드라이브스루", "테라스"), detail?.amenities)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun storeClickWithoutUserLocationLeavesDetailDistanceEmpty() = runTest {
+        val viewModel = StoreViewModel(
+            FakeStoreRepository(
+                stores = AppResult.Success(
+                    listOf(sampleStore(id = "gangnam", latitude = 37.498, longitude = 127.028)),
+                ),
+            ),
+            locationProvider = FakeLocationProvider(null),
+        )
+
+        viewModel.uiState.test {
+            assertTrue(awaitSettledState() is StoreUiState.Content)
+
+            viewModel.onStoreClick("gangnam")
+
+            val content = awaitItem() as StoreUiState.Content
+            assertEquals("", content.selectedStore?.distanceLabel)
 
             cancelAndIgnoreRemainingEvents()
         }
@@ -135,7 +223,7 @@ class StoreViewModelTest {
         val repository = FakeStoreRepository(
             stores = AppResult.Success(listOf(sampleStore(id = "gangnam"))),
         )
-        val viewModel = StoreViewModel(repository)
+        val viewModel = StoreViewModel(repository, locationProvider = FakeLocationProvider(null))
 
         viewModel.events.test {
             viewModel.onStartOrder("gangnam")
@@ -150,7 +238,9 @@ class StoreViewModelTest {
     private fun sampleStore(
         id: String,
         name: String = "카페민수 강남점",
-        distanceMeters: Int = 120,
+        distanceMeters: Int = 0,
+        latitude: Double = 37.498,
+        longitude: Double = 127.028,
         status: StoreStatus = StoreStatus.Open,
     ): Store =
         Store(
@@ -159,8 +249,8 @@ class StoreViewModelTest {
             address = "서울 강남구 테헤란로 134",
             phone = "02-3456-7890",
             distanceMeters = distanceMeters,
-            latitude = 37.498,
-            longitude = 127.028,
+            latitude = latitude,
+            longitude = longitude,
             status = status,
             closingTimeLabel = "22:00 마감",
             amenities = listOf(
@@ -224,6 +314,12 @@ private class FakeStoreRepository(
         }
 
     override fun observeSelectedStore(): Flow<Store?> = selectedStore
+}
+
+private class FakeLocationProvider(
+    private val latLng: Pair<Double, Double>?,
+) : LocationProvider {
+    override suspend fun currentLatLng(): Pair<Double, Double>? = latLng
 }
 
 @OptIn(ExperimentalCoroutinesApi::class)

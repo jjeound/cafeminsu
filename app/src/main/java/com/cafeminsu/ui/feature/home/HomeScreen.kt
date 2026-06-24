@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -25,7 +26,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
-import androidx.compose.ui.text.style.TextDecoration
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -43,7 +43,6 @@ import java.util.Locale
 @Composable
 fun HomeRoute(
     onRecommendedOrderClick: (String) -> Unit,
-    onCouponClick: () -> Unit,
     onNotificationClick: () -> Unit,
     onRecentOrdersClick: () -> Unit,
     onReorderClick: (String) -> Unit,
@@ -56,7 +55,6 @@ fun HomeRoute(
     HomeScreen(
         state = state,
         onRecommendedOrderClick = onRecommendedOrderClick,
-        onCouponClick = onCouponClick,
         onNotificationClick = onNotificationClick,
         onRecentOrdersClick = onRecentOrdersClick,
         onReorderClick = onReorderClick,
@@ -70,7 +68,6 @@ fun HomeRoute(
 fun HomeScreen(
     state: HomeUiState,
     onRecommendedOrderClick: (String) -> Unit,
-    onCouponClick: () -> Unit,
     onNotificationClick: () -> Unit,
     onRecentOrdersClick: () -> Unit,
     onReorderClick: (String) -> Unit,
@@ -100,7 +97,6 @@ fun HomeScreen(
                 is HomeUiState.Content -> HomeContent(
                     content = state,
                     onRecommendedOrderClick = onRecommendedOrderClick,
-                    onCouponClick = onCouponClick,
                     onNotificationClick = onNotificationClick,
                     onRecentOrdersClick = onRecentOrdersClick,
                     onReorderClick = onReorderClick,
@@ -127,7 +123,6 @@ fun HomeScreen(
 private fun HomeContent(
     content: HomeUiState.Content,
     onRecommendedOrderClick: (String) -> Unit,
-    onCouponClick: () -> Unit,
     onNotificationClick: () -> Unit,
     onRecentOrdersClick: () -> Unit,
     onReorderClick: (String) -> Unit,
@@ -140,10 +135,6 @@ private fun HomeContent(
     FeaturedMenuCard(
         menu = content.recommendedMenu,
         onClick = { onRecommendedOrderClick(content.recommendedMenu.id) },
-    )
-    CouponSummaryCard(
-        availableCouponCount = content.availableCouponCount,
-        onClick = onCouponClick,
     )
     RecentOrdersSection(
         orders = content.recentOrders,
@@ -257,7 +248,10 @@ private fun FeaturedMenuCard(
                     style = CafeTheme.typography.caption,
                     color = colors.onDark,
                 )
-                PopularTag()
+                val storeName = menu.storeName
+                if (!storeName.isNullOrBlank()) {
+                    StoreNameTag(storeName = storeName)
+                }
             }
 
             Row(
@@ -287,21 +281,11 @@ private fun FeaturedMenuCard(
                         maxLines = FeaturedDescriptionMaxLines,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Row(
-                        horizontalArrangement = Arrangement.spacedBy(spacing.space2),
-                        verticalAlignment = Alignment.CenterVertically,
-                    ) {
-                        Text(
-                            text = formatWon(menu.price),
-                            style = CafeTheme.typography.h3,
-                            color = colors.primary,
-                        )
-                        Text(
-                            text = formatWon(menu.originalPrice),
-                            style = CafeTheme.typography.caption.copy(textDecoration = TextDecoration.LineThrough),
-                            color = colors.muted,
-                        )
-                    }
+                    Text(
+                        text = formatWon(menu.price),
+                        style = CafeTheme.typography.h3,
+                        color = colors.primary,
+                    )
                 }
             }
 
@@ -315,7 +299,7 @@ private fun FeaturedMenuCard(
 }
 
 @Composable
-private fun PopularTag() {
+private fun StoreNameTag(storeName: String) {
     Surface(
         shape = CafeTheme.shapes.radiusPill,
         color = CafeTheme.colors.accentSoft,
@@ -326,74 +310,12 @@ private fun PopularTag() {
                 horizontal = CafeTheme.spacing.space3,
                 vertical = CafeTheme.spacing.space1,
             ),
-            text = "🔥 인기",
+            text = storeName,
             style = CafeTheme.typography.caption,
             color = CafeTheme.colors.primary,
+            maxLines = StoreNameTagMaxLines,
+            overflow = TextOverflow.Ellipsis,
         )
-    }
-}
-
-@Composable
-private fun CouponSummaryCard(
-    availableCouponCount: Int,
-    onClick: () -> Unit,
-) {
-    val colors = CafeTheme.colors
-    val spacing = CafeTheme.spacing
-
-    CafeCard(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick)
-            .semantics(mergeDescendants = true) {},
-        type = CafeCardType.Default,
-    ) {
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(spacing.space4),
-            verticalAlignment = Alignment.CenterVertically,
-        ) {
-            CouponIcon()
-            Column(
-                modifier = Modifier.weight(ContentWeight),
-                verticalArrangement = Arrangement.spacedBy(spacing.space1),
-            ) {
-                Text(
-                    text = "사용 가능 쿠폰 ${availableCouponCount}장",
-                    style = CafeTheme.typography.bodyL,
-                    color = colors.ink,
-                )
-                Text(
-                    text = "1잔 무료 쿠폰 · 오늘 만료",
-                    style = CafeTheme.typography.caption,
-                    color = colors.primary,
-                )
-            }
-            Text(
-                text = "›",
-                style = CafeTheme.typography.h2,
-                color = colors.body,
-            )
-        }
-    }
-}
-
-@Composable
-private fun CouponIcon() {
-    Surface(
-        modifier = Modifier.size(CafeTheme.spacing.space8),
-        shape = CafeTheme.shapes.radiusLg,
-        color = CafeTheme.colors.primary,
-        contentColor = CafeTheme.colors.onPrimary,
-    ) {
-        Box(contentAlignment = Alignment.Center) {
-            Icon(
-                painter = painterResource(R.drawable.ic_ticket),
-                contentDescription = null,
-                tint = CafeTheme.colors.onPrimary,
-                modifier = Modifier.size(CafeTheme.spacing.space5),
-            )
-        }
     }
 }
 
@@ -465,14 +387,14 @@ private fun RecentOrderCard(
 
     CafeCard(
         modifier = modifier
-            .height(spacing.space18 * RecentOrderCardHeightMultiplier + spacing.space2)
+            .heightIn(min = spacing.space18 * RecentOrderCardHeightMultiplier + spacing.space2)
             .clickable(onClick = onClick)
             .semantics(mergeDescendants = true) {},
         type = CafeCardType.Default,
     ) {
         Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(spacing.space3),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(spacing.space2)) {
                 Row(
@@ -522,7 +444,7 @@ private fun ReorderPill(price: Int) {
     ) {
         Box(
             modifier = Modifier.padding(
-                horizontal = CafeTheme.spacing.space3,
+                horizontal = CafeTheme.spacing.space2,
                 vertical = CafeTheme.spacing.space2,
             ),
             contentAlignment = Alignment.Center,
@@ -567,8 +489,9 @@ private const val ContentWeight = 1f
 private const val BorderWidthDivider = 4
 private const val RecentOrderColumns = 2
 private const val RecentOrderCardHeightMultiplier = 2
+private const val StoreNameTagMaxLines = 1
 private const val FeaturedNameMaxLines = 1
 private const val FeaturedDescriptionMaxLines = 2
-private const val RecentOrderNameMaxLines = 2
+private const val RecentOrderNameMaxLines = 1
 private const val RecentOrderOptionMaxLines = 1
 private const val ReorderPillMaxLines = 1

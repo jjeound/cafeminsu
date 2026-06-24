@@ -55,7 +55,7 @@ class MyViewModelTest {
             val content = awaitContent()
             assertEquals("진지원", content.profile.displayName)
             assertEquals("진", content.profile.initial)
-            assertEquals("GOLD", content.profile.tierLabel)
+            assertEquals("", content.profile.tierLabel)
             assertEquals(12, content.stats.orderCount)
             assertEquals(7, content.stats.stampCount)
             assertEquals(10, content.stats.stampGoalCount)

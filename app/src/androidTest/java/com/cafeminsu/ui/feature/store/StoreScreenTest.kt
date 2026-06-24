@@ -30,7 +30,7 @@ class StoreScreenTest {
                     onStartOrder = { startRequestedStoreId = it },
                     onRetry = {},
                     // 실 MapView(GL/SDK) 인스턴스화를 피하려고 지도 슬롯을 스텁으로 주입.
-                    mapContent = { markers, _ -> mapMarkers = markers },
+                    mapContent = { markers, _, _ -> mapMarkers = markers },
                 )
             }
         }
@@ -68,7 +68,7 @@ class StoreScreenTest {
                     onStartOrder = {},
                     onRetry = {},
                     // 지도 마커 탭이 onStoreClick(=상세/바텀시트) 로 이어지는지 스텁으로 검증.
-                    mapContent = { _, onMarkerClick -> capturedOnMarkerClick = onMarkerClick },
+                    mapContent = { _, _, onMarkerClick -> capturedOnMarkerClick = onMarkerClick },
                 )
             }
         }
