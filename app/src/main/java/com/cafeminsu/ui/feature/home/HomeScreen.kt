@@ -7,6 +7,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -16,11 +17,15 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Icon
+import androidx.compose.material3.Scaffold
+import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
@@ -33,9 +38,12 @@ import com.cafeminsu.R
 import com.cafeminsu.ui.components.CafeButton
 import com.cafeminsu.ui.components.CafeCard
 import com.cafeminsu.ui.components.CafeCardType
+import com.cafeminsu.ui.components.CafeSnackbarHost
+import com.cafeminsu.ui.components.CafeSnackbarType
 import com.cafeminsu.ui.components.EmptyView
 import com.cafeminsu.ui.components.ErrorView
 import com.cafeminsu.ui.components.LoadingView
+import com.cafeminsu.ui.components.cafeSnackbar
 import com.cafeminsu.ui.theme.CafeTheme
 import java.text.NumberFormat
 import java.util.Locale
@@ -45,23 +53,45 @@ fun HomeRoute(
     onRecommendedOrderClick: (String) -> Unit,
     onNotificationClick: () -> Unit,
     onRecentOrdersClick: () -> Unit,
-    onReorderClick: (String) -> Unit,
+    onNavigateToPayment: (String) -> Unit,
     onBrowseMenuClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+    val snackbarHostState = remember { SnackbarHostState() }
 
-    HomeScreen(
-        state = state,
-        onRecommendedOrderClick = onRecommendedOrderClick,
-        onNotificationClick = onNotificationClick,
-        onRecentOrdersClick = onRecentOrdersClick,
-        onReorderClick = onReorderClick,
-        onBrowseMenuClick = onBrowseMenuClick,
-        onRetry = viewModel::retry,
-        modifier = modifier,
-    )
+    LaunchedEffect(viewModel) {
+        viewModel.events.collect { event ->
+            when (event) {
+                // 재주문 주문 생성이 확정된 뒤에만 결제 화면으로 이동한다.
+                is HomeEvent.NavigateToPayment -> onNavigateToPayment(event.orderId)
+                is HomeEvent.ReorderFailed -> snackbarHostState.cafeSnackbar(
+                    message = event.message,
+                    type = CafeSnackbarType.Error,
+                )
+            }
+        }
+    }
+
+    Scaffold(
+        modifier = modifier.fillMaxSize(),
+        containerColor = CafeTheme.colors.canvas,
+        // 부모 AppNavHost Scaffold 가 이미 시스템바 인셋을 적용하므로 여기서 중복 적용하지 않는다.
+        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+        snackbarHost = { CafeSnackbarHost(snackbarHostState) },
+    ) { innerPadding ->
+        HomeScreen(
+            state = state,
+            onRecommendedOrderClick = onRecommendedOrderClick,
+            onNotificationClick = onNotificationClick,
+            onRecentOrdersClick = onRecentOrdersClick,
+            onReorderClick = viewModel::onReorder,
+            onBrowseMenuClick = onBrowseMenuClick,
+            onRetry = viewModel::retry,
+            modifier = Modifier.padding(innerPadding),
+        )
+    }
 }
 
 @Composable

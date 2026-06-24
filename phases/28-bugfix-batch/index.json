@@ -21,7 +21,10 @@
     {
       "step": 2,
       "name": "home-reorder-to-pay",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-06-24T23:42:31+0900",
+      "summary": "홈 재주문을 단발 주문 생성→결제 이동으로 변경. HomeViewModel.onReorder(menuItemId)가 menuRepository.getMenu로 메뉴를 해석해 기본옵션·수량1 단발 Cart를 만들고 createOrderFromCart로 주문 생성 후 HomeEvent.NavigateToPayment(orderId) 1회성 이벤트 emit(더블탭 가드, 기존 장바구니 불변, 낙관 금지). HomeRoute가 events를 collect해 결제로 이동하고 실패는 에러 스낵바. AppNavHost HOME 배선을 onNavigateToPayment→Routes.pay(orderId)로 교체. HISTORY 재주문은 불변.",
+      "completed_at": "2026-06-24T23:49:06+0900"
     },
     {
       "step": 3,
