@@ -14,12 +14,16 @@ import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.OrderStatus
 import com.cafeminsu.domain.model.SelectedOption
 import com.cafeminsu.domain.model.StampCard
+import com.cafeminsu.domain.model.Store
+import com.cafeminsu.domain.model.StoreStatus
 import com.cafeminsu.domain.model.UserProfile
 import com.cafeminsu.domain.repository.OrderRepository
 import com.cafeminsu.domain.repository.MenuRepository
 import com.cafeminsu.domain.repository.RecommendationRepository
 import com.cafeminsu.domain.repository.RewardRepository
 import com.cafeminsu.domain.repository.SessionRepository
+import com.cafeminsu.domain.repository.StoreRepository
+import org.junit.Assert.assertNull
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.Flow
@@ -78,6 +82,7 @@ class HomeViewModelTest {
                 ),
             ),
             recommendationRepository = FakeRecommendationRepository(),
+            storeRepository = FakeStoreRepository(sampleStore(name = "민수 강남점")),
         )
 
         viewModel.uiState.test {
@@ -88,8 +93,7 @@ class HomeViewModelTest {
             assertEquals("menu-1", content.recommendedMenu.id)
             assertEquals("민수 시그니처 라떼", content.recommendedMenu.name)
             assertEquals(5_500, content.recommendedMenu.price)
-            assertEquals(6_000, content.recommendedMenu.originalPrice)
-            assertEquals(2, content.availableCouponCount)
+            assertEquals("민수 강남점", content.recommendedMenu.storeName)
             assertEquals("아메리카노 ICE", content.recentOrders[0].menuName)
             assertEquals("어제", content.recentOrders[0].orderedAtLabel)
             assertEquals("헤이즐넛 라떼", content.recentOrders[1].menuName)
@@ -110,6 +114,7 @@ class HomeViewModelTest {
             ),
             sessionRepository = FakeSessionRepository(AuthState.Guest),
             recommendationRepository = FakeRecommendationRepository(),
+            storeRepository = FakeStoreRepository(null),
         )
 
         viewModel.uiState.test {
@@ -134,6 +139,7 @@ class HomeViewModelTest {
             ),
             sessionRepository = FakeSessionRepository(AuthState.Guest),
             recommendationRepository = FakeRecommendationRepository(),
+            storeRepository = FakeStoreRepository(null),
         )
 
         viewModel.uiState.test {
@@ -141,7 +147,8 @@ class HomeViewModelTest {
             assertTrue(state is HomeUiState.Content)
             val content = state as HomeUiState.Content
             assertEquals("안녕하세요, 민수님", content.greeting)
-            assertEquals(0, content.availableCouponCount)
+            // 매장 미선택 시 추천 카드 매장명은 비어 있어야 한다.
+            assertNull(content.recommendedMenu.storeName)
             assertTrue(content.recentOrders.isEmpty())
 
             cancelAndIgnoreRemainingEvents()
@@ -159,6 +166,7 @@ class HomeViewModelTest {
             ),
             sessionRepository = FakeSessionRepository(AuthState.Guest),
             recommendationRepository = FakeRecommendationRepository(),
+            storeRepository = FakeStoreRepository(null),
         )
 
         viewModel.uiState.test {
@@ -189,6 +197,7 @@ class HomeViewModelTest {
             recommendationRepository = FakeRecommendationRepository(
                 AppResult.Success(serverRecommendation),
             ),
+            storeRepository = FakeStoreRepository(null),
         )
 
         viewModel.uiState.test {
@@ -216,6 +225,7 @@ class HomeViewModelTest {
             recommendationRepository = FakeRecommendationRepository(
                 AppResult.Failure(DomainError.Network),
             ),
+            storeRepository = FakeStoreRepository(null),
         )
 
         viewModel.uiState.test {
@@ -228,6 +238,44 @@ class HomeViewModelTest {
             cancelAndIgnoreRemainingEvents()
         }
     }
+
+    @Test
+    fun blankStoreNameProducesNullStoreName() = runTest {
+        val viewModel = HomeViewModel(
+            menuRepository = FakeMenuRepository(AppResult.Success(listOf(sampleMenu()))),
+            orderRepository = FakeOrderRepository(AppResult.Success(emptyList())),
+            rewardRepository = FakeRewardRepository(
+                initialStampCard = AppResult.Success(sampleStampCard()),
+                initialGifticons = AppResult.Success(emptyList()),
+            ),
+            sessionRepository = FakeSessionRepository(AuthState.Guest),
+            recommendationRepository = FakeRecommendationRepository(),
+            storeRepository = FakeStoreRepository(sampleStore(name = "   ")),
+        )
+
+        viewModel.uiState.test {
+            val state = awaitSettledState()
+            assertTrue(state is HomeUiState.Content)
+            val content = state as HomeUiState.Content
+            assertNull(content.recommendedMenu.storeName)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    private fun sampleStore(name: String): Store =
+        Store(
+            id = "store-1",
+            name = name,
+            address = "서울시 강남구",
+            phone = "02-000-0000",
+            distanceMeters = 120,
+            latitude = 37.0,
+            longitude = 127.0,
+            status = StoreStatus.Open,
+            closingTimeLabel = null,
+            amenities = emptyList(),
+        )
 
     private fun sampleMenu(basePrice: Int = 5_500): MenuItem =
         MenuItem(
@@ -381,6 +429,23 @@ private class FakeRecommendationRepository(
     private val recommendation = MutableStateFlow(initialRecommendation)
 
     override fun observeTodayRecommendation(): Flow<AppResult<MenuItem?>> = recommendation
+}
+
+private class FakeStoreRepository(
+    selectedStore: Store?,
+) : StoreRepository {
+    private val selected = MutableStateFlow(selectedStore)
+
+    override fun observeNearbyStores(query: String?): Flow<AppResult<List<Store>>> =
+        MutableStateFlow(AppResult.Success(emptyList()))
+
+    override suspend fun getStore(storeId: String): AppResult<Store> =
+        AppResult.Failure(DomainError.NotFound)
+
+    override suspend fun selectStore(storeId: String): AppResult<Unit> =
+        AppResult.Success(Unit)
+
+    override fun observeSelectedStore(): Flow<Store?> = selected
 }
 
 private class FakeSessionRepository(

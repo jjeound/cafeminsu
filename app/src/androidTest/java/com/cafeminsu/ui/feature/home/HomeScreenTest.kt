@@ -17,7 +17,6 @@ class HomeScreenTest {
     @Test
     fun showsHomeContent() {
         var notified = false
-        var couponOpened = false
         var recommendedMenuId: String? = null
         var reorderedMenuId: String? = null
 
@@ -31,9 +30,8 @@ class HomeScreenTest {
                             name = "민수 시그니처 라떼",
                             description = "고소한 헤이즐넛 시럽 + 따뜻한 우유",
                             price = 5_500,
-                            originalPrice = 6_000,
+                            storeName = "민수 강남점",
                         ),
-                        availableCouponCount = 3,
                         recentOrders = listOf(
                             HomeRecentOrderSummary(
                                 orderId = "order-1",
@@ -54,7 +52,6 @@ class HomeScreenTest {
                         ),
                     ),
                     onRecommendedOrderClick = { recommendedMenuId = it },
-                    onCouponClick = { couponOpened = true },
                     onNotificationClick = { notified = true },
                     onRecentOrdersClick = {},
                     onReorderClick = { reorderedMenuId = it },
@@ -67,19 +64,17 @@ class HomeScreenTest {
         composeRule.onNodeWithText("안녕하세요, 민수님").assertIsDisplayed()
         composeRule.onNodeWithText("오늘도 잘 부탁드려요").assertIsDisplayed()
         composeRule.onNodeWithText("오늘의 추천 메뉴").assertIsDisplayed()
+        composeRule.onNodeWithText("민수 강남점").assertIsDisplayed()
         composeRule.onNodeWithText("민수 시그니처 라떼").assertIsDisplayed()
         composeRule.onNodeWithText("5,500원").assertIsDisplayed()
-        composeRule.onNodeWithText("사용 가능 쿠폰 3장").assertIsDisplayed()
         composeRule.onNodeWithText("다시 주문하기").assertIsDisplayed()
         composeRule.onNodeWithText("아메리카노 ICE").assertIsDisplayed()
 
         composeRule.onNodeWithText("지금 주문하기 ›").performClick()
-        composeRule.onNodeWithText("사용 가능 쿠폰 3장").performClick()
         composeRule.onNodeWithContentDescription("알림").performClick()
         composeRule.onNodeWithText("4,500원 · 재주문").performClick()
 
         assertEquals("menu-1", recommendedMenuId)
-        assertEquals(true, couponOpened)
         assertEquals(true, notified)
         assertEquals("americano", reorderedMenuId)
     }

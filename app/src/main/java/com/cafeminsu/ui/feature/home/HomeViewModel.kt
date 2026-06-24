@@ -6,15 +6,16 @@ import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.AuthState
 import com.cafeminsu.domain.model.Gifticon
-import com.cafeminsu.domain.model.GifticonStatus
 import com.cafeminsu.domain.model.MenuItem
 import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.StampCard
+import com.cafeminsu.domain.model.Store
 import com.cafeminsu.domain.repository.MenuRepository
 import com.cafeminsu.domain.repository.OrderRepository
 import com.cafeminsu.domain.repository.RecommendationRepository
 import com.cafeminsu.domain.repository.RewardRepository
 import com.cafeminsu.domain.repository.SessionRepository
+import com.cafeminsu.domain.repository.StoreRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.SharingStarted
@@ -31,6 +32,7 @@ class HomeViewModel @Inject constructor(
     private val rewardRepository: RewardRepository,
     private val sessionRepository: SessionRepository,
     private val recommendationRepository: RecommendationRepository,
+    private val storeRepository: StoreRepository,
 ) : ViewModel() {
     val uiState: StateFlow<HomeUiState> = combine(
         combine(
@@ -43,7 +45,8 @@ class HomeViewModel @Inject constructor(
             HomeInputs(menuResult, orderResult, stampResult, gifticonResult, authState)
         },
         recommendationRepository.observeTodayRecommendation(),
-    ) { inputs, recommendationResult ->
+        storeRepository.observeSelectedStore(),
+    ) { inputs, recommendationResult, selectedStore ->
         mapHomeState(
             menuResult = inputs.menuResult,
             orderResult = inputs.orderResult,
@@ -51,6 +54,7 @@ class HomeViewModel @Inject constructor(
             gifticonResult = inputs.gifticonResult,
             authState = inputs.authState,
             recommendationResult = recommendationResult,
+            selectedStore = selectedStore,
         )
     }.catch {
         emit(
@@ -81,6 +85,7 @@ class HomeViewModel @Inject constructor(
         gifticonResult: AppResult<List<Gifticon>>,
         authState: AuthState,
         recommendationResult: AppResult<MenuItem?>,
+        selectedStore: Store?,
     ): HomeUiState {
         val greeting = greetingFor(authState)
 
@@ -96,8 +101,8 @@ class HomeViewModel @Inject constructor(
             is AppResult.Success -> Unit
             is AppResult.Failure -> return stampResult.error.toHomeError()
         }
-        val gifticons = when (gifticonResult) {
-            is AppResult.Success -> gifticonResult.data
+        when (gifticonResult) {
+            is AppResult.Success -> Unit
             is AppResult.Failure -> return gifticonResult.error.toHomeError()
         }
         // 서버 추천을 우선 사용하되, 실패/빈 결과/매장 미선택 시 기존 메뉴 파생으로 폴백한다.
@@ -105,7 +110,8 @@ class HomeViewModel @Inject constructor(
             is AppResult.Success -> recommendationResult.data ?: menus.firstOrNull { !it.isSoldOut }
             is AppResult.Failure -> menus.firstOrNull { !it.isSoldOut }
         }
-        val recommendedMenu = recommendedMenuItem?.toHomeRecommendedMenu()
+        val storeName = selectedStore?.name?.takeIf { it.isNotBlank() }
+        val recommendedMenu = recommendedMenuItem?.toHomeRecommendedMenu(storeName)
 
         return if (recommendedMenu == null) {
             HomeUiState.Empty(
@@ -116,7 +122,6 @@ class HomeViewModel @Inject constructor(
             HomeUiState.Content(
                 greeting = greeting,
                 recommendedMenu = recommendedMenu,
-                availableCouponCount = gifticons.count { it.status == GifticonStatus.Available },
                 recentOrders = orders
                     .sortedByDescending { it.createdAtMillis }
                     .mapNotNull { it.toHomeRecentOrderSummary() }
@@ -137,13 +142,13 @@ class HomeViewModel @Inject constructor(
             -> DefaultUserName
         }
 
-    private fun MenuItem.toHomeRecommendedMenu(): HomeRecommendedMenu =
+    private fun MenuItem.toHomeRecommendedMenu(storeName: String?): HomeRecommendedMenu =
         HomeRecommendedMenu(
             id = id,
             name = name,
             description = description,
             price = basePrice,
-            originalPrice = basePrice + RecommendedOriginalPriceDelta,
+            storeName = storeName,
         )
 
     private fun Order.toHomeRecentOrderSummary(): HomeRecentOrderSummary? {
@@ -212,7 +217,6 @@ class HomeViewModel @Inject constructor(
 
     private companion object {
         const val StateStopTimeoutMillis = 5_000L
-        const val RecommendedOriginalPriceDelta = 500
         const val RecentOrderLimit = 2
         const val DayMillis = 24L * 60L * 60L * 1000L
         const val DefaultUserName = "민수"

@@ -6,7 +6,6 @@ sealed interface HomeUiState {
     data class Content(
         val greeting: String,
         val recommendedMenu: HomeRecommendedMenu,
-        val availableCouponCount: Int,
         val recentOrders: List<HomeRecentOrderSummary>,
     ) : HomeUiState
 
@@ -26,7 +25,7 @@ data class HomeRecommendedMenu(
     val name: String,
     val description: String,
     val price: Int,
-    val originalPrice: Int,
+    val storeName: String?,
 )
 
 data class HomeRecentOrderSummary(

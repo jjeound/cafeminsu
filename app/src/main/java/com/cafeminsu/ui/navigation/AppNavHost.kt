@@ -199,7 +199,6 @@ fun AppNavHost(
                     onRecommendedOrderClick = { menuItemId ->
                         navController.navigate(Routes.menuDetail(menuItemId))
                     },
-                    onCouponClick = { navController.navigate(Routes.COUPON) },
                     onNotificationClick = { navController.navigate(Routes.NOTI) },
                     onRecentOrdersClick = { navController.navigate(Routes.HISTORY) },
                     onReorderClick = { menuItemId ->
@@ -472,9 +471,9 @@ private val ownerBottomTabs = listOf(
     BottomTab(Routes.OWNER_SALES, "매출"),
 )
 
+// 메뉴(MENU)는 매장 선택 이후 진입하는 몰입형 주문 화면이라 하단 탭을 숨긴다.
 private val orderTabRoutes = setOf(
     Routes.STORE,
-    Routes.MENU,
 )
 
 // 메뉴 상세에서 장바구니에 담은 뒤 이동할 목적지를 직전 화면 기준으로 결정한다.
@@ -482,7 +481,7 @@ private val orderTabRoutes = setOf(
 internal fun menuDetailAddedDestination(previousRoute: String?): String? =
     if (previousRoute == Routes.HOME) Routes.MENU else null
 
-private fun shouldShowBottomBar(currentRoute: String?): Boolean =
+internal fun shouldShowBottomBar(currentRoute: String?): Boolean =
     selectedTabRoute(currentRoute) != null
 
 private fun shouldShowOwnerBottomBar(currentRoute: String?): Boolean =

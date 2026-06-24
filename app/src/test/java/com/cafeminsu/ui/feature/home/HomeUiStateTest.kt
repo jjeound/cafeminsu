@@ -1,21 +1,35 @@
 package com.cafeminsu.ui.feature.home
 
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertNull
 import org.junit.Test
 
 class HomeUiStateTest {
     @Test
-    fun recommendedMenuKeepsCurrentAndOriginalPrices() {
+    fun recommendedMenuKeepsPriceAndStoreName() {
         val menu = HomeRecommendedMenu(
             id = "menu-1",
             name = "민수 시그니처 라떼",
             description = "고소한 헤이즐넛 시럽 + 따뜻한 우유",
             price = 5_500,
-            originalPrice = 6_000,
+            storeName = "민수 강남점",
         )
 
         assertEquals(5_500, menu.price)
-        assertEquals(6_000, menu.originalPrice)
+        assertEquals("민수 강남점", menu.storeName)
+    }
+
+    @Test
+    fun recommendedMenuAllowsNullStoreName() {
+        val menu = HomeRecommendedMenu(
+            id = "menu-1",
+            name = "민수 시그니처 라떼",
+            description = "고소한 헤이즐넛 시럽 + 따뜻한 우유",
+            price = 5_500,
+            storeName = null,
+        )
+
+        assertNull(menu.storeName)
     }
 
     @Test
