@@ -1,0 +1,41 @@
+{
+  "project": "CafeMinsu",
+  "phase": "bugfix-batch",
+  "steps": [
+    {
+      "step": 0,
+      "name": "coupon-amount-discount",
+      "status": "pending"
+    },
+    {
+      "step": 1,
+      "name": "noti-hide-read",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "home-reorder-to-pay",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "name": "menu-default-image",
+      "status": "pending"
+    },
+    {
+      "step": 4,
+      "name": "kakaopay-consolidate",
+      "status": "pending"
+    },
+    {
+      "step": 5,
+      "name": "owner-store-switcher",
+      "status": "pending"
+    },
+    {
+      "step": 6,
+      "name": "owner-menu-image-upload",
+      "status": "pending"
+    }
+  ]
+}
