@@ -68,6 +68,25 @@
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@drawable/ic_notifications" />
 
+        <!-- 카카오페이 승인 후 pg_token 딥링크 캡처(스킴/호스트 화이트리스트). -->
+        <activity
+            android:name=".ui.feature.payment.KakaoPayRedirectActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="kakaopay"
+                    android:scheme="cafeminsu" />
+            </intent-filter>
+        </activity>
+
         <activity
             android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
             android:exported="true">
