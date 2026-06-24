@@ -29,3 +29,9 @@ data class OwnerProfile(
     val loginId: String,
     val isStoreOpen: Boolean,
 )
+
+/** 로그인한 점주가 운영하는 매장(헤더 매장 선택용). 단일 매장이면 1개만 노출한다. */
+data class OwnerStore(
+    val id: String,
+    val name: String,
+)

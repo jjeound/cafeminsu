@@ -8,6 +8,7 @@ import com.cafeminsu.core.AppResult
 import com.cafeminsu.domain.auth.OwnerAuthProvider
 import com.cafeminsu.domain.model.AuthState
 import com.cafeminsu.domain.model.OwnerProfile
+import com.cafeminsu.domain.model.OwnerStore
 import com.cafeminsu.domain.repository.SessionRepository
 import com.cafeminsu.ui.theme.CafeTheme
 import kotlinx.coroutines.flow.Flow
@@ -111,6 +112,20 @@ private class FakeOwnerAuthProvider : OwnerAuthProvider {
                 storeName = "강남점",
                 loginId = "owner",
                 isStoreOpen = open,
+            ),
+        )
+
+    override suspend fun getStores(): AppResult<List<OwnerStore>> =
+        AppResult.Success(listOf(OwnerStore(id = "store-gangnam", name = "강남점")))
+
+    override suspend fun selectStore(storeId: String): AppResult<OwnerProfile> =
+        AppResult.Success(
+            OwnerProfile(
+                id = "owner-demo",
+                storeId = storeId,
+                storeName = "강남점",
+                loginId = "owner",
+                isStoreOpen = true,
             ),
         )
 }

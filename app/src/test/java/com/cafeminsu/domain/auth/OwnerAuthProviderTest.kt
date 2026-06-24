@@ -2,6 +2,7 @@ package com.cafeminsu.domain.auth
 
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.domain.model.OwnerProfile
+import com.cafeminsu.domain.model.OwnerStore
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
@@ -44,6 +45,20 @@ private class FakeOwnerAuthProvider : OwnerAuthProvider {
                 storeName = "강남점",
                 loginId = "owner",
                 isStoreOpen = open,
+            ),
+        )
+
+    override suspend fun getStores(): AppResult<List<OwnerStore>> =
+        AppResult.Success(listOf(OwnerStore(id = "store-gangnam", name = "강남점")))
+
+    override suspend fun selectStore(storeId: String): AppResult<OwnerProfile> =
+        AppResult.Success(
+            OwnerProfile(
+                id = "owner-demo",
+                storeId = storeId,
+                storeName = "강남점",
+                loginId = "owner",
+                isStoreOpen = true,
             ),
         )
 }

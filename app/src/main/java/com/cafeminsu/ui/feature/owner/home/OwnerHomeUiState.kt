@@ -12,6 +12,7 @@ sealed interface OwnerHomeUiState {
         val stats: OwnerHomeStatsUiModel,
         val pendingOrders: List<OwnerHomeOrderUiModel>,
         val isStoreOpenUpdating: Boolean,
+        val stores: List<OwnerStoreUiModel> = emptyList(),
     ) : OwnerHomeUiState
 
     data class Empty(
@@ -21,6 +22,7 @@ sealed interface OwnerHomeUiState {
         val stats: OwnerHomeStatsUiModel,
         val message: String,
         val isStoreOpenUpdating: Boolean,
+        val stores: List<OwnerStoreUiModel> = emptyList(),
     ) : OwnerHomeUiState
 
     data class Error(
@@ -33,6 +35,12 @@ data class OwnerHomeStatsUiModel(
     val totalSales: Int,
     val orderCount: Int,
     val newWaitingCount: Int,
+)
+
+data class OwnerStoreUiModel(
+    val id: String,
+    val name: String,
+    val isSelected: Boolean,
 )
 
 data class OwnerHomeOrderUiModel(

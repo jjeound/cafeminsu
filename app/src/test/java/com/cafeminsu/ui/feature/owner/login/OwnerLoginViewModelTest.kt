@@ -5,6 +5,7 @@ import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.auth.OwnerAuthProvider
 import com.cafeminsu.domain.model.OwnerProfile
+import com.cafeminsu.domain.model.OwnerStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.test.TestDispatcher
@@ -114,6 +115,12 @@ private class FakeOwnerAuthProvider(
         AppResult.Success(Unit)
 
     override suspend fun setStoreOpen(open: Boolean): AppResult<OwnerProfile> =
+        loginResult
+
+    override suspend fun getStores(): AppResult<List<OwnerStore>> =
+        AppResult.Success(emptyList())
+
+    override suspend fun selectStore(storeId: String): AppResult<OwnerProfile> =
         loginResult
 }
 
