@@ -46,6 +46,7 @@ import com.kakao.vectormap.LatLng
 import com.kakao.vectormap.MapLifeCycleCallback
 import com.kakao.vectormap.MapView
 import com.kakao.vectormap.camera.CameraUpdateFactory
+import com.kakao.vectormap.label.LabelLayerOptions
 import com.kakao.vectormap.label.LabelOptions
 import com.kakao.vectormap.label.LabelStyle
 import com.kakao.vectormap.label.LabelStyles
@@ -69,10 +70,16 @@ fun shouldRenderKakaoMap(kakaoNativeAppKey: String): Boolean =
 fun StoreMapView(
     markers: List<StoreMapMarker>,
     modifier: Modifier = Modifier,
+    userLocation: UserLocationUiModel? = null,
     onMarkerClick: (String) -> Unit = {},
 ) {
     if (shouldRenderKakaoMap(BuildConfig.KAKAO_NATIVE_APP_KEY)) {
-        KakaoStoreMap(markers = markers, onMarkerClick = onMarkerClick, modifier = modifier)
+        KakaoStoreMap(
+            markers = markers,
+            userLocation = userLocation,
+            onMarkerClick = onMarkerClick,
+            modifier = modifier,
+        )
     } else {
         StoreMapPlaceholder(modifier = modifier)
     }
@@ -81,6 +88,7 @@ fun StoreMapView(
 @Composable
 private fun KakaoStoreMap(
     markers: List<StoreMapMarker>,
+    userLocation: UserLocationUiModel?,
     onMarkerClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -91,9 +99,15 @@ private fun KakaoStoreMap(
     // 마커 색은 디자인 토큰(primary/onPrimary)에서 — 네이티브 MapView 경계라 Compose 테마를 직접 못 써 ARGB int 로 넘긴다.
     val markerColorArgb = CafeTheme.colors.primary.toArgb()
     val markerDotColorArgb = CafeTheme.colors.onPrimary.toArgb()
+    // "내 위치" 마커는 코랄(primary) 매장 핀과 구분되도록 비-primary 시맨틱 토큰(ink)으로 그린다.
+    val userMarkerColorArgb = CafeTheme.colors.ink.toArgb()
+    val userMarkerDotColorArgb = CafeTheme.colors.onPrimary.toArgb()
     // 이 SDK 는 텍스트 전용 라벨/벡터 드로어블을 "ImageAsset is invalid" 로 거부한다 → 코드로 그린 비트맵 핀을 마커 아이콘으로 쓴다.
     val markerBitmap = remember(markerColorArgb, markerDotColorArgb) {
         createMarkerBitmap(fillColorArgb = markerColorArgb, dotColorArgb = markerDotColorArgb)
+    }
+    val userMarkerBitmap = remember(userMarkerColorArgb, userMarkerDotColorArgb) {
+        createMarkerBitmap(fillColorArgb = userMarkerColorArgb, dotColorArgb = userMarkerDotColorArgb)
     }
     val mapView = remember { MapView(context) }
     var kakaoMap by remember { mutableStateOf<KakaoMap?>(null) }
@@ -101,6 +115,8 @@ private fun KakaoStoreMap(
     var mapStarted by remember { mutableStateOf(false) }
     // 이미 마커를 그린 목록. 매 recomposition 마다 removeAll+moveCamera 하면 카메라/타일 로딩이 churn 되므로 변경 시에만 다시 그린다.
     var renderedMarkers by remember { mutableStateOf<List<StoreMapMarker>?>(null) }
+    // "내 위치" 마커도 동일하게 변경 시에만 다시 그린다.
+    var renderedUserLocation by remember { mutableStateOf<UserLocationUiModel?>(null) }
     // 유효 좌표 매장이 보이도록 카메라를 한 번만 맞춘다(이후 사용자의 이동/확대를 덮어쓰지 않게).
     var storesFramed by remember { mutableStateOf(false) }
 
@@ -155,6 +171,8 @@ private fun KakaoStoreMap(
                             }
                             map.renderStoreMarkers(markers, markerBitmap)
                             renderedMarkers = markers
+                            map.renderUserMarker(userLocation, userMarkerBitmap)
+                            renderedUserLocation = userLocation
                             storesFramed = map.frameStoresOrFallback(markers, context)
                         }
                     },
@@ -176,6 +194,11 @@ private fun KakaoStoreMap(
                 if (!storesFramed) {
                     storesFramed = map.frameStoresOrFallback(markers, context)
                 }
+            }
+            // 내 위치는 권한 허용/측위 이후(나중 emit)에 채워질 수 있어 변경 시 다시 그린다.
+            if (map != null && userLocation != renderedUserLocation) {
+                map.renderUserMarker(userLocation, userMarkerBitmap)
+                renderedUserLocation = userLocation
             }
         },
     )
@@ -202,6 +225,31 @@ private fun KakaoMap.renderStoreMarkers(
                 .setTag(marker.id),
         )
     }
+}
+
+/**
+ * "내 위치" 마커를 매장 핀과는 별도의 라벨 레이어에 그린다.
+ * 매장 레이어는 [renderStoreMarkers] 가 removeAll() 로 매번 비우므로, 별도 레이어로 분리해 서로 침범하지 않게 한다.
+ * userLocation 이 null 이면(권한/측위 불가) 기존 내 위치 마커를 지운다.
+ */
+private fun KakaoMap.renderUserMarker(
+    userLocation: UserLocationUiModel?,
+    userMarkerBitmap: Bitmap,
+) {
+    val manager = labelManager ?: return
+    val layer = manager.getLayer(UserLocationLayerId)
+        ?: manager.addLayer(LabelLayerOptions.from(UserLocationLayerId))
+        ?: return
+    layer.removeAll()
+    if (userLocation == null) return
+
+    val styles = manager.addLabelStyles(
+        LabelStyles.from(LabelStyle.from(userMarkerBitmap)),
+    ) ?: return
+    layer.addLabel(
+        LabelOptions.from(LatLng.from(userLocation.latitude, userLocation.longitude))
+            .setStyles(styles),
+    )
 }
 
 /** 디자인 토큰 색으로 그린 마커 핀(코랄 원 + 흰 점). 네이티브 라벨 아이콘으로 쓴다. */
@@ -362,3 +410,4 @@ private const val MaxLat = 90.0
 private const val MinLng = -180.0
 private const val MaxLng = 180.0
 private const val MapLogTag = "StoreMapView"
+private const val UserLocationLayerId = "user-location"

@@ -100,11 +100,19 @@ fun StoreScreen(
     onStartOrder: (String) -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
-    mapContent: @Composable (List<StoreMapMarker>, (String) -> Unit) -> Unit =
-        { markers, onMarkerClick -> StoreMapView(markers = markers, onMarkerClick = onMarkerClick) },
+    mapContent: @Composable (List<StoreMapMarker>, UserLocationUiModel?, (String) -> Unit) -> Unit =
+        { markers, userLocation, onMarkerClick ->
+            StoreMapView(
+                markers = markers,
+                userLocation = userLocation,
+                onMarkerClick = onMarkerClick,
+            )
+        },
 ) {
-    val selectedStore = (state as? StoreUiState.Content)?.selectedStore
-    val mapMarkers = (state as? StoreUiState.Content)?.stores?.map { it.toMapMarker() }.orEmpty()
+    val content = state as? StoreUiState.Content
+    val selectedStore = content?.selectedStore
+    val mapMarkers = content?.stores?.map { it.toMapMarker() }.orEmpty()
+    val userLocation = content?.userLocation
 
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -126,7 +134,7 @@ fun StoreScreen(
             ) {
                 StoreHeader()
                 StoreSearchField(query = query, onQueryChange = onQueryChange)
-                mapContent(mapMarkers, onStoreClick)
+                mapContent(mapMarkers, userLocation, onStoreClick)
                 NearbyStoresHeader()
 
                 when (state) {
@@ -286,11 +294,14 @@ private fun StoreCard(
                         maxLines = StoreNameMaxLines,
                         overflow = TextOverflow.Ellipsis,
                     )
-                    Spacer(modifier = Modifier.width(spacing.space2))
-                    DistancePill(
-                        label = store.distanceLabel,
-                        selected = selected,
-                    )
+                    // 거리를 알 수 없으면("") 핀을 그리지 않는다("0m" 노출 금지).
+                    if (store.distanceLabel.isNotBlank()) {
+                        Spacer(modifier = Modifier.width(spacing.space2))
+                        DistancePill(
+                            label = store.distanceLabel,
+                            selected = selected,
+                        )
+                    }
                 }
 
                 Text(
@@ -485,8 +496,11 @@ private fun StoreInfoRows(store: StoreDetailUiModel) {
         StoreInfoDivider()
         StoreInfoRow(label = "전화", value = store.phone)
         StoreInfoDivider()
-        StoreInfoRow(label = "거리", value = store.distanceLabel)
-        StoreInfoDivider()
+        // 거리를 알 수 없으면("") 거리 행을 숨긴다("0m" 노출 금지).
+        if (store.distanceLabel.isNotBlank()) {
+            StoreInfoRow(label = "거리", value = store.distanceLabel)
+            StoreInfoDivider()
+        }
         StoreInfoRow(label = "주차", value = store.parkingLabel)
     }
 }
