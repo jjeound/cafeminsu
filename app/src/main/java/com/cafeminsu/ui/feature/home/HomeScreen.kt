@@ -491,6 +491,6 @@ private const val RecentOrderCardHeightMultiplier = 2
 private const val StoreNameTagMaxLines = 1
 private const val FeaturedNameMaxLines = 1
 private const val FeaturedDescriptionMaxLines = 2
-private const val RecentOrderNameMaxLines = 2
+private const val RecentOrderNameMaxLines = 1
 private const val RecentOrderOptionMaxLines = 1
 private const val ReorderPillMaxLines = 1
