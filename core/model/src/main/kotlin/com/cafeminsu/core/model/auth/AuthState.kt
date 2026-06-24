@@ -1,4 +1,4 @@
-package com.cafeminsu.core.model.session
+package com.cafeminsu.core.model.auth
 
 sealed interface AuthState {
     data object Unknown : AuthState

@@ -1,4 +1,4 @@
-package com.cafeminsu.core.model.session
+package com.cafeminsu.core.model.auth
 
 sealed interface PhoneLast4 {
     data object Unavailable : PhoneLast4

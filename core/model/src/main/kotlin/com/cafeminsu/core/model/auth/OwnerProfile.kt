@@ -1,4 +1,4 @@
-package com.cafeminsu.core.model.session
+package com.cafeminsu.core.model.auth
 
 data class OwnerProfile(
     val id: String,
