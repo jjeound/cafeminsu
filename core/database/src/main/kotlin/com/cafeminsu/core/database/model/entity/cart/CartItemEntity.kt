@@ -11,9 +11,10 @@ import androidx.room.PrimaryKey
 data class CartItemEntity(
     @PrimaryKey val id: String,
     val storeId: Long,
-    val menuItemId: Long,
+    val menuId: Long,
     val name: String,
-    val unitPrice: Int,
+    val imageUrl: String?,
+    val price: Int,
     val selectedOptionsJson: String,
     val quantity: Int,
     val createdAtMillis: Long,

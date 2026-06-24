@@ -2,6 +2,8 @@ package com.cafeminsu.core.data.di
 
 import com.cafeminsu.core.data.repository.auth.AuthRepository
 import com.cafeminsu.core.data.repository.auth.DefaultAuthRepository
+import com.cafeminsu.core.data.repository.cart.CartRepository
+import com.cafeminsu.core.data.repository.cart.DefaultCartRepository
 import com.cafeminsu.core.data.repository.menu.DefaultMenuRepository
 import com.cafeminsu.core.data.repository.menu.DefaultOwnerMenuRepository
 import com.cafeminsu.core.data.repository.menu.MenuRepository
@@ -71,4 +73,9 @@ abstract class DataModule {
     internal abstract fun bindNotificationRepository(
         notificationRepository: DefaultNotificationRepository,
     ): NotificationRepository
+
+    @Binds
+    internal abstract fun bindCartRepository(
+        cartRepository: DefaultCartRepository,
+    ): CartRepository
 }
