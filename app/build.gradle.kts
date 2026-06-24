@@ -103,6 +103,8 @@ dependencies {
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kakao.user)
     implementation(libs.kakao.share)
+    implementation(libs.kakao.friend)
+    implementation(libs.kakao.talk)
     implementation(libs.kakao.map)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)

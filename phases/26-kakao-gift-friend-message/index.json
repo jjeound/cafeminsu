@@ -2,7 +2,18 @@
   "project": "CafeMinsu",
   "phase": "kakao-gift-friend-message",
   "steps": [
-    { "step": 0, "name": "friend-picker-deps-and-scope", "status": "pending" },
-    { "step": 1, "name": "friend-pick-and-send", "status": "pending" }
-  ]
+    {
+      "step": 0,
+      "name": "friend-picker-deps-and-scope",
+      "status": "completed",
+      "started_at": "2026-06-24T11:11:03+0900",
+      "summary": "v2-friend·v2-talk 의존성 + KakaoTalkScopeProvider(friends/talk_message 증분 동의 헬퍼, loginWithNewScopes), 매니페스트 cleartrafic tools:replace로 SDK 충돌 해소"
+    },
+    {
+      "step": 1,
+      "name": "friend-pick-and-send",
+      "status": "pending"
+    }
+  ],
+  "created_at": "2026-06-24T11:11:03+0900"
 }
