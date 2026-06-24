@@ -12,8 +12,8 @@ interface MenuService {
     suspend fun getMenus(
         @Path("storeId") storeId: Long,
         @Query("category") category: String? = null,
-    ): ApiResponse<List<MenuListItemResponse>>
+    ): List<MenuListItemResponse>
 
     @GET("api/menus/{menuId}")
-    suspend fun getMenu(@Path("menuId") menuId: Long): ApiResponse<MenuDetailResponse>
+    suspend fun getMenu(@Path("menuId") menuId: Long): MenuDetailResponse
 }

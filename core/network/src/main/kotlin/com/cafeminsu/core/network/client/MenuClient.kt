@@ -9,8 +9,8 @@ import javax.inject.Inject
 class MenuClient @Inject constructor(
     private val menuService: MenuService,
 ) {
-    suspend fun getMenus(storeId: Long, category: String? = null): ApiResponse<List<MenuListItemResponse>> =
+    suspend fun getMenus(storeId: Long, category: String? = null): List<MenuListItemResponse> =
         menuService.getMenus(storeId, category)
 
-    suspend fun getMenu(menuId: Long): ApiResponse<MenuDetailResponse> = menuService.getMenu(menuId)
+    suspend fun getMenu(menuId: Long): MenuDetailResponse = menuService.getMenu(menuId)
 }

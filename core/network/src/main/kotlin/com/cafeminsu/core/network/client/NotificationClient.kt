@@ -6,6 +6,6 @@ import com.skydoves.sandwich.ApiResponse
 import javax.inject.Inject
 
 class NotificationClient @Inject constructor(private val notificationService: NotificationService) {
-    suspend fun getNotifications(): ApiResponse<List<NotificationResponse>> = notificationService.getNotifications()
-    suspend fun markAllRead(): ApiResponse<Unit> = notificationService.markAllRead()
+    suspend fun getNotifications(): List<NotificationResponse> = notificationService.getNotifications()
+    suspend fun markAllRead(): Unit = notificationService.markAllRead()
 }
