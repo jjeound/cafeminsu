@@ -40,7 +40,7 @@
       "status": "completed",
       "started_at": "2026-06-24T23:53:28+0900",
       "summary": "스웨거 정합 재검증 결과 KakaoPayApi(ready {merchantUid,amount}→{tid,redirectUrl} / approve {tid,pgToken,merchantUid}→{paymentToken})와 RealPaymentRepository(prepare→pgClient.authorize→verify[impUid=paymentToken]) 흐름이 백엔드 계약과 정확히 일치해 API 변경 불필요. 결제수단을 카카오페이로 통합 — defaultPaymentMethods()와 PaymentViewModel 내부 paymentMethods(token map)를 kakaopay 단일 항목으로 정리해 진입 시 기본 선택이 카카오페이가 되도록 함(신용카드/간편결제/coupon 목 수단 제거). PaymentViewModelTest/PaymentUiStateTest/PaymentScreenTest와 RealPaymentRepositoryTest 토큰 픽스처를 새 구성에 맞게 갱신. KAKAOPAY_ENABLED 플래그·멱등키·낙관금지·verify 확정 흐름 불변.",
-      "completed_at": "2026-06-24T23:56:00+0900"
+      "completed_at": "2026-06-24T23:57:58+0900"
     },
     {
       "step": 5,
