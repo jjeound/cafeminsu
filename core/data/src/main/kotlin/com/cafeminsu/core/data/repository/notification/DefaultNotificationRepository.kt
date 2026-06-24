@@ -15,8 +15,16 @@ class DefaultNotificationRepository @Inject constructor(
     private val client: NotificationClient,
     @Dispatcher(CafeMinsuDispatcher.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : NotificationRepository {
-    override fun getNotifications(): Flow<List<AppNotification>> = flow {
-        emit(client.getNotifications().map { it.asExternalModel() })
+    override fun getNotifications(isRead: Boolean?, limit: Int): Flow<List<AppNotification>> = flow {
+        emit(client.getNotifications(isRead, limit).map { it.asExternalModel() })
+    }.flowOn(ioDispatcher)
+
+    override fun getUnreadCount(): Flow<Int> = flow {
+        emit(client.getUnreadCount().count)
+    }.flowOn(ioDispatcher)
+
+    override fun markRead(id: Long): Flow<Unit> = flow {
+        emit(client.markRead(id))
     }.flowOn(ioDispatcher)
 
     override fun markAllRead(): Flow<Unit> = flow {
