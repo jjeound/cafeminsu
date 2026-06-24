@@ -63,6 +63,8 @@ class GifticonApiTest {
             gifticonId = 55,
             qrCode = "qr-value",
             merchantUid = "merchant-1",
+            claimCode = "GFT-XXXX-XXXX",
+            shareLink = "https://cafeminsu.example/gift?code=GFT-XXXX-XXXX",
         )
 
         assertEquals(10_000, request.amount)
@@ -72,16 +74,7 @@ class GifticonApiTest {
         assertEquals(55L, response.gifticonId)
         assertEquals("qr-value", response.qrCode)
         assertEquals("merchant-1", response.merchantUid)
-    }
-
-    @Test
-    fun gifticonShareDtoKeepsOpenApiResultFields() {
-        val response = GifticonShareRes(
-            shareLink = "https://cafeminsu.example/gift/secret",
-            deepLink = "cafeminsu://gift/secret",
-        )
-
-        assertEquals("https://cafeminsu.example/gift/secret", response.shareLink)
-        assertEquals("cafeminsu://gift/secret", response.deepLink)
+        assertEquals("GFT-XXXX-XXXX", response.claimCode)
+        assertEquals("https://cafeminsu.example/gift?code=GFT-XXXX-XXXX", response.shareLink)
     }
 }

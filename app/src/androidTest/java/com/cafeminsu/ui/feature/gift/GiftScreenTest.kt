@@ -3,7 +3,6 @@ package com.cafeminsu.ui.feature.gift
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
-import com.cafeminsu.domain.model.GiftChannel
 import com.cafeminsu.ui.theme.CafeTheme
 import org.junit.Rule
 import org.junit.Test
@@ -19,18 +18,13 @@ class GiftScreenTest {
                 GiftScreen(
                     state = GiftUiState.Content(
                         selectedAmountOption = GiftAmountOption.TenThousand,
-                        selectedChannel = GiftChannel.KakaoTalk,
-                        recipient = "",
                         message = "오늘 하루 수고 많았어",
                     ),
                     onBackClick = {},
                     onLoginClick = {},
                     onRetry = {},
                     onAmountSelected = {},
-                    onChannelSelected = {},
-                    onRecipientChanged = {},
                     onMessageChanged = {},
-                    onPickFriendClick = {},
                     onSendClick = {},
                 )
             }
@@ -42,32 +36,27 @@ class GiftScreenTest {
     }
 
     @Test
-    fun showsBothChannelCardsWithTitleAndSubtitle() {
+    fun showsKakaoOnlyShareNoticeWithoutSmsChannel() {
         composeRule.setContent {
             CafeTheme {
                 GiftScreen(
                     state = GiftUiState.Content(
                         selectedAmountOption = GiftAmountOption.TenThousand,
-                        selectedChannel = GiftChannel.KakaoTalk,
-                        recipient = "",
                         message = "",
                     ),
                     onBackClick = {},
                     onLoginClick = {},
                     onRetry = {},
                     onAmountSelected = {},
-                    onChannelSelected = {},
-                    onRecipientChanged = {},
                     onMessageChanged = {},
-                    onPickFriendClick = {},
                     onSendClick = {},
                 )
             }
         }
 
-        composeRule.onNodeWithText("카카오톡").assertIsDisplayed()
-        composeRule.onNodeWithText("친구 선택").assertIsDisplayed()
-        composeRule.onNodeWithText("문자 (SMS)").assertIsDisplayed()
-        composeRule.onNodeWithText("연락처 입력").assertIsDisplayed()
+        // 카카오톡 단일 채널: '받는 사람' 안내만 표시되고 문자(SMS) 선택지는 없다.
+        composeRule.onNodeWithText("받는 사람").assertIsDisplayed()
+        composeRule.onNodeWithText("구매 후 카카오톡으로 공유해요").assertIsDisplayed()
+        composeRule.onNodeWithText("문자 (SMS)").assertDoesNotExist()
     }
 }

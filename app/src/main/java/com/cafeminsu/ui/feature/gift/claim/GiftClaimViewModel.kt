@@ -36,6 +36,12 @@ class GiftClaimViewModel @Inject constructor(
     )
     val uiState: StateFlow<GiftClaimUiState> = _uiState.asStateFlow()
 
+    /**
+     * 딥링크(`cafeminsu://gift?code=...`)로 유효한 코드가 채워진 채 진입했는지 여부.
+     * 수동 진입('선물 등록' 버튼)은 코드가 비어 false. UI 가 진입 시 자동 등록(claim)에 사용한다.
+     */
+    val isDeepLinkClaim: Boolean = GiftClaimDeepLink.isValidClaimCode(_uiState.value.code)
+
     private val _events = MutableSharedFlow<GiftClaimEvent>(extraBufferCapacity = EventBufferCapacity)
     val events: SharedFlow<GiftClaimEvent> = _events.asSharedFlow()
 

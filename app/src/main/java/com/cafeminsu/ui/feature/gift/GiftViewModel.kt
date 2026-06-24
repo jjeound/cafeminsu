@@ -5,11 +5,11 @@ import androidx.lifecycle.viewModelScope
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.AuthState
-import com.cafeminsu.domain.model.GiftChannel
 import com.cafeminsu.domain.model.GiftSendRequest
 import com.cafeminsu.domain.model.GiftSendResult
 import com.cafeminsu.domain.repository.GiftRepository
 import com.cafeminsu.domain.repository.SessionRepository
+import com.cafeminsu.ui.feature.gift.claim.GiftClaimDeepLink
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -74,31 +74,6 @@ class GiftViewModel @Inject constructor(
         }
     }
 
-    fun onChannelSelected(channel: GiftChannel) {
-        formState.update { form ->
-            form.copy(selectedChannel = channel)
-        }
-    }
-
-    fun onRecipientChanged(value: String) {
-        formState.update { form ->
-            form.copy(recipient = value)
-        }
-    }
-
-    /**
-     * 친구 피커에서 선택된 친구. uuid 는 메시지 전송 전용으로만 보관하며 서버 구매에는 보내지 않는다.
-     * uuid/표시이름은 로깅하지 않는다(SECURITY §4).
-     */
-    fun onFriendSelected(uuid: String, displayName: String) {
-        formState.update { form ->
-            form.copy(
-                selectedFriendUuid = uuid,
-                selectedFriendName = displayName,
-            )
-        }
-    }
-
     fun onMessageChanged(value: String) {
         formState.update { form ->
             form.copy(message = value.take(MaxMessageLength))
@@ -123,22 +98,16 @@ class GiftViewModel @Inject constructor(
         }
 
         if (!content.canSend) {
-            _events.tryEmit(GiftEvent.SendFailed("받는 사람을 확인해 주세요"))
+            _events.tryEmit(GiftEvent.SendFailed("선물 금액을 확인해 주세요"))
             return
         }
 
         formState.update { current -> current.copy(sending = true) }
 
-        val friendUuid = form.selectedFriendUuid.orEmpty()
         viewModelScope.launch {
+            // 카카오톡 단일 채널: 수신자 미지정 구매(받는 사람은 인텐트 공유로 전달).
             val request = GiftSendRequest(
                 amount = content.selectedAmount,
-                channel = content.selectedChannel,
-                // KakaoTalk 은 친구 uuid 를 식별자로 전달(서버 미전송, 수신자 미지정 구매). SMS 는 연락처.
-                recipientRef = when (content.selectedChannel) {
-                    GiftChannel.KakaoTalk -> friendUuid
-                    GiftChannel.Sms -> content.recipient.trim()
-                },
                 message = content.message.ifBlank { null },
             )
             when (val result = sendGiftSafely(request)) {
@@ -146,13 +115,10 @@ class GiftViewModel @Inject constructor(
                     formState.update { current ->
                         current.copy(
                             sending = false,
-                            recipient = "",
                             message = "",
-                            selectedFriendUuid = null,
-                            selectedFriendName = null,
                         )
                     }
-                    _events.emit(successEvent(content.selectedChannel, friendUuid, result.data))
+                    _events.emit(successEvent(content.message, result.data))
                 }
 
                 is AppResult.Failure -> {
@@ -163,26 +129,38 @@ class GiftViewModel @Inject constructor(
         }
     }
 
+    // 클레임 링크를 공유 텍스트로 만들어 ShareGiftLink 로 신호한다.
+    // shareLink(서버 제공) 우선, 없으면 claimCode 로 딥링크를 생성한다. 둘 다 없으면 일반 성공 처리.
     private fun successEvent(
-        channel: GiftChannel,
-        friendUuid: String,
+        message: String,
         result: GiftSendResult,
     ): GiftEvent {
-        val hasShareLink =
-            !result.shareLink.isNullOrBlank() || !result.deepLink.isNullOrBlank()
-        return if (channel == GiftChannel.KakaoTalk && friendUuid.isNotBlank() && hasShareLink) {
-            GiftEvent.SendKakaoMessage(
-                receiverUuid = friendUuid,
-                target = KakaoShareTarget(
-                    shareLink = result.shareLink,
-                    deepLink = result.deepLink,
-                ),
-                message = "선물을 보냈어요",
+        val link = result.shareLink?.takeIf { it.isNotBlank() }
+            ?: result.claimCode?.takeIf { it.isNotBlank() }?.let(GiftClaimDeepLink::buildClaimUri)
+        return if (link != null) {
+            GiftEvent.ShareGiftLink(
+                shareText = buildShareText(message, link, result.claimCode),
+                message = SendSuccessMessage,
             )
         } else {
-            GiftEvent.SendSucceeded("선물을 보냈어요")
+            GiftEvent.SendSucceeded(SendSuccessMessage)
         }
     }
+
+    private fun buildShareText(message: String, link: String, claimCode: String?): String =
+        buildString {
+            val note = message.trim()
+            if (note.isNotEmpty()) {
+                appendLine(note)
+                appendLine()
+            }
+            appendLine(ShareGuide)
+            append(link)
+            if (!claimCode.isNullOrBlank()) {
+                appendLine()
+                append("등록 코드: $claimCode")
+            }
+        }
 
     private suspend fun sendGiftSafely(request: GiftSendRequest) =
         try {
@@ -212,10 +190,7 @@ class GiftViewModel @Inject constructor(
     private fun GiftFormState.toContent(): GiftUiState.Content =
         GiftUiState.Content(
             selectedAmountOption = selectedAmountOption,
-            selectedChannel = selectedChannel,
-            recipient = recipient,
             message = message,
-            selectedFriendName = selectedFriendName,
             customAmountText = customAmountText,
             sending = sending,
         )
@@ -233,11 +208,7 @@ class GiftViewModel @Inject constructor(
 
     private data class GiftFormState(
         val selectedAmountOption: GiftAmountOption = GiftAmountOption.TenThousand,
-        val selectedChannel: GiftChannel = GiftChannel.KakaoTalk,
-        val recipient: String = "",
         val message: String = "오늘 하루 수고 많았어 ☕",
-        val selectedFriendUuid: String? = null,
-        val selectedFriendName: String? = null,
         val customAmountText: String = "",
         val sending: Boolean = false,
     )
@@ -246,5 +217,7 @@ class GiftViewModel @Inject constructor(
         const val StateStopTimeoutMillis = 5_000L
         const val EventBufferCapacity = 1
         const val MaxMessageLength = 100
+        const val SendSuccessMessage = "선물을 보냈어요"
+        const val ShareGuide = "카페민수 기프티콘이 도착했어요. 아래 링크 또는 코드로 등록해 주세요."
     }
 }
