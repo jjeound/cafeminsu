@@ -1,7 +1,7 @@
 plugins {
     alias(libs.plugins.cafeminsu.android.library)
     alias(libs.plugins.cafeminsu.android.hilt)
-    alias(libs.plugins.protobuf.plugin)
+    alias(libs.plugins.protobuf)
 }
 
 android {
