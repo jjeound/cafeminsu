@@ -244,7 +244,21 @@ fun AppNavHost(
                 ),
             ) {
                 MenuDetailRoute(
-                    onAddedToCart = { navController.popBackStack() },
+                    onAddedToCart = {
+                        // 홈에서 추천 메뉴를 바로 담은 경우엔 홈으로 튕기지 않고 주문 메뉴 화면으로 이어준다.
+                        // 그 외(메뉴/장바구니 수정/주문내역)에서는 기존대로 직전 화면으로 되돌아간다.
+                        val destination = menuDetailAddedDestination(
+                            navController.previousBackStackEntry?.destination?.route,
+                        )
+                        if (destination != null) {
+                            navController.navigate(destination) {
+                                popUpTo(Routes.HOME)
+                                launchSingleTop = true
+                            }
+                        } else {
+                            navController.popBackStack()
+                        }
+                    },
                     onBackClick = { navController.popBackStack() },
                 )
             }
@@ -461,6 +475,11 @@ private val orderTabRoutes = setOf(
     Routes.STORE,
     Routes.MENU,
 )
+
+// 메뉴 상세에서 장바구니에 담은 뒤 이동할 목적지를 직전 화면 기준으로 결정한다.
+// 홈에서 바로 진입한 경우엔 주문 메뉴 화면(MENU)으로 이어주고, 그 외엔 null(=직전 화면으로 popBackStack).
+internal fun menuDetailAddedDestination(previousRoute: String?): String? =
+    if (previousRoute == Routes.HOME) Routes.MENU else null
 
 private fun shouldShowBottomBar(currentRoute: String?): Boolean =
     selectedTabRoute(currentRoute) != null
