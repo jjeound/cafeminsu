@@ -16,8 +16,9 @@ class DefaultMenuRepository @Inject constructor(
     private val client: MenuClient,
     @Dispatcher(CafeMinsuDispatcher.IO) private val ioDispatcher: CoroutineDispatcher,
 ) : MenuRepository {
-    override fun getMenuSummaries(storeId: Long): Flow<List<MenuSummary>> = flow {
-        emit(client.getMenus(storeId).map { it.asExternalModel() })
+    override fun getMenuSummaries(storeId: Long, category: String): Flow<List<MenuSummary>> = flow {
+        val filter = category.trim().ifBlank { null }
+        emit(client.getMenus(storeId, filter).map { it.asExternalModel() })
     }.flowOn(ioDispatcher)
 
     override fun getMenu(id: Long): Flow<MenuDetail> = flow {

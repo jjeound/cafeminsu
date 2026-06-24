@@ -7,21 +7,21 @@ import org.junit.Test
 
 class MenuOptionResponseMapperTest {
     @Test
-    fun `maps new menu detail option response fields to domain option`() {
+    fun `maps live menu detail option response to domain option`() {
         val response = MenuOptionResponse(
-            optionId = 12L,
-            optionGroup = "온도",
-            optionName = "ICE",
-            optionPrice = 500,
-            isDefault = true,
+            id = 108L,
+            group = "사이즈",
+            name = "Large",
+            additionalPrice = 500,
+            isDefault = false,
         )
 
         val option = response.asExternalModel()
 
-        assertEquals(12L, option.id)
-        assertEquals("온도", option.groupName)
-        assertEquals("ICE", option.name)
+        assertEquals(108L, option.id)
+        assertEquals("사이즈", option.groupName)
+        assertEquals("Large", option.name)
         assertEquals(500, option.additionalPrice)
-        assertTrue(option.isDefault)
+        assertTrue(!option.isDefault)
     }
 }

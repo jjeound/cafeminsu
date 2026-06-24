@@ -35,11 +35,11 @@ fun MenuDetailResponse.asEntity(): MenuDetailEntity =
 
 fun MenuOptionResponse.asEntity(menuId: Long): MenuOptionEntity =
     MenuOptionEntity(
-        id = optionId,
+        id = id,
         menuId = menuId,
-        groupName = optionGroup,
-        name = optionName,
-        additionalPrice = optionPrice,
+        groupName = group,
+        name = name,
+        additionalPrice = additionalPrice,
         isDefault = isDefault
     )
 
@@ -64,7 +64,7 @@ fun MenuDetailResponse.asExternalModel() = MenuDetail(
 )
 
 fun MenuOptionResponse.asExternalModel() =
-    MenuOption(optionId, optionGroup, optionName, optionPrice, isDefault)
+    MenuOption(id, group, name, additionalPrice, isDefault)
 
 fun MenuEntity.asExternalModel(): MenuSummary =
     MenuSummary(

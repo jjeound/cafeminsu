@@ -5,6 +5,7 @@ import com.cafeminsu.core.model.menu.MenuSummary
 import kotlinx.coroutines.flow.Flow
 
 interface MenuRepository {
-    fun getMenuSummaries(storeId: Long): Flow<List<MenuSummary>>
+    fun getMenuSummaries(storeId: Long, category: String = ""): Flow<List<MenuSummary>>
+
     fun getMenu(id: Long): Flow<MenuDetail>
 }
