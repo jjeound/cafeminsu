@@ -32,7 +32,7 @@
       "status": "completed",
       "started_at": "2026-06-24T23:49:27+0900",
       "summary": "coffee.svg를 res/drawable/img_menu_default.xml 벡터 드로어블로 변환 추가. MenuItemUiModel·MenuDetailUiState.Content에 imageUrl 필드 추가하고 ViewModel 매핑(toUiModel/toContent)으로 전달. MenuThumbnail·MenuImageHero가 Coil AsyncImage(ContentScale.Crop)로 imageUrl 렌더링하되 placeholder/error/fallback을 img_menu_default로 지정해 null/blank이면 기본 이미지 표시(기존 크기/모양/토큰 유지). UiState imageUrl 전달 검증 테스트 추가.",
-      "completed_at": "2026-06-24T23:54:00+0900"
+      "completed_at": "2026-06-24T23:53:28+0900"
     },
     {
       "step": 4,
