@@ -46,7 +46,7 @@ class RealGiftRepositoryTest {
         val result = repository.sendGift(
             giftRequest(
                 channel = GiftChannel.KakaoTalk,
-                recipientRef = "42",
+                recipientRef = "friend-uuid-secret",
                 message = "오늘 하루 수고 많았어",
             ),
         )
@@ -61,8 +61,11 @@ class RealGiftRepositoryTest {
         assertEquals(null, purchase.requestUrl?.queryParameter("userId"))
         val purchaseBody = purchase.body.readUtf8()
         assertTrue(purchaseBody.contains("\"amount\":10000"))
-        assertTrue(purchaseBody.contains("\"receiverId\":42"))
         assertTrue(purchaseBody.contains("\"message\":\"오늘 하루 수고 많았어\""))
+        // 친구 선물: 수신자 미지정 구매. 친구 uuid 는 서버로 보내지 않는다.
+        assertFalse(purchaseBody.contains("receiverId"))
+        assertFalse(purchaseBody.contains("receiverPhone"))
+        assertFalse(purchaseBody.contains("friend-uuid-secret"))
         assertFalse(purchaseBody.contains("shareLink"))
         assertFalse(purchaseBody.contains("qr-sensitive-value"))
 
@@ -86,6 +89,7 @@ class RealGiftRepositoryTest {
         val gift = (result as AppResult.Success).data
         assertEquals("https://cafeminsu.example/gift/secret", gift.shareLink)
         assertEquals("cafeminsu://gift/secret", gift.deepLink)
+        assertEquals("GFT-XXXX-XXXX", gift.claimCode)
     }
 
     @Test
@@ -205,7 +209,8 @@ class RealGiftRepositoryTest {
                 """
                 {
                   "shareLink": "https://cafeminsu.example/gift/secret",
-                  "deepLink": "cafeminsu://gift/secret"
+                  "deepLink": "cafeminsu://gift/secret",
+                  "claimCode": "GFT-XXXX-XXXX"
                 }
                 """.trimIndent(),
             )

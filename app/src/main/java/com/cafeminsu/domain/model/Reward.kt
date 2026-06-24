@@ -66,4 +66,5 @@ data class GiftSendResult(
     val sentAtMillis: Long,
     val shareLink: String? = null,
     val deepLink: String? = null,
+    val claimCode: String? = null,
 )

@@ -17,6 +17,7 @@ fun GifticonShareRes.toGiftSendResult(
             sentAtMillis = sentAtMillis,
             shareLink = shareLink,
             deepLink = deepLink,
+            claimCode = claimCode ?: purchase.claimCode,
         ),
     )
 }

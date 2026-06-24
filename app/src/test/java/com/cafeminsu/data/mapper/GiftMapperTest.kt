@@ -33,6 +33,45 @@ class GiftMapperTest {
     }
 
     @Test
+    fun claimCodeIsCarriedFromShareResponseWhenPresent() {
+        val result = GifticonShareRes(
+            shareLink = "https://cafeminsu.example/gift?code=GFT-XXXX-XXXX",
+            deepLink = "cafeminsu://gift?code=GFT-XXXX-XXXX",
+            claimCode = "GFT-XXXX-XXXX",
+        ).toGiftSendResult(
+            purchase = GifticonPurchaseRes(
+                gifticonId = 55,
+                qrCode = null,
+                merchantUid = null,
+            ),
+            sentAtMillis = 1_782_012_345_000L,
+        )
+
+        assertTrue(result is AppResult.Success)
+        assertEquals("GFT-XXXX-XXXX", (result as AppResult.Success).data.claimCode)
+    }
+
+    @Test
+    fun claimCodeFallsBackToPurchaseResponseWhenShareOmitsIt() {
+        val result = GifticonShareRes(
+            shareLink = "https://cafeminsu.example/gift",
+            deepLink = null,
+            claimCode = null,
+        ).toGiftSendResult(
+            purchase = GifticonPurchaseRes(
+                gifticonId = 55,
+                qrCode = null,
+                merchantUid = null,
+                claimCode = "GFT-FROM-PURCHASE",
+            ),
+            sentAtMillis = 1_782_012_345_000L,
+        )
+
+        assertTrue(result is AppResult.Success)
+        assertEquals("GFT-FROM-PURCHASE", (result as AppResult.Success).data.claimCode)
+    }
+
+    @Test
     fun missingPurchaseIdMapsToUnknownFailure() {
         val result = GifticonShareRes(
             shareLink = "https://cafeminsu.example/gift/secret",

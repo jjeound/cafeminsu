@@ -30,6 +30,7 @@ class GiftScreenTest {
                     onChannelSelected = {},
                     onRecipientChanged = {},
                     onMessageChanged = {},
+                    onPickFriendClick = {},
                     onSendClick = {},
                 )
             }
@@ -58,6 +59,7 @@ class GiftScreenTest {
                     onChannelSelected = {},
                     onRecipientChanged = {},
                     onMessageChanged = {},
+                    onPickFriendClick = {},
                     onSendClick = {},
                 )
             }

@@ -70,8 +70,8 @@ class GiftViewModelTest {
     }
 
     @Test
-    fun successfulSendUsesRepositoryAndDoesNotExposeRecipientInEvent() = runTest {
-        val recipient = "010-1234-5678"
+    fun successfulSendUsesSelectedFriendUuidAndDoesNotExposeItInEvent() = runTest {
+        val friendUuid = "friend-uuid-secret"
         val giftRepository = FakeGiftRepository(
             result = AppResult.Success(
                 GiftSendResult(
@@ -84,7 +84,7 @@ class GiftViewModelTest {
 
         viewModel.uiState.test {
             awaitContent()
-            viewModel.onRecipientChanged(recipient)
+            viewModel.onFriendSelected(uuid = friendUuid, displayName = "친구")
             awaitContent()
 
             viewModel.events.test {
@@ -92,8 +92,9 @@ class GiftViewModelTest {
 
                 val sent = awaitItem()
                 assertTrue(sent is GiftEvent.SendSucceeded)
-                assertFalse(sent.message.contains(recipient))
-                assertEquals(recipient, giftRepository.requests.single().recipientRef)
+                assertFalse(sent.message.contains(friendUuid))
+                // KakaoTalk: 친구 uuid 가 식별자로 repository 에 전달(서버 미전송은 data 레이어 책임).
+                assertEquals(friendUuid, giftRepository.requests.single().recipientRef)
                 assertEquals(10_000, giftRepository.requests.single().amount)
                 assertEquals(GiftChannel.KakaoTalk, giftRepository.requests.single().channel)
 
@@ -105,7 +106,8 @@ class GiftViewModelTest {
     }
 
     @Test
-    fun kakaoTalkSendWithShareLinkEmitsLaunchKakaoShare() = runTest {
+    fun kakaoTalkSendWithSelectedFriendEmitsSendKakaoMessageWithFallbackTarget() = runTest {
+        val friendUuid = "friend-uuid-secret"
         val giftRepository = FakeGiftRepository(
             result = AppResult.Success(
                 GiftSendResult(
@@ -120,17 +122,19 @@ class GiftViewModelTest {
 
         viewModel.uiState.test {
             awaitContent()
-            viewModel.onRecipientChanged("카카오친구")
+            viewModel.onFriendSelected(uuid = friendUuid, displayName = "친구")
             awaitContent()
 
             viewModel.events.test {
                 viewModel.sendGift()
 
                 val event = awaitItem()
-                assertTrue(event is GiftEvent.LaunchKakaoShare)
-                val launch = event as GiftEvent.LaunchKakaoShare
-                assertEquals("https://cafeminsu.example/gift/abc", launch.target.shareLink)
-                assertEquals("cafeminsu://gift/abc", launch.target.deepLink)
+                assertTrue(event is GiftEvent.SendKakaoMessage)
+                val message = event as GiftEvent.SendKakaoMessage
+                assertEquals(friendUuid, message.receiverUuid)
+                // 공유 폴백을 위해 클레임 링크를 함께 싣는다.
+                assertEquals("https://cafeminsu.example/gift/abc", message.target.shareLink)
+                assertEquals("cafeminsu://gift/abc", message.target.deepLink)
 
                 cancelAndIgnoreRemainingEvents()
             }
@@ -173,8 +177,8 @@ class GiftViewModelTest {
     }
 
     @Test
-    fun sendFailureProducesFailureEventWithoutRecipient() = runTest {
-        val recipient = "friend-sensitive-id"
+    fun sendFailureProducesFailureEventWithoutFriendIdentifier() = runTest {
+        val friendUuid = "friend-sensitive-id"
         val viewModel = viewModel(
             giftRepository = FakeGiftRepository(
                 result = AppResult.Failure(DomainError.Network),
@@ -183,7 +187,7 @@ class GiftViewModelTest {
 
         viewModel.uiState.test {
             awaitContent()
-            viewModel.onRecipientChanged(recipient)
+            viewModel.onFriendSelected(uuid = friendUuid, displayName = "친구")
             awaitContent()
 
             viewModel.events.test {
@@ -191,7 +195,7 @@ class GiftViewModelTest {
 
                 val failed = awaitItem()
                 assertTrue(failed is GiftEvent.SendFailed)
-                assertFalse(failed.message.contains(recipient))
+                assertFalse(failed.message.contains(friendUuid))
 
                 cancelAndIgnoreRemainingEvents()
             }

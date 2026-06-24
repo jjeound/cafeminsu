@@ -75,9 +75,10 @@ class RealGiftRepository(
 
     private fun GiftSendRequest.toPurchaseReq(): GifticonPurchaseReq =
         when (channel) {
+            // 친구 선물: 수신자 미지정 구매. 친구 uuid 는 서버로 보내지 않고(발신자만 JWT 로 식별)
+            // 메시지 전송 전용으로 UI 레이어에서만 사용한다(docs/KAKAO_GIFT_BACKEND.md §1).
             GiftChannel.KakaoTalk -> GifticonPurchaseReq(
                 amount = amount,
-                receiverId = recipientRef.trim().toLong(),
                 message = message.normalizedMessage(),
             )
 
@@ -91,10 +92,8 @@ class RealGiftRepository(
     private fun validate(request: GiftSendRequest): DomainError? =
         when {
             request.amount < MinimumGiftAmount -> DomainError.Validation("amount")
+            // KakaoTalk 은 선택된 친구(uuid) 존재만 전제(빈 선택 차단). 숫자 receiverId 를 더는 요구하지 않는다.
             request.recipientRef.isBlank() -> DomainError.Validation("recipient")
-            request.channel == GiftChannel.KakaoTalk && request.recipientRef.trim().toLongOrNull() == null ->
-                DomainError.Validation("recipient")
-
             request.message != null && request.message.length > MaxMessageLength ->
                 DomainError.Validation("message")
 

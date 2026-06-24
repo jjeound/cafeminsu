@@ -45,6 +45,7 @@ data class GifticonPurchaseRes(
     val gifticonId: Long?,
     val qrCode: String?,
     val merchantUid: String?,
+    val claimCode: String? = null,
 )
 
 @JsonClass(generateAdapter = true)
@@ -81,4 +82,5 @@ data class GifticonUseRes(
 data class GifticonShareRes(
     val shareLink: String?,
     val deepLink: String?,
+    val claimCode: String? = null,
 )
