@@ -77,7 +77,11 @@ fun defaultPaymentMethods(): List<PaymentMethodUiModel> =
         PaymentMethodUiModel(
             id = "simple-pay",
             label = "간편결제",
-        )
+        ),
+        PaymentMethodUiModel(
+            id = "kakaopay",
+            label = "카카오페이",
+        ),
     )
 
 enum class PaymentFailureReason {
