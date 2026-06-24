@@ -15,7 +15,8 @@
       "name": "redirect-bridge-and-pay-ui",
       "status": "completed",
       "summary": "KakaoPayRedirectBridge 실구현(커스텀탭+pg_token 딥링크 캡처, cafeminsu://kakaopay 매니페스트) + 결제 화면 카카오페이 수단 칩 연결(낙관금지/중복가드 유지, 기본 Mock 폴백)",
-      "started_at": "2026-06-24T09:46:29+0900"
+      "started_at": "2026-06-24T09:46:29+0900",
+      "completed_at": "2026-06-24T09:51:59+0900"
     }
   ],
   "created_at": "2026-06-24T09:42:09+0900"
