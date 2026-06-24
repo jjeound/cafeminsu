@@ -13,8 +13,6 @@ import com.cafeminsu.domain.model.GifticonStatus
 import com.cafeminsu.domain.model.StampCard
 import com.cafeminsu.domain.model.StampEvent
 import java.text.NumberFormat
-import java.time.Instant
-import java.time.format.DateTimeParseException
 import java.util.Locale
 
 fun StampSummaryRes.toStampCard(): AppResult<StampCard> {
@@ -154,14 +152,7 @@ private fun String?.toGifticonStatus(): GifticonStatus? =
 private fun Int.toWonTitle(): String =
     "$WonSymbol${numberFormat.format(this)}"
 
-private fun String?.toEpochMillisOrZero(): Long =
-    this?.let { value ->
-        try {
-            Instant.parse(value).toEpochMilli()
-        } catch (_: DateTimeParseException) {
-            DefaultEpochMillis
-        }
-    } ?: DefaultEpochMillis
+private fun String?.toEpochMillisOrZero(): Long = parseServerEpochMillis(this)
 
 private val numberFormat: NumberFormat = NumberFormat.getNumberInstance(Locale.KOREA)
 
@@ -169,6 +160,5 @@ private const val DefaultStampGoal = 10
 private const val DefaultStampCount = 0
 private const val DefaultHistoryCount = 1
 private const val DefaultGifticonAmount = 0
-private const val DefaultEpochMillis = 0L
 private const val DefaultStampUserId = "server-stamp"
 private const val WonSymbol = "₩"
