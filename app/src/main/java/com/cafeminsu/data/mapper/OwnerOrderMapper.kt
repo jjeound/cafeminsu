@@ -50,11 +50,10 @@ private fun List<MenuSummary>.toOwnerCartItems(orderId: Long): List<CartItem> =
         )
     }
 
-// 점주 큐는 결제 완료된 주문만 들어온다. 서버 PENDING(접수 대기)은 점주가 접수해야 할
-// 신규 주문이므로 점주 화면이 "신규" 로 인식하는 도메인 Accepted 로 매핑한다.
+// 점주 큐는 결제 완료된 주문만 들어온다 — 서버 PENDING(접수 대기)을 도메인 Paid 로 본다.
 internal fun String?.toOwnerOrderStatus(): OrderStatus? =
     when (this) {
-        "PENDING" -> OrderStatus.Accepted
+        "PENDING" -> OrderStatus.Paid
         "ACCEPTED" -> OrderStatus.Accepted
         "READY" -> OrderStatus.Ready
         "DONE" -> OrderStatus.Completed

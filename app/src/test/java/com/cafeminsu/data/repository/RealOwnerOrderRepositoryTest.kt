@@ -45,7 +45,7 @@ class RealOwnerOrderRepositoryTest {
             assertTrue(result is AppResult.Success)
             val orders = (result as AppResult.Success).data
             assertEquals(listOf("1042", "1041"), orders.map { it.id })
-            assertEquals(listOf(OrderStatus.Accepted, OrderStatus.Accepted), orders.map { it.status })
+            assertEquals(listOf(OrderStatus.Paid, OrderStatus.Accepted), orders.map { it.status })
 
             val first = orders.first()
             assertEquals("1042", first.orderNumber)
