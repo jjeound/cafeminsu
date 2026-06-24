@@ -21,8 +21,13 @@ class MenuDetailDestinationTest {
     }
 
     @Test
-    fun fromHistoryPopsBack() {
-        assertNull(menuDetailAddedDestination(Routes.HISTORY))
+    fun fromHistoryContinuesToOrderMenu() {
+        assertEquals(Routes.MENU, menuDetailAddedDestination(Routes.HISTORY))
+    }
+
+    @Test
+    fun fromHistoryDetailContinuesToOrderMenu() {
+        assertEquals(Routes.MENU, menuDetailAddedDestination(Routes.HISTORY_DETAIL))
     }
 
     @Test
