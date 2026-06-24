@@ -126,6 +126,75 @@ class RealOwnerMenuRepositoryTest {
     }
 
     @Test
+    fun setSoldOutSuccessEmitsUpdatedMenuToActiveObserver() = runTest(testDispatcher) {
+        server.enqueue(myStoresResponse())
+        server.enqueue(menusResponse())
+        server.enqueue(MockResponse().setResponseCode(200).setBody("{}"))
+        val repository = realOwnerMenuRepository()
+
+        // 관측을 유지한 채 토글하면 변경이 화면(관측자)으로 전파돼야 한다.
+        repository.observeManagedMenus().test {
+            val initial = awaitItem()
+            assertTrue(initial is AppResult.Success)
+            assertFalse((initial as AppResult.Success).data.first { it.id == "101" }.isSoldOut)
+
+            val result = repository.setSoldOut(menuItemId = "101", soldOut = true)
+            assertTrue(result is AppResult.Success)
+
+            val updated = awaitItem()
+            assertTrue(updated is AppResult.Success)
+            val americano = (updated as AppResult.Success).data.first { it.id == "101" }
+            assertTrue(americano.isSoldOut)
+            // 토글이 항목의 이름/가격을 보존하는지 확인한다.
+            assertEquals("아메리카노", americano.name)
+            assertEquals(4_500, americano.basePrice)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun setSoldOutFailureKeepsSnapshotUnchangedForObserver() = runTest(testDispatcher) {
+        server.enqueue(myStoresResponse())
+        server.enqueue(menusResponse())
+        server.enqueue(MockResponse().setResponseCode(500))
+        val repository = realOwnerMenuRepository()
+
+        repository.observeManagedMenus().test {
+            val initial = awaitItem()
+            assertTrue(initial is AppResult.Success)
+            assertFalse((initial as AppResult.Success).data.first { it.id == "101" }.isSoldOut)
+
+            // PATCH 실패 시 스냅샷은 변하지 않고 에러만 노출된다(낙관적 UI 금지).
+            val result = repository.setSoldOut(menuItemId = "101", soldOut = true)
+            assertTrue(result is AppResult.Failure)
+
+            expectNoEvents()
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun setVisibleEmitsUpdatedSnapshotToActiveObserver() = runTest(testDispatcher) {
+        server.enqueue(myStoresResponse())
+        server.enqueue(menusResponse())
+        val repository = realOwnerMenuRepository()
+
+        repository.observeManagedMenus().test {
+            assertTrue(awaitItem() is AppResult.Success)
+
+            val result = repository.setVisible(menuItemId = "101", visible = false)
+            assertTrue(result is AppResult.Success)
+
+            val updated = awaitItem()
+            assertTrue(updated is AppResult.Success)
+            assertFalse((updated as AppResult.Success).data.first { it.id == "101" }.isVisible)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun setSoldOutHttpErrorMapsToFailure() = runTest(testDispatcher) {
         server.enqueue(MockResponse().setResponseCode(500))
         val repository = realOwnerMenuRepository()

@@ -21,8 +21,10 @@ import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emitAll
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
 
 @Singleton
@@ -37,9 +39,19 @@ class RealOwnerMenuRepository @Inject constructor(
     // 토글/생성 결과를 마지막 관측 목록에 반영하기 위한 인메모리 스냅샷(서버가 단일 진실, 영속화하지 않음).
     private val menuSnapshot = MutableStateFlow<List<MenuItem>>(emptyList())
 
+    // 최초 1회 API 로딩으로 스냅샷을 채운 뒤, 이후 setSoldOut/setVisible/addMenu 의
+    // 스냅샷 변경이 관측자(화면)로 전파되도록 menuSnapshot 을 reactive 하게 흘려보낸다.
     override fun observeManagedMenus(categoryId: String?): Flow<AppResult<List<MenuItem>>> =
         flow {
-            emit(loadManagedMenus(categoryId))
+            when (val loaded = loadManagedMenus(categoryId)) {
+                is AppResult.Success -> {
+                    // 서버 로딩 성공분으로 스냅샷을 시드한 뒤 후속 변경을 계속 방출한다.
+                    menuSnapshot.value = loaded.data
+                    emitAll(menuSnapshot.map { AppResult.Success(it) })
+                }
+                // 초기 로딩 실패는 그대로 노출한다(스냅샷은 건드리지 않음).
+                is AppResult.Failure -> emit(loaded)
+            }
         }.flowOn(ioDispatcher)
 
     private suspend fun loadManagedMenus(categoryId: String?): AppResult<List<MenuItem>> {
@@ -52,9 +64,7 @@ class RealOwnerMenuRepository @Inject constructor(
         return when (
             val response = runCatchingToAppResult { menuApi.listByStore(storeId, categoryId) }
         ) {
-            is AppResult.Success -> response.data.toMenuItems().also { mapped ->
-                if (mapped is AppResult.Success) menuSnapshot.value = mapped.data
-            }
+            is AppResult.Success -> response.data.toMenuItems()
             is AppResult.Failure -> response
         }
     }
