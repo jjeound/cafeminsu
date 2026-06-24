@@ -289,6 +289,11 @@ private class FakeGiftRepository(
         requests += request
         return result
     }
+
+    override suspend fun claimGift(
+        claimCode: String,
+    ): AppResult<com.cafeminsu.domain.model.Gifticon> =
+        AppResult.Failure(com.cafeminsu.core.DomainError.Unknown)
 }
 
 private class FakeGiftSessionRepository(

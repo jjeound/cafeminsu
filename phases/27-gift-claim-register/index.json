@@ -2,7 +2,18 @@
   "project": "CafeMinsu",
   "phase": "gift-claim-register",
   "steps": [
-    { "step": 0, "name": "claim-data-layer", "status": "pending" },
-    { "step": 1, "name": "claim-screen-and-deeplink", "status": "pending" }
-  ]
+    {
+      "step": 0,
+      "name": "claim-data-layer",
+      "status": "completed",
+      "started_at": "2026-06-24T11:30:55+0900",
+      "summary": "GifticonApi.claimGifticon + GiftRepository.claimGift(claimCode)->Gifticon 매핑(Real/Mock, AppResult, 민감값 미로깅)"
+    },
+    {
+      "step": 1,
+      "name": "claim-screen-and-deeplink",
+      "status": "pending"
+    }
+  ],
+  "created_at": "2026-06-24T11:30:55+0900"
 }

@@ -605,6 +605,11 @@ private class FakeGiftRepository : GiftRepository {
                 sentAtMillis = 0L,
             ),
         )
+
+    override suspend fun claimGift(
+        claimCode: String,
+    ): com.cafeminsu.core.AppResult<com.cafeminsu.domain.model.Gifticon> =
+        com.cafeminsu.core.AppResult.Failure(com.cafeminsu.core.DomainError.Unknown)
 }
 
 private class FakeNotificationRepository : NotificationRepository {

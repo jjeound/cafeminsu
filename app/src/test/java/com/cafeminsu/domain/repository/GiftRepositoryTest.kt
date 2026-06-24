@@ -19,6 +19,11 @@ class GiftRepositoryTest {
                         sentAtMillis = 1_803_974_400_000L,
                     ),
                 )
+
+            override suspend fun claimGift(
+                claimCode: String,
+            ): AppResult<com.cafeminsu.domain.model.Gifticon> =
+                AppResult.Failure(com.cafeminsu.core.DomainError.Unknown)
         }
 
         val result = repository.sendGift(

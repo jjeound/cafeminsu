@@ -10,6 +10,7 @@ import com.cafeminsu.data.remote.createRetrofit
 import com.cafeminsu.domain.model.AuthState
 import com.cafeminsu.domain.model.GiftChannel
 import com.cafeminsu.domain.model.GiftSendRequest
+import com.cafeminsu.domain.model.GifticonStatus
 import com.cafeminsu.domain.model.UserProfile
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -158,6 +159,70 @@ class RealGiftRepositoryTest {
         assertEquals(0, server.requestCount)
     }
 
+    @Test
+    fun claimGiftMapsResponseToGifticon() = runTest(testDispatcher) {
+        server.enqueue(claimResponse())
+        val repository = realGiftRepository()
+
+        val result = repository.claimGift("GFT-1234-5678")
+
+        assertTrue(result is AppResult.Success)
+        val gifticon = (result as AppResult.Success).data
+        assertEquals("123", gifticon.id)
+        assertEquals("금액형 기프티콘 10,000원", gifticon.title)
+        assertEquals("barcode-sensitive-value", gifticon.barcodeValue)
+        assertEquals("qr-sensitive-value", gifticon.qrValue)
+        assertEquals(1_750_000_000_000L, gifticon.expiresAtMillis)
+        assertEquals(GifticonStatus.Available, gifticon.status)
+
+        val request = server.takeRequest()
+        assertEquals("/api/gifticons/claim", request.requestUrl?.encodedPath)
+        assertEquals(null, request.requestUrl?.queryParameter("userId"))
+        assertTrue(request.body.readUtf8().contains("\"claimCode\":\"GFT-1234-5678\""))
+    }
+
+    @Test
+    fun claimGiftBlankCodeBlocksBeforeNetworkCall() = runTest(testDispatcher) {
+        val repository = realGiftRepository()
+
+        val result = repository.claimGift("   ")
+
+        assertEquals(AppResult.Failure(DomainError.Validation("claimCode")), result)
+        assertEquals(0, server.requestCount)
+    }
+
+    @Test
+    fun claimGiftGuestSessionBlocksBeforeNetworkCall() = runTest(testDispatcher) {
+        val repository = realGiftRepository(authState = AuthState.Guest)
+
+        val result = repository.claimGift("GFT-1234-5678")
+
+        assertEquals(AppResult.Failure(DomainError.Unauthorized), result)
+        assertEquals(0, server.requestCount)
+    }
+
+    @Test
+    fun claimGiftAlreadyClaimedMapsToPaymentError() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setResponseCode(409))
+        val repository = realGiftRepository()
+
+        val result = repository.claimGift("GFT-1234-5678")
+
+        assertEquals(AppResult.Failure(DomainError.Payment("already-claimed")), result)
+        assertEquals(1, server.requestCount)
+        assertEquals("/api/gifticons/claim", server.takeRequest().requestUrl?.encodedPath)
+    }
+
+    @Test
+    fun claimGiftNotFoundMapsToNotFound() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setResponseCode(404))
+        val repository = realGiftRepository()
+
+        val result = repository.claimGift("GFT-1234-5678")
+
+        assertEquals(AppResult.Failure(DomainError.NotFound), result)
+    }
+
     private fun realGiftRepository(
         authState: AuthState = authenticatedState(),
         nowMillis: () -> Long = { 1_782_000_000_000L },
@@ -211,6 +276,22 @@ class RealGiftRepositoryTest {
                   "shareLink": "https://cafeminsu.example/gift/secret",
                   "deepLink": "cafeminsu://gift/secret",
                   "claimCode": "GFT-XXXX-XXXX"
+                }
+                """.trimIndent(),
+            )
+
+    private fun claimResponse(): MockResponse =
+        MockResponse()
+            .setResponseCode(200)
+            .setBody(
+                """
+                {
+                  "gifticonId": 123,
+                  "title": "금액형 기프티콘 10,000원",
+                  "barcodeValue": "barcode-sensitive-value",
+                  "qrValue": "qr-sensitive-value",
+                  "expiresAtMillis": 1750000000000,
+                  "status": "AVAILABLE"
                 }
                 """.trimIndent(),
             )

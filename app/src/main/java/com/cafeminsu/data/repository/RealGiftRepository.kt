@@ -3,21 +3,28 @@ package com.cafeminsu.data.repository
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.data.auth.SessionStateHolder
+import com.cafeminsu.data.mapper.toGifticon
 import com.cafeminsu.data.mapper.toGiftSendResult
 import com.cafeminsu.data.remote.GifticonApi
+import com.cafeminsu.data.remote.GifticonClaimReq
+import com.cafeminsu.data.remote.GifticonClaimRes
 import com.cafeminsu.data.remote.GifticonPurchaseReq
 import com.cafeminsu.data.remote.GifticonPurchaseRes
 import com.cafeminsu.data.remote.runCatchingToAppResult
+import com.cafeminsu.data.remote.toDomainError
 import com.cafeminsu.di.IoDispatcher
 import com.cafeminsu.domain.model.AuthState
 import com.cafeminsu.domain.model.GiftChannel
+import com.cafeminsu.domain.model.Gifticon
 import com.cafeminsu.domain.model.GiftSendRequest
 import com.cafeminsu.domain.model.GiftSendResult
 import com.cafeminsu.domain.repository.GiftRepository
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.withContext
+import retrofit2.HttpException
 
 @Singleton
 class RealGiftRepository(
@@ -68,6 +75,42 @@ class RealGiftRepository(
             }
         }
 
+    override suspend fun claimGift(claimCode: String): AppResult<Gifticon> =
+        withContext(ioDispatcher) {
+            val normalizedCode = claimCode.trim()
+            if (normalizedCode.isBlank()) {
+                return@withContext AppResult.Failure(DomainError.Validation("claimCode"))
+            }
+
+            when (val auth = ensureAuthenticated()) {
+                is AppResult.Success -> Unit
+                is AppResult.Failure -> return@withContext auth
+            }
+
+            when (val response = claimGifticon(normalizedCode)) {
+                is AppResult.Success -> response.data.toGifticon()
+                is AppResult.Failure -> response
+            }
+        }
+
+    private suspend fun claimGifticon(claimCode: String): AppResult<GifticonClaimRes> =
+        try {
+            AppResult.Success(gifticonApi.claimGifticon(GifticonClaimReq(claimCode = claimCode)))
+        } catch (throwable: Throwable) {
+            if (throwable is CancellationException) {
+                throw throwable
+            }
+            AppResult.Failure(throwable.toClaimDomainError())
+        }
+
+    // 이미 등록된 코드(409)는 별도 도메인 에러로 구분. 그 외는 공통 매핑.
+    private fun Throwable.toClaimDomainError(): DomainError =
+        if (this is HttpException && code() == HttpConflict) {
+            DomainError.Payment("already-claimed")
+        } else {
+            toDomainError()
+        }
+
     private suspend fun purchaseGifticon(request: GiftSendRequest): AppResult<GifticonPurchaseRes> =
         runCatchingToAppResult {
             gifticonApi.purchaseGifticon(request = request.toPurchaseReq())
@@ -114,5 +157,6 @@ class RealGiftRepository(
     private companion object {
         const val MinimumGiftAmount = 1_000
         const val MaxMessageLength = 200
+        const val HttpConflict = 409
     }
 }
