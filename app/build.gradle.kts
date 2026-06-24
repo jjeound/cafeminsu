@@ -17,9 +17,15 @@ val localProperties = Properties().apply {
 }
 val kakaoNativeAppKey = localProperties.getProperty("KAKAO_NATIVE_APP_KEY").orEmpty()
 val baseUrl = localProperties.getProperty("BASE_URL").orEmpty().trim()
+val kakaoPayEnabled = localProperties.getProperty("KAKAOPAY_ENABLED").orEmpty().trim()
+    .ifBlank { "false" }
 
 require(baseUrl.isBlank() || baseUrl.startsWith("https://")) {
     "BASE_URL must start with https:// when set."
+}
+
+require(kakaoPayEnabled == "true" || kakaoPayEnabled == "false") {
+    "KAKAOPAY_ENABLED must be \"true\" or \"false\" when set."
 }
 
 fun String.toBuildConfigLiteral(): String =
@@ -38,6 +44,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "KAKAO_NATIVE_APP_KEY", kakaoNativeAppKey.toBuildConfigLiteral())
         buildConfigField("String", "BASE_URL", baseUrl.toBuildConfigLiteral())
+        buildConfigField("boolean", "KAKAOPAY_ENABLED", kakaoPayEnabled)
         manifestPlaceholders["kakaoRedirectScheme"] = "kakao$kakaoNativeAppKey"
     }
 

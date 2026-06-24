@@ -103,6 +103,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideKakaoPayApi(retrofit: Retrofit): KakaoPayApi =
+        retrofit.create(KakaoPayApi::class.java)
+
+    @Provides
+    @Singleton
     fun provideStampApi(retrofit: Retrofit): StampApi =
         retrofit.create(StampApi::class.java)
 
