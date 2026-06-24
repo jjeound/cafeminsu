@@ -16,7 +16,7 @@
       "status": "completed",
       "started_at": "2026-06-24T11:35:25+0900",
       "summary": "기프티콘 등록 화면(GiftClaim*)+코드 입력/딥링크 cafeminsu://gift?code 수신→claimGift→내 기프티콘 이동. 딥링크 화이트리스트·입력검증",
-      "completed_at": "2026-06-24T11:48:00+0900"
+      "completed_at": "2026-06-24T11:45:38+0900"
     }
   ],
   "created_at": "2026-06-24T11:30:55+0900"
