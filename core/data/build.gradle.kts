@@ -15,6 +15,7 @@ dependencies {
     implementation(projects.core.datastore)
     implementation(projects.core.common)
     implementation(libs.sandwich)
+    implementation(libs.kakao.user)
 
     // kotlinx
     api(libs.kotlinx.immutable.collection)
