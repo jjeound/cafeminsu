@@ -381,7 +381,8 @@ fun AppNavHost(
                         }
                     },
                     onClaimed = {
-                        navController.navigate(Routes.GIFTICON) {
+                        // 등록 완료 후 쿠폰함으로 이동(딥링크 자동 등록 포함).
+                        navController.navigate(Routes.COUPON) {
                             popUpTo(Routes.GIFT_CLAIM) { inclusive = true }
                             launchSingleTop = true
                         }

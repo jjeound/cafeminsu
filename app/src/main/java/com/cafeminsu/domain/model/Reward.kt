@@ -51,20 +51,12 @@ enum class CouponStatus {
 
 data class GiftSendRequest(
     val amount: Int,
-    val channel: GiftChannel,
-    val recipientRef: String,
     val message: String?,
 )
-
-enum class GiftChannel {
-    KakaoTalk,
-    Sms,
-}
 
 data class GiftSendResult(
     val giftId: String,
     val sentAtMillis: Long,
     val shareLink: String? = null,
-    val deepLink: String? = null,
     val claimCode: String? = null,
 )

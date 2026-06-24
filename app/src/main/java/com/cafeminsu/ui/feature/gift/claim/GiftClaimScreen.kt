@@ -46,6 +46,14 @@ fun GiftClaimRoute(
         }
     }
 
+    // 딥링크로 진입하면 코드를 자동 등록한다(위 이벤트 콜렉터 구독 후 호출되어 Claimed 이벤트 유실 없음).
+    // 등록 성공 시 onClaimed → 쿠폰함으로 이동, 실패/미로그인 시 화면에 오류를 표시한다.
+    LaunchedEffect(viewModel) {
+        if (viewModel.isDeepLinkClaim) {
+            viewModel.claim()
+        }
+    }
+
     GiftClaimScreen(
         state = state,
         onBackClick = onBackClick,
