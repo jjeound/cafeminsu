@@ -172,7 +172,8 @@
     {
       "dir": "24-kakao-gift-share",
       "name": "kakao-gift-share",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-24T09:41:48+0900"
     },
     {
       "dir": "25-kakaopay-payment",
