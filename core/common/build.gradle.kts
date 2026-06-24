@@ -1,11 +1,10 @@
 plugins {
-    alias(libs.plugins.kotlin.jvm)
-    alias(libs.plugins.ksp)
+    alias(libs.plugins.cafeminsu.jvm.library)
+    alias(libs.plugins.cafeminsu.hilt)
 }
 
 dependencies {
-    implementation(libs.hilt.core)
     implementation(libs.kotlinx.coroutines.core)
-
-    ksp(libs.hilt.compiler)
+    testImplementation(libs.kotlinx.coroutines.test)
+    testImplementation(libs.turbine)
 }

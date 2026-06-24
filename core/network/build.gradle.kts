@@ -13,7 +13,7 @@ fun String.toBuildConfigLiteral(): String =
 
 plugins {
     alias(libs.plugins.cafeminsu.android.library)
-    alias(libs.plugins.cafeminsu.android.hilt)
+    alias(libs.plugins.cafeminsu.hilt)
     alias(libs.plugins.kotlinx.serialization)
 }
 

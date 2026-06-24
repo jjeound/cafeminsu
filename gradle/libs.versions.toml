@@ -130,5 +130,5 @@ cafeminsu-android-feature = { id = "cafeminsu.android.feature" }
 cafeminsu-android-library = { id = "cafeminsu.android.library" }
 cafeminsu-android-library-compose = { id = "cafeminsu.android.library.compose" }
 cafeminsu-android-room = { id = "cafeminsu.android.room" }
-cafeminsu-android-hilt = { id = "cafeminsu.android.hilt" }
+cafeminsu-hilt = { id = "cafeminsu.android.hilt" }
 cafeminsu-jvm-library = { id = "cafeminsu.jvm.library" }

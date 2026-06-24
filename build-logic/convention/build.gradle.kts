@@ -51,8 +51,8 @@ gradlePlugin {
         }
 
         register("androidHilt") {
-            id = libs.plugins.cafeminsu.android.hilt.get().pluginId
-            implementationClass = "AndroidHiltConventionPlugin"
+            id = libs.plugins.cafeminsu.hilt.get().pluginId
+            implementationClass = "HiltConventionPlugin"
         }
 
         register("jvmLibrary") {
