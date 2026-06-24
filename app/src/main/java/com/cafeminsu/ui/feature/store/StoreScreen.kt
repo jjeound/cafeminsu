@@ -100,7 +100,8 @@ fun StoreScreen(
     onStartOrder: (String) -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
-    mapContent: @Composable (List<StoreMapMarker>) -> Unit = { markers -> StoreMapView(markers) },
+    mapContent: @Composable (List<StoreMapMarker>, (String) -> Unit) -> Unit =
+        { markers, onMarkerClick -> StoreMapView(markers = markers, onMarkerClick = onMarkerClick) },
 ) {
     val selectedStore = (state as? StoreUiState.Content)?.selectedStore
     val mapMarkers = (state as? StoreUiState.Content)?.stores?.map { it.toMapMarker() }.orEmpty()
@@ -125,7 +126,7 @@ fun StoreScreen(
             ) {
                 StoreHeader()
                 StoreSearchField(query = query, onQueryChange = onQueryChange)
-                mapContent(mapMarkers)
+                mapContent(mapMarkers, onStoreClick)
                 NearbyStoresHeader()
 
                 when (state) {

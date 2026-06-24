@@ -30,7 +30,7 @@ class StoreScreenTest {
                     onStartOrder = { startRequestedStoreId = it },
                     onRetry = {},
                     // 실 MapView(GL/SDK) 인스턴스화를 피하려고 지도 슬롯을 스텁으로 주입.
-                    mapContent = { markers -> mapMarkers = markers },
+                    mapContent = { markers, _ -> mapMarkers = markers },
                 )
             }
         }
@@ -49,6 +49,34 @@ class StoreScreenTest {
             assertEquals("yeoksam", detailRequestedStoreId)
             assertEquals("gangnam", startRequestedStoreId)
             assertEquals(listOf("gangnam", "yeoksam"), mapMarkers.map { it.id })
+        }
+    }
+
+    @Test
+    fun mapMarkerClickRequestsStoreDetail() {
+        var detailRequestedStoreId: String? = null
+        var capturedOnMarkerClick: ((String) -> Unit)? = null
+
+        composeRule.setContent {
+            CafeTheme {
+                StoreScreen(
+                    state = sampleContentState(selectedStore = null),
+                    query = "",
+                    onQueryChange = {},
+                    onStoreClick = { detailRequestedStoreId = it },
+                    onDismissStoreDetail = {},
+                    onStartOrder = {},
+                    onRetry = {},
+                    // 지도 마커 탭이 onStoreClick(=상세/바텀시트) 로 이어지는지 스텁으로 검증.
+                    mapContent = { _, onMarkerClick -> capturedOnMarkerClick = onMarkerClick },
+                )
+            }
+        }
+
+        composeRule.runOnIdle { capturedOnMarkerClick?.invoke("yeoksam") }
+
+        composeRule.runOnIdle {
+            assertEquals("yeoksam", detailRequestedStoreId)
         }
     }
 
