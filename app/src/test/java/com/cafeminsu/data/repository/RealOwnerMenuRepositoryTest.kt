@@ -2,6 +2,8 @@ package com.cafeminsu.data.repository
 
 import app.cash.turbine.test
 import com.cafeminsu.core.AppResult
+import com.cafeminsu.data.platform.MenuImageData
+import com.cafeminsu.data.platform.MenuImageReader
 import com.cafeminsu.data.remote.MenuApi
 import com.cafeminsu.data.remote.OwnerMenuApi
 import com.cafeminsu.data.remote.OwnerOrderApi
@@ -258,6 +260,108 @@ class RealOwnerMenuRepositoryTest {
     }
 
     @Test
+    fun addMenuUploadsLocalImageThenCreatesWithReturnedUrl() = runTest(testDispatcher) {
+        server.enqueue(myStoresResponse())
+        // 1) 이미지 업로드 응답: 서버가 원격 URL 을 돌려준다.
+        server.enqueue(
+            MockResponse()
+                .setResponseCode(200)
+                .setBody("""{ "imageUrl": "https://cdn.example.com/menu/cold-brew.jpg" }"""),
+        )
+        // 2) 메뉴 생성 응답.
+        server.enqueue(MockResponse().setResponseCode(200).setBody("""{ "menuId": 777 }"""))
+        val reader = FakeMenuImageReader(
+            data = MenuImageData(bytes = byteArrayOf(1, 2, 3), mimeType = "image/png", fileName = "menu_image.png"),
+        )
+        val repository = realOwnerMenuRepository(imageReader = reader)
+
+        val result = repository.addMenu(
+            NewMenuDraft(
+                name = "콜드브루",
+                categoryId = "coffee",
+                basePrice = 5_500,
+                description = "",
+                imageUrl = "content://media/external/images/42",
+                isSoldOut = false,
+            ),
+        )
+
+        assertTrue(result is AppResult.Success)
+        val created = (result as AppResult.Success).data
+        // 로컬 content:// 가 아니라 업로드로 받은 원격 URL 이 확정돼야 한다.
+        assertEquals("https://cdn.example.com/menu/cold-brew.jpg", created.imageUrl)
+        assertEquals("content://media/external/images/42", reader.lastReadUri)
+
+        server.takeRequest() // stores/my
+        val uploadRequest = server.takeRequest()
+        assertEquals("POST", uploadRequest.method)
+        assertEquals("/api/images/menu", uploadRequest.requestUrl?.encodedPath)
+        assertTrue(uploadRequest.headers["Content-Type"]?.startsWith("multipart/form-data") == true)
+
+        val createRequest = server.takeRequest()
+        assertEquals("/api/stores/7/menus", createRequest.requestUrl?.encodedPath)
+        val body = createRequest.body.readUtf8()
+        assertTrue(body.contains("\"imageUrl\":\"https://cdn.example.com/menu/cold-brew.jpg\""))
+        // 잘못된 content:// 가 생성 요청으로 새어 나가지 않아야 한다.
+        assertFalse(body.contains("content://"))
+    }
+
+    @Test
+    fun addMenuUploadFailureFailsWithoutCreatingMenu() = runTest(testDispatcher) {
+        server.enqueue(myStoresResponse())
+        // 업로드 실패 → 메뉴 생성으로 진행하지 않는다(낙관 금지).
+        server.enqueue(MockResponse().setResponseCode(500))
+        val reader = FakeMenuImageReader(
+            data = MenuImageData(bytes = byteArrayOf(9), mimeType = "image/jpeg", fileName = "menu_image.jpg"),
+        )
+        val repository = realOwnerMenuRepository(imageReader = reader)
+
+        val result = repository.addMenu(
+            NewMenuDraft(
+                name = "콜드브루",
+                categoryId = "coffee",
+                basePrice = 5_500,
+                description = "",
+                imageUrl = "content://media/external/images/42",
+                isSoldOut = false,
+            ),
+        )
+
+        assertTrue(result is AppResult.Failure)
+        // stores/my + 업로드(실패) 까지만 호출되고 생성 호출은 없어야 한다.
+        assertEquals(2, server.requestCount)
+    }
+
+    @Test
+    fun addMenuUnreadableLocalImageProceedsWithoutImage() = runTest(testDispatcher) {
+        server.enqueue(myStoresResponse())
+        server.enqueue(MockResponse().setResponseCode(200).setBody("""{ "menuId": 888 }"""))
+        // 리더가 null 을 반환(읽기 실패) → 업로드 없이 이미지 없이 생성한다.
+        val reader = FakeMenuImageReader(data = null)
+        val repository = realOwnerMenuRepository(imageReader = reader)
+
+        val result = repository.addMenu(
+            NewMenuDraft(
+                name = "콜드브루",
+                categoryId = "coffee",
+                basePrice = 5_500,
+                description = "",
+                imageUrl = "content://media/external/images/42",
+                isSoldOut = false,
+            ),
+        )
+
+        assertTrue(result is AppResult.Success)
+        assertEquals(null, (result as AppResult.Success).data.imageUrl)
+        // 업로드 호출 없이 stores/my + create 만 발생.
+        assertEquals(2, server.requestCount)
+        server.takeRequest() // stores/my
+        val createRequest = server.takeRequest()
+        assertEquals("/api/stores/7/menus", createRequest.requestUrl?.encodedPath)
+        assertFalse(createRequest.body.readUtf8().contains("content://"))
+    }
+
+    @Test
     fun addMenuHttpErrorMapsToFailure() = runTest(testDispatcher) {
         server.enqueue(myStoresResponse())
         server.enqueue(MockResponse().setResponseCode(500))
@@ -277,12 +381,15 @@ class RealOwnerMenuRepositoryTest {
         assertTrue(result is AppResult.Failure)
     }
 
-    private fun realOwnerMenuRepository(): RealOwnerMenuRepository {
+    private fun realOwnerMenuRepository(
+        imageReader: MenuImageReader = FakeMenuImageReader(data = null),
+    ): RealOwnerMenuRepository {
         val retrofit = retrofit()
         return RealOwnerMenuRepository(
             ownerMenuApi = retrofit.create(OwnerMenuApi::class.java),
             ownerOrderApi = retrofit.create(OwnerOrderApi::class.java),
             menuApi = retrofit.create(MenuApi::class.java),
+            menuImageReader = imageReader,
             ioDispatcher = testDispatcher,
         )
     }
@@ -316,4 +423,16 @@ class RealOwnerMenuRepositoryTest {
                 ]
                 """.trimIndent(),
             )
+}
+
+private class FakeMenuImageReader(
+    private val data: MenuImageData?,
+) : MenuImageReader {
+    var lastReadUri: String? = null
+        private set
+
+    override suspend fun read(localUri: String): MenuImageData? {
+        lastReadUri = localUri
+        return data
+    }
 }

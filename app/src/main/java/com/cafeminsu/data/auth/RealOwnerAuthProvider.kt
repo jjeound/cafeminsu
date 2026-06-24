@@ -9,6 +9,7 @@ import com.cafeminsu.data.remote.runCatchingToAppResult
 import com.cafeminsu.data.remote.toOwnerLoginExchange
 import com.cafeminsu.domain.auth.OwnerAuthProvider
 import com.cafeminsu.domain.model.OwnerProfile
+import com.cafeminsu.domain.model.OwnerStore
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -66,5 +67,23 @@ class RealOwnerAuthProvider @Inject constructor(
         ownerProfile = updated
         preferences.setOwnerStoreOpen(open)
         return AppResult.Success(updated)
+    }
+
+    override suspend fun getStores(): AppResult<List<OwnerStore>> {
+        // 실서버 다중매장 API 부재(`stores/my` 빈 배열) — 로그인 매장 단일 항목만 노출한다.
+        val current = ownerProfile
+            ?: return AppResult.Failure(DomainError.Unauthorized)
+        return AppResult.Success(listOf(OwnerStore(id = current.storeId, name = current.storeName)))
+    }
+
+    override suspend fun selectStore(storeId: String): AppResult<OwnerProfile> {
+        val current = ownerProfile
+            ?: return AppResult.Failure(DomainError.Unauthorized)
+        // 단일 매장만 보유하므로 활성 매장과 동일할 때만 성공 처리한다.
+        return if (storeId == current.storeId) {
+            AppResult.Success(current)
+        } else {
+            AppResult.Failure(DomainError.NotFound)
+        }
     }
 }

@@ -36,3 +36,8 @@ data class HomeRecentOrderSummary(
     val orderedAtLabel: String,
     val totalPrice: Int,
 )
+
+sealed interface HomeEvent {
+    data class NavigateToPayment(val orderId: String) : HomeEvent
+    data class ReorderFailed(val message: String) : HomeEvent
+}

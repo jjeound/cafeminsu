@@ -201,8 +201,9 @@ fun AppNavHost(
                     },
                     onNotificationClick = { navController.navigate(Routes.NOTI) },
                     onRecentOrdersClick = { navController.navigate(Routes.HISTORY) },
-                    onReorderClick = { menuItemId ->
-                        navController.navigate(Routes.menuDetail(menuItemId))
+                    // 홈 재주문은 단발 주문을 만들어 곧장 결제 화면으로 이동한다(VM 이벤트 → orderId).
+                    onNavigateToPayment = { orderId ->
+                        navController.navigate(Routes.pay(orderId))
                     },
                     onBrowseMenuClick = { navController.navigate(Routes.STORE) },
                 )

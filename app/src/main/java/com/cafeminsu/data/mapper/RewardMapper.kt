@@ -69,6 +69,7 @@ fun MyGifticonRes.toGifticon(): AppResult<Gifticon> {
             qrValue = "",
             expiresAtMillis = expiresAt.toEpochMillisOrZero(),
             status = GifticonStatus.Available,
+            amount = balance,
         ),
     )
 }
@@ -98,6 +99,7 @@ fun GifticonDetailRes.toGifticon(): AppResult<Gifticon> {
             qrValue = codeValue,
             expiresAtMillis = expiresAt.toEpochMillisOrZero(),
             status = status,
+            amount = balance,
         ),
     )
 }
@@ -111,6 +113,7 @@ fun GifticonUseRes.toGifticon(previous: GifticonDetailRes): AppResult<Gifticon> 
             mapped.data.copy(
                 title = balance.toWonTitle(),
                 status = status,
+                amount = balance,
             ),
         )
 

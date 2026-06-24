@@ -9,6 +9,7 @@ import com.cafeminsu.domain.model.CartItem
 import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.OrderStatus
 import com.cafeminsu.domain.model.OwnerProfile
+import com.cafeminsu.domain.model.OwnerStore
 import com.cafeminsu.domain.model.SelectedOption
 import com.cafeminsu.domain.repository.OwnerOrderRepository
 import kotlinx.coroutines.Dispatchers
@@ -145,6 +146,38 @@ class OwnerHomeViewModelTest {
     }
 
     @Test
+    fun storesAreExposedAndSelectStoreSwitchesActiveStore() = runTest {
+        val ownerAuthProvider = FakeOwnerAuthProvider(
+            stores = listOf(
+                OwnerStore(id = "store-gangnam", name = "강남점"),
+                OwnerStore(id = "store-hongdae", name = "홍대점"),
+            ),
+        )
+        val viewModel = OwnerHomeViewModel(
+            ownerOrderRepository = FakeOwnerOrderRepository(
+                initialResult = AppResult.Success(listOf(sampleOrder(status = OrderStatus.Accepted))),
+            ),
+            ownerAuthProvider = ownerAuthProvider,
+        )
+
+        viewModel.uiState.test {
+            val initial = awaitContent()
+            assertEquals("강남점", initial.storeName)
+            assertEquals(listOf("강남점", "홍대점"), initial.stores.map { it.name })
+            assertEquals("강남점", initial.stores.single { it.isSelected }.name)
+
+            viewModel.selectStore("store-hongdae")
+
+            val switched = awaitContent()
+            assertEquals("store-hongdae", ownerAuthProvider.lastSelectedStoreId)
+            assertEquals("홍대점", switched.storeName)
+            assertEquals("홍대점", switched.stores.single { it.isSelected }.name)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun repositoryFailureProducesErrorState() = runTest {
         val viewModel = OwnerHomeViewModel(
             ownerOrderRepository = FakeOwnerOrderRepository(
@@ -249,9 +282,12 @@ private class FakeOwnerOrderRepository(
 }
 
 private class FakeOwnerAuthProvider(
+    private val stores: List<OwnerStore> = listOf(OwnerStore(id = "store-gangnam", name = "강남점")),
     private var ownerProfile: OwnerProfile = ownerProfile(),
 ) : OwnerAuthProvider {
     var lastRequestedOpen: Boolean? = null
+        private set
+    var lastSelectedStoreId: String? = null
         private set
 
     override suspend fun login(loginId: String, password: String): AppResult<OwnerProfile> =
@@ -263,6 +299,17 @@ private class FakeOwnerAuthProvider(
     override suspend fun setStoreOpen(open: Boolean): AppResult<OwnerProfile> {
         lastRequestedOpen = open
         ownerProfile = ownerProfile.copy(isStoreOpen = open)
+        return AppResult.Success(ownerProfile)
+    }
+
+    override suspend fun getStores(): AppResult<List<OwnerStore>> =
+        AppResult.Success(stores)
+
+    override suspend fun selectStore(storeId: String): AppResult<OwnerProfile> {
+        lastSelectedStoreId = storeId
+        val store = stores.firstOrNull { it.id == storeId }
+            ?: return AppResult.Failure(DomainError.NotFound)
+        ownerProfile = ownerProfile.copy(storeId = store.id, storeName = store.name)
         return AppResult.Success(ownerProfile)
     }
 }

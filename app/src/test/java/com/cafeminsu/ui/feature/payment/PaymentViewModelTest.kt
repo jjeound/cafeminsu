@@ -503,6 +503,54 @@ class PaymentViewModelTest {
     }
 
     @Test
+    fun applyingAmountGifticonDiscountsByBalanceNotMostExpensiveDrink() = runTest {
+        val rewardRepository = FakePaymentRewardRepository(
+            gifticons = listOf(
+                Gifticon(
+                    id = "gifticon-amount",
+                    title = "₩2,000",
+                    barcodeValue = "",
+                    qrValue = "",
+                    expiresAtMillis = 1_800_000_000_000L,
+                    status = GifticonStatus.Available,
+                    amount = 2_000,
+                ),
+            ),
+        )
+        val paymentRepository = FakePaymentRepository(
+            payResults = mutableListOf(
+                AppResult.Success(paymentResult(status = PaymentStatus.Approved)),
+            ),
+        )
+        val viewModel = viewModel(
+            paymentRepository = paymentRepository,
+            rewardRepository = rewardRepository,
+        )
+
+        viewModel.uiState.test {
+            val content = awaitContentWithCoupons()
+            assertEquals(12_000, content.payableAmount)
+
+            // 금액권(2,000원)은 잔액만큼만 할인한다 — 가장 비싼 한 잔(6,000원)이 아님.
+            viewModel.onToggleCoupon("gifticon-amount")
+            val discounted = awaitContent()
+            assertEquals(2_000, discounted.discountAmount)
+            assertEquals(10_000, discounted.payableAmount)
+
+            viewModel.events.test {
+                viewModel.onPay()
+
+                assertEquals(PaymentEvent.PaymentApproved("order-1"), awaitItem())
+                assertEquals(10_000, paymentRepository.payRequests.single().amount)
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun kakaoPayMethodApprovalRoutesThroughKakaoPayToken() = runTest {
         val paymentRepository = FakePaymentRepository(
             payResults = mutableListOf(
@@ -513,10 +561,9 @@ class PaymentViewModelTest {
 
         viewModel.uiState.test {
             val content = awaitContent()
+            // 결제는 카카오페이로 통합 — 기본 선택이 카카오페이다.
+            assertEquals("kakaopay", content.selectedMethodId)
             assertTrue(content.methods.any { method -> method.id == "kakaopay" })
-
-            viewModel.onSelectMethod("kakaopay")
-            assertEquals("kakaopay", awaitContent().selectedMethodId)
 
             viewModel.events.test {
                 viewModel.onPay()
@@ -544,10 +591,8 @@ class PaymentViewModelTest {
         val viewModel = viewModel(paymentRepository = paymentRepository)
 
         viewModel.uiState.test {
-            awaitContent()
-
-            viewModel.onSelectMethod("kakaopay")
-            assertEquals("kakaopay", awaitContent().selectedMethodId)
+            val content = awaitContent()
+            assertEquals("kakaopay", content.selectedMethodId)
 
             viewModel.events.test {
                 viewModel.onPayFailure()

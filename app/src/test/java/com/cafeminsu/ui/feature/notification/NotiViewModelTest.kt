@@ -32,7 +32,7 @@ class NotiViewModelTest {
     val mainDispatcherRule = MainDispatcherRule()
 
     @Test
-    fun notificationResultsProduceContentGroupedByTodayAndYesterday() = runTest {
+    fun unreadNotificationsAreGroupedByTodayWhileReadOnesAreHidden() = runTest {
         val repository = FakeNotificationRepository(
             AppResult.Success(
                 listOf(
@@ -65,12 +65,12 @@ class NotiViewModelTest {
         viewModel.uiState.test {
             val content = awaitContent()
 
-            assertEquals(listOf("오늘", "어제"), content.groups.map { it.label })
+            assertEquals(listOf("오늘"), content.groups.map { it.label })
             assertEquals(listOf("ready", "accepted"), content.groups[0].items.map { it.id })
             assertEquals("방금", content.groups[0].items[0].timeLabel)
             assertEquals("5분 전", content.groups[0].items[1].timeLabel)
             assertTrue(content.groups[0].items[0].unread)
-            assertEquals("어제 19:42", content.groups[1].items.single().timeLabel)
+            assertTrue(content.groups.flatMap { it.items }.none { it.id == "gift" })
 
             cancelAndIgnoreRemainingEvents()
         }

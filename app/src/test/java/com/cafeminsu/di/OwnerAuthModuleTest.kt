@@ -3,6 +3,7 @@ package com.cafeminsu.di
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.domain.auth.OwnerAuthProvider
 import com.cafeminsu.domain.model.OwnerProfile
+import com.cafeminsu.domain.model.OwnerStore
 import org.junit.Assert.assertSame
 import org.junit.Test
 
@@ -43,5 +44,11 @@ private class FakeOwnerAuthProvider : OwnerAuthProvider {
     override suspend fun logout(): AppResult<Unit> = AppResult.Success(Unit)
 
     override suspend fun setStoreOpen(open: Boolean): AppResult<OwnerProfile> =
+        AppResult.Failure(com.cafeminsu.core.DomainError.Unknown)
+
+    override suspend fun getStores(): AppResult<List<OwnerStore>> =
+        AppResult.Failure(com.cafeminsu.core.DomainError.Unknown)
+
+    override suspend fun selectStore(storeId: String): AppResult<OwnerProfile> =
         AppResult.Failure(com.cafeminsu.core.DomainError.Unknown)
 }

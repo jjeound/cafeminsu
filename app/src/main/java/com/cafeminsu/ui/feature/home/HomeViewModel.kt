@@ -5,6 +5,9 @@ import androidx.lifecycle.viewModelScope
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.AuthState
+import com.cafeminsu.domain.model.Cart
+import com.cafeminsu.domain.model.CartItem
+import com.cafeminsu.domain.model.CartValidation
 import com.cafeminsu.domain.model.Gifticon
 import com.cafeminsu.domain.model.MenuItem
 import com.cafeminsu.domain.model.Order
@@ -18,8 +21,11 @@ import com.cafeminsu.domain.repository.SessionRepository
 import com.cafeminsu.domain.repository.StoreRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
+import kotlinx.coroutines.flow.MutableSharedFlow
+import kotlinx.coroutines.flow.SharedFlow
 import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
+import kotlinx.coroutines.flow.asSharedFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.stateIn
@@ -34,6 +40,12 @@ class HomeViewModel @Inject constructor(
     private val recommendationRepository: RecommendationRepository,
     private val storeRepository: StoreRepository,
 ) : ViewModel() {
+    private val _events = MutableSharedFlow<HomeEvent>(extraBufferCapacity = EventBufferCapacity)
+    val events: SharedFlow<HomeEvent> = _events.asSharedFlow()
+
+    // 재주문 더블탭으로 동일 주문이 중복 생성되지 않도록 막는다(금전 액션 가드).
+    private var reorderInProgress = false
+
     val uiState: StateFlow<HomeUiState> = combine(
         combine(
             menuRepository.observeMenus(),
@@ -76,6 +88,51 @@ class HomeViewModel @Inject constructor(
                 sessionRepository.refreshOnce()
             }
         }
+    }
+
+    // 홈 재주문: 해당 메뉴(기본 옵션·수량 1)로 단발 주문을 만들어 곧장 결제로 보낸다.
+    // 사용자의 기존 장바구니는 건드리지 않으며, 주문 생성 확정 후에만 결제로 이동한다(낙관 금지).
+    fun onReorder(menuItemId: String) {
+        if (reorderInProgress) {
+            return
+        }
+        reorderInProgress = true
+        viewModelScope.launch {
+            try {
+                val menu = when (val menuResult = menuRepository.getMenu(menuItemId)) {
+                    is AppResult.Success -> menuResult.data
+                    is AppResult.Failure -> {
+                        _events.emit(HomeEvent.ReorderFailed(menuResult.error.toReorderMessage()))
+                        return@launch
+                    }
+                }
+                when (val orderResult = orderRepository.createOrderFromCart(menu.toReorderCart())) {
+                    is AppResult.Success ->
+                        _events.emit(HomeEvent.NavigateToPayment(orderResult.data.id))
+
+                    is AppResult.Failure ->
+                        _events.emit(HomeEvent.ReorderFailed(orderResult.error.toReorderMessage()))
+                }
+            } finally {
+                reorderInProgress = false
+            }
+        }
+    }
+
+    private fun MenuItem.toReorderCart(): Cart {
+        val item = CartItem(
+            id = "reorder-$id",
+            menuItemId = id,
+            name = name,
+            unitPrice = basePrice,
+            selectedOptions = emptyList(),
+            quantity = ReorderQuantity,
+        )
+        return Cart(
+            items = listOf(item),
+            subtotal = basePrice * ReorderQuantity,
+            validation = CartValidation.Valid,
+        )
     }
 
     private fun mapHomeState(
@@ -193,6 +250,14 @@ class HomeViewModel @Inject constructor(
             DomainError.Unknown -> "홈 정보를 불러오지 못했어요"
         }
 
+    private fun DomainError.toReorderMessage(): String =
+        when (this) {
+            DomainError.Network -> "네트워크 연결을 확인하고 다시 시도해 주세요"
+            DomainError.Timeout -> "응답이 지연되고 있어요. 잠시 후 다시 시도해 주세요"
+            DomainError.Unauthorized -> "로그인이 만료됐어요. 다시 로그인해 주세요"
+            else -> "재주문하지 못했어요. 잠시 후 다시 시도해 주세요"
+        }
+
     private fun DomainError.isRetryable(): Boolean =
         when (this) {
             DomainError.Network,
@@ -220,5 +285,7 @@ class HomeViewModel @Inject constructor(
         const val RecentOrderLimit = 2
         const val DayMillis = 24L * 60L * 60L * 1000L
         const val DefaultUserName = "민수"
+        const val EventBufferCapacity = 1
+        const val ReorderQuantity = 1
     }
 }

@@ -6,6 +6,8 @@ import com.cafeminsu.core.map
 import com.cafeminsu.data.mapper.toMenuCreateReq
 import com.cafeminsu.data.mapper.toMenuItem
 import com.cafeminsu.data.mapper.toMenuItems
+import com.cafeminsu.data.platform.MenuImageData
+import com.cafeminsu.data.platform.MenuImageReader
 import com.cafeminsu.data.remote.MenuApi
 import com.cafeminsu.data.remote.MenuAvailabilityReq
 import com.cafeminsu.data.remote.OwnerMenuApi
@@ -26,6 +28,9 @@ import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.withContext
+import okhttp3.MediaType.Companion.toMediaTypeOrNull
+import okhttp3.MultipartBody
+import okhttp3.RequestBody.Companion.toRequestBody
 
 @Singleton
 class RealOwnerMenuRepository @Inject constructor(
@@ -34,6 +39,8 @@ class RealOwnerMenuRepository @Inject constructor(
     private val ownerOrderApi: OwnerOrderApi,
     // 목록 조회(GET stores/{id}/menus)는 public 이라 기존 고객용 MenuApi 를 재사용한다.
     @Unauthenticated private val menuApi: MenuApi,
+    // 점주가 고른 로컬 이미지(content://)를 업로드용 바이트로 읽는다.
+    private val menuImageReader: MenuImageReader,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : OwnerMenuRepository {
     // 토글/생성 결과를 마지막 관측 목록에 반영하기 위한 인메모리 스냅샷(서버가 단일 진실, 영속화하지 않음).
@@ -96,21 +103,50 @@ class RealOwnerMenuRepository @Inject constructor(
                 is AppResult.Failure -> return@withContext result
             }
 
+            // 로컬에서 고른 이미지(content://·file://)는 서버에 업로드해 받은 원격 URL 로 교체한다.
+            // 그래야 생성 요청·로컬 스냅샷·메뉴 목록에서 이미지가 실제로 보인다.
+            val imageUrl = when (val resolved = resolveImageUrl(draft.imageUrl)) {
+                is AppResult.Success -> resolved.data
+                is AppResult.Failure -> return@withContext resolved
+            }
+            val resolvedDraft = draft.copy(imageUrl = imageUrl)
+
             when (
                 val response = runCatchingToAppResult {
-                    ownerMenuApi.createMenu(storeId, draft.toMenuCreateReq())
+                    ownerMenuApi.createMenu(storeId, resolvedDraft.toMenuCreateReq())
                 }
             ) {
                 is AppResult.Success -> {
                     val menuId = response.data.menuId
                         ?: return@withContext AppResult.Failure(DomainError.Unknown)
-                    val created = draft.toMenuItem(serverMenuId = menuId)
+                    val created = resolvedDraft.toMenuItem(serverMenuId = menuId)
                     menuSnapshot.value = menuSnapshot.value + created
                     AppResult.Success(created)
                 }
                 is AppResult.Failure -> response
             }
         }
+
+    // 이미지 URL 을 확정한다: 로컬 URI 면 업로드해 원격 URL 을, 이미 원격(http) URL 이거나 없으면 그대로 반환.
+    private suspend fun resolveImageUrl(imageUrl: String?): AppResult<String?> {
+        if (imageUrl == null || !imageUrl.isLocalImageUri()) {
+            return AppResult.Success(imageUrl)
+        }
+
+        // 읽을 수 없으면(권한/포맷 등) 잘못된 content:// 를 서버로 보내지 않고 이미지 없이 진행한다(크래시 금지).
+        val image = menuImageReader.read(imageUrl) ?: return AppResult.Success(null)
+
+        return runCatchingToAppResult { ownerMenuApi.uploadMenuImage(image.toFormPart()) }
+            .map { it.imageUrl }
+    }
+
+    private fun MenuImageData.toFormPart(): MultipartBody.Part {
+        val body = bytes.toRequestBody(mimeType.toMediaTypeOrNull())
+        return MultipartBody.Part.createFormData(name = "file", filename = fileName, body = body)
+    }
+
+    private fun String.isLocalImageUri(): Boolean =
+        startsWith("content://") || startsWith("file://")
 
     // 점주 매장은 stores/my 첫 매장으로 해석한다(step 0 RealOwnerOrderRepository 와 동일).
     private suspend fun resolveStoreId(): AppResult<Long?> =

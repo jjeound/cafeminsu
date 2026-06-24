@@ -196,6 +196,7 @@ class MenuViewModel @Inject constructor(
             description = description,
             price = basePrice,
             isSoldOut = isSoldOut,
+            imageUrl = imageUrl,
             isEnabled = !isSoldOut,
         )
 

@@ -1,0 +1,64 @@
+{
+  "project": "CafeMinsu",
+  "phase": "bugfix-batch",
+  "steps": [
+    {
+      "step": 0,
+      "name": "coupon-amount-discount",
+      "status": "completed",
+      "started_at": "2026-06-24T23:37:22+0900",
+      "summary": "Gifticon에 amount(잔액) 필드 추가 + RewardMapper가 balance를 채우고, PaymentViewModel이 금액권(amount>0)은 잔액만큼만(아니면 가장 비싼 한 잔으로 폴백) 할인하도록 수정. MockData 정합 + 신규 테스트 추가.",
+      "completed_at": "2026-06-24T23:40:20+0900"
+    },
+    {
+      "step": 1,
+      "name": "noti-hide-read",
+      "status": "completed",
+      "started_at": "2026-06-24T23:40:20+0900",
+      "summary": "NotiViewModel에 세션 노출 id 집합(sessionVisibleIds) 도입 — 구독 시작 시 onStart로 비우고 emission마다 read==false 알림 id를 누적, 그 집합에 든 알림만 표시. 진입 시 markAllRead로 읽어도 세션 동안은 유지되고 이미 읽은 알림은 숨김, 재구독 시 사라짐. 테스트를 새 동작에 맞게 수정.",
+      "completed_at": "2026-06-24T23:42:31+0900"
+    },
+    {
+      "step": 2,
+      "name": "home-reorder-to-pay",
+      "status": "completed",
+      "started_at": "2026-06-24T23:42:31+0900",
+      "summary": "홈 재주문을 단발 주문 생성→결제 이동으로 변경. HomeViewModel.onReorder(menuItemId)가 menuRepository.getMenu로 메뉴를 해석해 기본옵션·수량1 단발 Cart를 만들고 createOrderFromCart로 주문 생성 후 HomeEvent.NavigateToPayment(orderId) 1회성 이벤트 emit(더블탭 가드, 기존 장바구니 불변, 낙관 금지). HomeRoute가 events를 collect해 결제로 이동하고 실패는 에러 스낵바. AppNavHost HOME 배선을 onNavigateToPayment→Routes.pay(orderId)로 교체. HISTORY 재주문은 불변.",
+      "completed_at": "2026-06-24T23:49:26+0900"
+    },
+    {
+      "step": 3,
+      "name": "menu-default-image",
+      "status": "completed",
+      "started_at": "2026-06-24T23:49:27+0900",
+      "summary": "coffee.svg를 res/drawable/img_menu_default.xml 벡터 드로어블로 변환 추가. MenuItemUiModel·MenuDetailUiState.Content에 imageUrl 필드 추가하고 ViewModel 매핑(toUiModel/toContent)으로 전달. MenuThumbnail·MenuImageHero가 Coil AsyncImage(ContentScale.Crop)로 imageUrl 렌더링하되 placeholder/error/fallback을 img_menu_default로 지정해 null/blank이면 기본 이미지 표시(기존 크기/모양/토큰 유지). UiState imageUrl 전달 검증 테스트 추가.",
+      "completed_at": "2026-06-24T23:53:28+0900"
+    },
+    {
+      "step": 4,
+      "name": "kakaopay-consolidate",
+      "status": "completed",
+      "started_at": "2026-06-24T23:53:28+0900",
+      "summary": "스웨거 정합 재검증 결과 KakaoPayApi(ready {merchantUid,amount}→{tid,redirectUrl} / approve {tid,pgToken,merchantUid}→{paymentToken})와 RealPaymentRepository(prepare→pgClient.authorize→verify[impUid=paymentToken]) 흐름이 백엔드 계약과 정확히 일치해 API 변경 불필요. 결제수단을 카카오페이로 통합 — defaultPaymentMethods()와 PaymentViewModel 내부 paymentMethods(token map)를 kakaopay 단일 항목으로 정리해 진입 시 기본 선택이 카카오페이가 되도록 함(신용카드/간편결제/coupon 목 수단 제거). PaymentViewModelTest/PaymentUiStateTest/PaymentScreenTest와 RealPaymentRepositoryTest 토큰 픽스처를 새 구성에 맞게 갱신. KAKAOPAY_ENABLED 플래그·멱등키·낙관금지·verify 확정 흐름 불변.",
+      "completed_at": "2026-06-24T23:57:58+0900"
+    },
+    {
+      "step": 5,
+      "name": "owner-store-switcher",
+      "status": "completed",
+      "started_at": "2026-06-24T23:57:58+0900",
+      "summary": "점주 대시보드 헤더에 여러 매장 선택 드롭다운 추가. OwnerStore 도메인 모델 + OwnerAuthProvider.getStores()/selectStore() 계약 추가. MockOwnerAuthProvider가 강남/홍대/판교 3개 매장(매장별 영업상태)을 시드해 전환 제공, RealOwnerAuthProvider는 다중매장 API 부재로 로그인 매장 단일 항목만 노출. OwnerHomeViewModel이 init에서 getStores 로드 후 OwnerStoreUiModel 목록을 Content/Empty 상태로 노출하고 selectStore로 활성 매장 전환(헤더 매장명·영업 토글 반영, 전환 중복 가드). OwnerHomeScreen 헤더 \"$storeName ▾\"를 Material3 DropdownMenu(surfaceCard 토큰)로 전환하되 매장 2개 이상일 때만 활성. ViewModel 전환·Mock/Real getStores·selectStore·Screen 드롭다운 테스트 추가, 기존 5개 fake OwnerAuthProvider 구현에 신규 메서드 보강.",
+      "completed_at": "2026-06-25T00:08:51+0900"
+    },
+    {
+      "step": 6,
+      "name": "owner-menu-image-upload",
+      "status": "completed",
+      "started_at": "2026-06-25T00:08:51+0900",
+      "summary": "점주 메뉴 추가 이미지 업로드 실연동. 스웨거에 POST /api/images/menu(multipart, part=file → ImageUploadRes{imageUrl}) 존재 확인. OwnerMenuApi.uploadMenuImage 멀티파트 엔드포인트 + ImageUploadRes 추가. MenuImageReader(데이터 계약)+AndroidMenuImageReader(ContentResolver로 content:// 바이트 읽기, 실패 시 null 폴백) 추가하고 RepositoryModule @Binds로 연결. RealOwnerMenuRepository.addMenu가 draft.imageUrl이 로컬 URI(content://·file://)면 업로드해 받은 원격 URL로 교체 후 createMenu·로컬 스냅샷에 반영(http URL/null은 통과, 읽기불가는 이미지없이 진행, 업로드 실패는 생성 전 Failure로 낙관금지). content:// 가 서버로 새지 않도록 정리. OwnerMenuAddViewModelTest(이미지 있음/없음)·RealOwnerMenuRepositoryTest(업로드 성공/실패/읽기불가)·MenuImageReaderTest·AndroidMenuImageReaderTest 추가. 이미지 바이너리/토큰 로깅은 기존 redact+okhttp 바이너리 생략으로 미노출.",
+      "completed_at": "2026-06-25T00:17:27+0900"
+    }
+  ],
+  "created_at": "2026-06-24T23:37:22+0900",
+  "completed_at": "2026-06-25T00:17:27+0900"
+}

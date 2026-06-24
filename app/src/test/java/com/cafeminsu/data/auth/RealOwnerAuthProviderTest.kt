@@ -10,6 +10,7 @@ import com.cafeminsu.data.remote.createMoshi
 import com.cafeminsu.data.remote.createOkHttpClient
 import com.cafeminsu.data.remote.createRetrofit
 import com.cafeminsu.domain.model.OwnerProfile
+import com.cafeminsu.domain.model.OwnerStore
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -117,6 +118,39 @@ class RealOwnerAuthProviderTest {
         val provider = realOwnerAuthProvider(InMemorySessionTokenStore())
 
         assertEquals(AppResult.Failure(DomainError.Unauthorized), provider.setStoreOpen(open = false))
+    }
+
+    @Test
+    fun getStoresReturnsSingleLoginStore() = runTest {
+        server.enqueue(ownerLoginResponse(nickname = "강남점장"))
+        val provider = realOwnerAuthProvider(InMemorySessionTokenStore())
+        provider.login(loginId = "owner02", password = "cafe5678")
+
+        val result = provider.getStores()
+
+        assertTrue(result is AppResult.Success)
+        val stores = (result as AppResult.Success<List<OwnerStore>>).data
+        assertEquals(1, stores.size)
+        assertEquals("강남점장", stores.single().name)
+    }
+
+    @Test
+    fun getStoresWithoutLoginReturnsUnauthorized() = runTest {
+        val provider = realOwnerAuthProvider(InMemorySessionTokenStore())
+
+        assertEquals(AppResult.Failure(DomainError.Unauthorized), provider.getStores())
+    }
+
+    @Test
+    fun selectStoreWithLoginStoreIdReturnsProfile() = runTest {
+        server.enqueue(ownerLoginResponse(nickname = "강남점장"))
+        val provider = realOwnerAuthProvider(InMemorySessionTokenStore())
+        val loggedIn = (provider.login(loginId = "owner02", password = "cafe5678") as AppResult.Success).data
+
+        val result = provider.selectStore(loggedIn.storeId)
+
+        assertTrue(result is AppResult.Success)
+        assertEquals(loggedIn.storeId, (result as AppResult.Success<OwnerProfile>).data.storeId)
     }
 
     @Test

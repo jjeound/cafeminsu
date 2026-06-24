@@ -5,6 +5,8 @@ import com.cafeminsu.data.payment.KakaoPayRedirectBridge
 import com.cafeminsu.data.payment.MockPgClient
 import com.cafeminsu.data.payment.NoOpKakaoPayRedirectBridge
 import com.cafeminsu.data.payment.PgClient
+import com.cafeminsu.data.platform.AndroidMenuImageReader
+import com.cafeminsu.data.platform.MenuImageReader
 import com.cafeminsu.data.platform.RealKakaoPayRedirectBridge
 import com.cafeminsu.data.repository.MockCartRepository
 import com.cafeminsu.data.repository.MockCouponRepository
@@ -70,6 +72,11 @@ abstract class RepositoryModule {
     @Binds
     @Singleton
     abstract fun bindCouponRepository(repository: MockCouponRepository): CouponRepository
+
+    // 점주 메뉴 이미지 업로드를 위한 로컬 이미지 리더(프레임워크 의존 — Android ContentResolver).
+    @Binds
+    @Singleton
+    abstract fun bindMenuImageReader(reader: AndroidMenuImageReader): MenuImageReader
 
     companion object {
         @Provides

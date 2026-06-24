@@ -51,6 +51,27 @@ class MenuDetailUiStateTest {
     }
 
     @Test
+    fun contentCarriesImageUrl() {
+        val content = MenuDetailUiState.Content(
+            menuItemId = "americano",
+            name = "민수 아메리카노",
+            description = "고소한 블렌드의 깔끔한 기본 커피",
+            basePrice = 5_000,
+            isSoldOut = false,
+            imageUrl = "https://example.com/americano.png",
+            optionGroups = emptyList(),
+            selectedOptionIdsByGroup = emptyMap(),
+            quantity = 1,
+            unitPrice = 5_000,
+            totalPrice = 5_000,
+            canAddToCart = true,
+            addStatus = MenuDetailAddStatus.Idle,
+        )
+
+        assertEquals("https://example.com/americano.png", content.imageUrl)
+    }
+
+    @Test
     fun errorStateCarriesRetryability() {
         val error = MenuDetailUiState.Error(
             message = "메뉴 정보를 찾지 못했어요",

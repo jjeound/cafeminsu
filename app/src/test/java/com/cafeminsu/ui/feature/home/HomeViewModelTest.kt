@@ -5,7 +5,9 @@ import app.cash.turbine.test
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.AuthState
+import com.cafeminsu.domain.model.Cart
 import com.cafeminsu.domain.model.CartItem
+import com.cafeminsu.domain.model.CartValidation
 import com.cafeminsu.domain.model.Gifticon
 import com.cafeminsu.domain.model.GifticonStatus
 import com.cafeminsu.domain.model.MenuCategory
@@ -263,6 +265,123 @@ class HomeViewModelTest {
         }
     }
 
+    @Test
+    fun reorderCreatesOrderAndEmitsNavigationEvent() = runTest {
+        val reorderMenu = sampleMenu(basePrice = 4_500).copy(id = "americano", name = "아메리카노")
+        val createdOrder = sampleOrder(
+            id = "order-99",
+            orderNumber = "M099",
+            itemName = "아메리카노",
+            menuItemId = "americano",
+            totalAmount = 4_500,
+            createdAtMillis = System.currentTimeMillis(),
+        )
+        val orderRepository = FakeOrderRepository(
+            initialOrders = AppResult.Success(emptyList()),
+            createOrderResult = AppResult.Success(createdOrder),
+        )
+        val viewModel = HomeViewModel(
+            menuRepository = FakeMenuRepository(AppResult.Success(listOf(reorderMenu))),
+            orderRepository = orderRepository,
+            rewardRepository = FakeRewardRepository(
+                initialStampCard = AppResult.Success(sampleStampCard()),
+                initialGifticons = AppResult.Success(emptyList()),
+            ),
+            sessionRepository = FakeSessionRepository(AuthState.Guest),
+            recommendationRepository = FakeRecommendationRepository(),
+            storeRepository = FakeStoreRepository(null),
+        )
+
+        viewModel.events.test {
+            viewModel.onReorder("americano")
+            val event = awaitItem()
+            assertTrue(event is HomeEvent.NavigateToPayment)
+            assertEquals("order-99", (event as HomeEvent.NavigateToPayment).orderId)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        // 단발 주문 카트는 해당 메뉴·기본 옵션·수량 1·Valid 여야 한다.
+        val cart = orderRepository.lastCart
+        assertEquals(1, cart?.items?.size)
+        val item = cart?.items?.first()
+        assertEquals("americano", item?.menuItemId)
+        assertEquals(1, item?.quantity)
+        assertEquals(4_500, item?.unitPrice)
+        assertTrue(item?.selectedOptions?.isEmpty() == true)
+        assertEquals(4_500, cart?.subtotal)
+        assertEquals(CartValidation.Valid, cart?.validation)
+    }
+
+    @Test
+    fun reorderOrderCreationFailureEmitsReorderFailedEvent() = runTest {
+        val reorderMenu = sampleMenu(basePrice = 4_500).copy(id = "americano")
+        val viewModel = HomeViewModel(
+            menuRepository = FakeMenuRepository(AppResult.Success(listOf(reorderMenu))),
+            orderRepository = FakeOrderRepository(
+                initialOrders = AppResult.Success(emptyList()),
+                createOrderResult = AppResult.Failure(DomainError.Network),
+            ),
+            rewardRepository = FakeRewardRepository(
+                initialStampCard = AppResult.Success(sampleStampCard()),
+                initialGifticons = AppResult.Success(emptyList()),
+            ),
+            sessionRepository = FakeSessionRepository(AuthState.Guest),
+            recommendationRepository = FakeRecommendationRepository(),
+            storeRepository = FakeStoreRepository(null),
+        )
+
+        viewModel.events.test {
+            viewModel.onReorder("americano")
+            val event = awaitItem()
+            assertTrue(event is HomeEvent.ReorderFailed)
+            assertEquals(
+                "네트워크 연결을 확인하고 다시 시도해 주세요",
+                (event as HomeEvent.ReorderFailed).message,
+            )
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun reorderWithUnknownMenuEmitsReorderFailedEvent() = runTest {
+        val orderRepository = FakeOrderRepository(
+            initialOrders = AppResult.Success(emptyList()),
+            createOrderResult = AppResult.Success(
+                sampleOrder(
+                    id = "order-1",
+                    orderNumber = "M001",
+                    itemName = "아메리카노",
+                    menuItemId = "americano",
+                    totalAmount = 4_500,
+                    createdAtMillis = System.currentTimeMillis(),
+                ),
+            ),
+        )
+        val viewModel = HomeViewModel(
+            menuRepository = FakeMenuRepository(AppResult.Success(listOf(sampleMenu()))),
+            orderRepository = orderRepository,
+            rewardRepository = FakeRewardRepository(
+                initialStampCard = AppResult.Success(sampleStampCard()),
+                initialGifticons = AppResult.Success(emptyList()),
+            ),
+            sessionRepository = FakeSessionRepository(AuthState.Guest),
+            recommendationRepository = FakeRecommendationRepository(),
+            storeRepository = FakeStoreRepository(null),
+        )
+
+        viewModel.events.test {
+            viewModel.onReorder("ghost-menu")
+            val event = awaitItem()
+            assertTrue(event is HomeEvent.ReorderFailed)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+        // 메뉴 조회 실패 시 주문을 생성하지 않는다.
+        assertNull(orderRepository.lastCart)
+    }
+
     private fun sampleStore(name: String): Store =
         Store(
             id = "store-1",
@@ -382,18 +501,30 @@ private class FakeMenuRepository(
     override fun observeMenus(categoryId: String?): Flow<AppResult<List<MenuItem>>> = menus
 
     override suspend fun getMenu(menuItemId: String): AppResult<MenuItem> =
-        AppResult.Failure(DomainError.NotFound)
+        when (val current = menus.value) {
+            is AppResult.Success ->
+                current.data.firstOrNull { it.id == menuItemId }
+                    ?.let { AppResult.Success(it) }
+                    ?: AppResult.Failure(DomainError.NotFound)
+
+            is AppResult.Failure -> current
+        }
 
     override suspend fun refreshMenus(): AppResult<Unit> = AppResult.Success(Unit)
 }
 
 private class FakeOrderRepository(
     initialOrders: AppResult<List<Order>>,
+    private val createOrderResult: AppResult<Order> = AppResult.Failure(DomainError.Validation("cart")),
 ) : OrderRepository {
     private val orders = MutableStateFlow(initialOrders)
+    var lastCart: Cart? = null
+        private set
 
-    override suspend fun createOrderFromCart(cart: com.cafeminsu.domain.model.Cart): AppResult<Order> =
-        AppResult.Failure(DomainError.Validation("cart"))
+    override suspend fun createOrderFromCart(cart: Cart): AppResult<Order> {
+        lastCart = cart
+        return createOrderResult
+    }
 
     override fun observeOrder(orderId: String): Flow<AppResult<Order>> =
         MutableStateFlow(AppResult.Failure(DomainError.NotFound))

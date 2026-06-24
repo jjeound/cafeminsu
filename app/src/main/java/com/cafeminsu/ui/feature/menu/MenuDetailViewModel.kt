@@ -180,6 +180,7 @@ class MenuDetailViewModel @Inject constructor(
             description = description,
             basePrice = basePrice,
             isSoldOut = isSoldOut,
+            imageUrl = imageUrl,
             optionGroups = emptyList(),
             selectedOptionIdsByGroup = emptyMap(),
             quantity = initialQuantity,

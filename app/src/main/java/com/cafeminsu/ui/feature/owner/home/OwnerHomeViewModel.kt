@@ -8,6 +8,7 @@ import com.cafeminsu.domain.auth.OwnerAuthProvider
 import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.OrderStatus
 import com.cafeminsu.domain.model.OwnerProfile
+import com.cafeminsu.domain.model.OwnerStore
 import com.cafeminsu.domain.repository.OwnerOrderRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Instant
@@ -29,20 +30,32 @@ class OwnerHomeViewModel @Inject constructor(
     private val ownerAuthProvider: OwnerAuthProvider,
 ) : ViewModel() {
     private val ownerProfile = MutableStateFlow(DefaultOwnerProfile)
+    private val stores = MutableStateFlow<List<OwnerStore>>(emptyList())
     private val operationError = MutableStateFlow<DomainError?>(null)
     private val processingOrderIds = MutableStateFlow<Set<String>>(emptySet())
     private val isStoreOpenUpdating = MutableStateFlow(false)
+    private val isStoreSwitching = MutableStateFlow(false)
+
+    init {
+        viewModelScope.launch {
+            when (val result = ownerAuthProvider.getStores()) {
+                is AppResult.Success -> stores.value = result.data
+                is AppResult.Failure -> Unit // 목록을 못 받으면 단일 매장 표시로 폴백(드롭다운 없음).
+            }
+        }
+    }
 
     val uiState: StateFlow<OwnerHomeUiState> = combine(
         ownerOrderRepository.observeIncomingOrders(),
-        ownerProfile,
+        combine(ownerProfile, stores) { profile, storeList -> profile to storeList },
         operationError,
         processingOrderIds,
         isStoreOpenUpdating,
-    ) { orderResult, profile, actionError, processingIds, storeOpenUpdating ->
+    ) { orderResult, (profile, storeList), actionError, processingIds, storeOpenUpdating ->
         mapOwnerHomeState(
             orderResult = orderResult,
             ownerProfile = profile,
+            stores = storeList,
             operationError = actionError,
             processingOrderIds = processingIds,
             isStoreOpenUpdating = storeOpenUpdating,
@@ -83,6 +96,26 @@ class OwnerHomeViewModel @Inject constructor(
         }
     }
 
+    fun selectStore(storeId: String) {
+        if (storeId == ownerProfile.value.storeId) return
+        if (isStoreSwitching.value) return
+
+        viewModelScope.launch {
+            isStoreSwitching.value = true
+            when (val result = ownerAuthProvider.selectStore(storeId)) {
+                is AppResult.Success -> {
+                    ownerProfile.value = result.data
+                    operationError.value = null
+                }
+
+                is AppResult.Failure -> {
+                    operationError.value = result.error
+                }
+            }
+            isStoreSwitching.value = false
+        }
+    }
+
     fun advanceStatus(orderId: String) {
         val content = uiState.value as? OwnerHomeUiState.Content ?: return
         val order = content.pendingOrders.firstOrNull { it.id == orderId } ?: return
@@ -107,12 +140,14 @@ class OwnerHomeViewModel @Inject constructor(
     private fun mapOwnerHomeState(
         orderResult: AppResult<List<Order>>,
         ownerProfile: OwnerProfile,
+        stores: List<OwnerStore>,
         operationError: DomainError?,
         processingOrderIds: Set<String>,
         isStoreOpenUpdating: Boolean,
     ): OwnerHomeUiState {
         operationError?.let { return it.toOwnerHomeError() }
 
+        val storeUiModels = stores.toOwnerStoreUiModels(ownerProfile.storeId)
         val orders = when (orderResult) {
             is AppResult.Success -> orderResult.data
             is AppResult.Failure -> return orderResult.error.toOwnerHomeError()
@@ -126,6 +161,7 @@ class OwnerHomeViewModel @Inject constructor(
                 stats = stats,
                 message = "처리할 주문이 없어요",
                 isStoreOpenUpdating = isStoreOpenUpdating,
+                stores = storeUiModels,
             )
         }
 
@@ -140,8 +176,18 @@ class OwnerHomeViewModel @Inject constructor(
                 .take(DashboardOrderLimit)
                 .map { it.toOwnerHomeOrderUiModel(processingOrderIds) },
             isStoreOpenUpdating = isStoreOpenUpdating,
+            stores = storeUiModels,
         )
     }
+
+    private fun List<OwnerStore>.toOwnerStoreUiModels(selectedStoreId: String): List<OwnerStoreUiModel> =
+        map { store ->
+            OwnerStoreUiModel(
+                id = store.id,
+                name = store.name,
+                isSelected = store.id == selectedStoreId,
+            )
+        }
 
     private fun List<Order>.toOwnerHomeStats(): OwnerHomeStatsUiModel =
         OwnerHomeStatsUiModel(

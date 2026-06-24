@@ -72,4 +72,43 @@ class OwnerHomeScreenTest {
         assertEquals("owner-order-1042", advancedOrderId)
         assertEquals(false, toggledOpen)
     }
+
+    @Test
+    fun storeSelectorOpensDropdownAndSwitchesStore() {
+        var selectedStoreId: String? = null
+
+        composeRule.setContent {
+            CafeTheme {
+                OwnerHomeScreen(
+                    state = OwnerHomeUiState.Content(
+                        storeName = "강남점",
+                        isStoreOpen = true,
+                        dateLabel = "6월 19일 (금)",
+                        stats = OwnerHomeStatsUiModel(
+                            totalSales = 0,
+                            orderCount = 0,
+                            newWaitingCount = 0,
+                        ),
+                        pendingOrders = emptyList(),
+                        isStoreOpenUpdating = false,
+                        stores = listOf(
+                            OwnerStoreUiModel(id = "store-gangnam", name = "강남점", isSelected = true),
+                            OwnerStoreUiModel(id = "store-hongdae", name = "홍대점", isSelected = false),
+                        ),
+                    ),
+                    onToggleStoreOpen = {},
+                    onAdvanceStatus = {},
+                    onViewAllOrders = {},
+                    onRetry = {},
+                    onSelectStore = { selectedStoreId = it },
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("강남점 ▾").performClick()
+        composeRule.onNodeWithText("홍대점").assertIsDisplayed()
+        composeRule.onNodeWithText("홍대점").performClick()
+
+        assertEquals("store-hongdae", selectedStoreId)
+    }
 }
