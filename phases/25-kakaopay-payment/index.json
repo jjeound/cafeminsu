@@ -7,7 +7,8 @@
       "name": "kakaopay-pg-client",
       "status": "completed",
       "summary": "KakaoPayApi(ready/approve) + KakaoPayPgClient(PgClient) + KakaoPayRedirectBridge 인터페이스 + KAKAOPAY_ENABLED 키게이트 DI(기본 Mock 폴백). 멱등 merchantUid 유지",
-      "started_at": "2026-06-24T09:42:09+0900"
+      "started_at": "2026-06-24T09:42:09+0900",
+      "completed_at": "2026-06-24T09:46:29+0900"
     },
     {
       "step": 1,
