@@ -73,6 +73,22 @@ class RealGiftRepositoryTest {
     }
 
     @Test
+    fun sendGiftKakaoChannelMapsShareLinkAndDeepLink() = runTest(testDispatcher) {
+        server.enqueue(purchaseResponse(gifticonId = 60))
+        server.enqueue(shareResponse())
+        val repository = realGiftRepository()
+
+        val result = repository.sendGift(
+            giftRequest(channel = GiftChannel.KakaoTalk, recipientRef = "42"),
+        )
+
+        assertTrue(result is AppResult.Success)
+        val gift = (result as AppResult.Success).data
+        assertEquals("https://cafeminsu.example/gift/secret", gift.shareLink)
+        assertEquals("cafeminsu://gift/secret", gift.deepLink)
+    }
+
+    @Test
     fun sendGiftMapsSmsRecipientToReceiverPhone() = runTest(testDispatcher) {
         server.enqueue(purchaseResponse(gifticonId = 56))
         server.enqueue(shareResponse())

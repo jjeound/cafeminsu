@@ -64,4 +64,6 @@ enum class GiftChannel {
 data class GiftSendResult(
     val giftId: String,
     val sentAtMillis: Long,
+    val shareLink: String? = null,
+    val deepLink: String? = null,
 )

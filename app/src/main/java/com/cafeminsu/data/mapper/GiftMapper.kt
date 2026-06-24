@@ -15,6 +15,8 @@ fun GifticonShareRes.toGiftSendResult(
         GiftSendResult(
             giftId = gifticonId.toString(),
             sentAtMillis = sentAtMillis,
+            shareLink = shareLink,
+            deepLink = deepLink,
         ),
     )
 }

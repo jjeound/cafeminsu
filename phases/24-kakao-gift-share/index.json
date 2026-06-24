@@ -2,7 +2,18 @@
   "project": "CafeMinsu",
   "phase": "kakao-gift-share",
   "steps": [
-    { "step": 0, "name": "share-link-plumbing", "status": "pending" },
-    { "step": 1, "name": "kakao-share-launch", "status": "pending" }
-  ]
+    {
+      "step": 0,
+      "name": "share-link-plumbing",
+      "status": "completed",
+      "started_at": "2026-06-24T09:32:11+0900",
+      "summary": "GiftSendResult 에 shareLink/deepLink 추가 + toGiftSendResult/RealGiftRepository 매핑 (UI 공유 런처용 링크 전달)"
+    },
+    {
+      "step": 1,
+      "name": "kakao-share-launch",
+      "status": "pending"
+    }
+  ],
+  "created_at": "2026-06-24T09:32:11+0900"
 }

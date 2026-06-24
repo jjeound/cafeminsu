@@ -10,7 +10,7 @@ import org.junit.Test
 
 class GiftMapperTest {
     @Test
-    fun shareResponseMapsPurchaseIdAndSentAtWithoutExposingLinks() {
+    fun shareResponseMapsPurchaseIdSentAtAndShareLinks() {
         val result = GifticonShareRes(
             shareLink = "https://cafeminsu.example/gift/secret",
             deepLink = "cafeminsu://gift/secret",
@@ -27,7 +27,8 @@ class GiftMapperTest {
         val gift = (result as AppResult.Success).data
         assertEquals("55", gift.giftId)
         assertEquals(1_782_012_345_000L, gift.sentAtMillis)
-        assertEquals(false, gift.toString().contains("secret"))
+        assertEquals("https://cafeminsu.example/gift/secret", gift.shareLink)
+        assertEquals("cafeminsu://gift/secret", gift.deepLink)
         assertEquals(false, gift.toString().contains("qr-sensitive-value"))
     }
 
