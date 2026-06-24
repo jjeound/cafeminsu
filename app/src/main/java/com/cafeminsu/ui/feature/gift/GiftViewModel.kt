@@ -128,18 +128,16 @@ class GiftViewModel @Inject constructor(
         }
     }
 
-    // 등록 코드를 공유 텍스트로 만들어 ShareGiftLink 로 신호한다.
-    // 커스텀 스킴(cafeminsu://) 링크는 카톡 인앱 브라우저에서 열리지 않으므로 공유 텍스트에 넣지 않는다.
-    // 서버가 실제 http(s) 공유 페이지를 주면 그 링크를 함께 싣고, 그 외엔 등록 코드 안내만 보낸다.
+    // 등록 코드(claimCode)만 공유 텍스트로 만들어 ShareGiftLink 로 신호한다.
+    // 링크는 일절 넣지 않는다(커스텀 스킴은 카톡에서 안 열리고, 웹 링크도 보내지 않음).
     private fun successEvent(
         message: String,
         result: GiftSendResult,
     ): GiftEvent {
         val code = result.claimCode?.takeIf { it.isNotBlank() }
-        val webLink = result.shareLink?.takeIf { it.startsWith("http", ignoreCase = true) }
-        return if (code != null || webLink != null) {
+        return if (code != null) {
             GiftEvent.ShareGiftLink(
-                shareText = buildShareText(message, code, webLink),
+                shareText = buildShareText(message, code),
                 message = SendSuccessMessage,
             )
         } else {
@@ -147,7 +145,7 @@ class GiftViewModel @Inject constructor(
         }
     }
 
-    private fun buildShareText(message: String, code: String?, webLink: String?): String =
+    private fun buildShareText(message: String, code: String): String =
         buildString {
             val note = message.trim()
             if (note.isNotEmpty()) {
@@ -155,13 +153,7 @@ class GiftViewModel @Inject constructor(
                 appendLine()
             }
             appendLine(ShareGuide)
-            if (code != null) {
-                append("등록 코드: $code")
-            }
-            if (webLink != null) {
-                if (code != null) appendLine()
-                append(webLink)
-            }
+            append("등록 코드: $code")
         }
 
     private suspend fun sendGiftSafely(request: GiftSendRequest) =

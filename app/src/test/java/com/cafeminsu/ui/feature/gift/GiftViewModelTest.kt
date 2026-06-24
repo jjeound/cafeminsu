@@ -125,7 +125,7 @@ class GiftViewModelTest {
     }
 
     @Test
-    fun kakaoTalkSendPrefersServerShareLink() = runTest {
+    fun sendSharesClaimCodeOnlyEvenWhenServerShareLinkPresent() = runTest {
         val giftRepository = FakeGiftRepository(
             result = AppResult.Success(
                 GiftSendResult(
@@ -147,9 +147,10 @@ class GiftViewModelTest {
                 val event = awaitItem()
                 assertTrue(event is GiftEvent.ShareGiftLink)
                 val share = event as GiftEvent.ShareGiftLink
-                assertTrue(
-                    share.shareText.contains("https://cafeminsu.example/gift?code=GFT-1234-5678"),
-                )
+                // 링크는 일절 넣지 않고 등록 코드만 공유한다.
+                assertTrue(share.shareText.contains("등록 코드: GFT-1234-5678"))
+                assertFalse(share.shareText.contains("http"))
+                assertFalse(share.shareText.contains("cafeminsu://"))
 
                 cancelAndIgnoreRemainingEvents()
             }
