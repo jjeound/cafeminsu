@@ -7,7 +7,8 @@
       "name": "share-link-plumbing",
       "status": "completed",
       "started_at": "2026-06-24T09:32:11+0900",
-      "summary": "GiftSendResult 에 shareLink/deepLink 추가 + toGiftSendResult/RealGiftRepository 매핑 (UI 공유 런처용 링크 전달)"
+      "summary": "GiftSendResult 에 shareLink/deepLink 추가 + toGiftSendResult/RealGiftRepository 매핑 (UI 공유 런처용 링크 전달)",
+      "completed_at": "2026-06-24T09:36:48+0900"
     },
     {
       "step": 1,
