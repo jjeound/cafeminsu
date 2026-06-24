@@ -13,6 +13,8 @@ dependencies {
     implementation(projects.core.network)
     implementation(projects.core.database)
     implementation(projects.core.datastore)
+    implementation(projects.core.common)
+    implementation(libs.sandwich)
 
     // kotlinx
     api(libs.kotlinx.immutable.collection)
