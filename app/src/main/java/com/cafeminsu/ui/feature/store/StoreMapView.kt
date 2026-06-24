@@ -23,6 +23,7 @@ import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -68,9 +69,10 @@ fun shouldRenderKakaoMap(kakaoNativeAppKey: String): Boolean =
 fun StoreMapView(
     markers: List<StoreMapMarker>,
     modifier: Modifier = Modifier,
+    onMarkerClick: (String) -> Unit = {},
 ) {
     if (shouldRenderKakaoMap(BuildConfig.KAKAO_NATIVE_APP_KEY)) {
-        KakaoStoreMap(markers = markers, modifier = modifier)
+        KakaoStoreMap(markers = markers, onMarkerClick = onMarkerClick, modifier = modifier)
     } else {
         StoreMapPlaceholder(modifier = modifier)
     }
@@ -79,10 +81,13 @@ fun StoreMapView(
 @Composable
 private fun KakaoStoreMap(
     markers: List<StoreMapMarker>,
+    onMarkerClick: (String) -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val context = LocalContext.current
     val lifecycleOwner = LocalLifecycleOwner.current
+    // 클릭 리스너는 onMapReady 에서 한 번만 등록되므로, 최신 콜백을 항상 가리키도록 rememberUpdatedState 로 감싼다.
+    val currentOnMarkerClick by rememberUpdatedState(onMarkerClick)
     // 마커 색은 디자인 토큰(primary/onPrimary)에서 — 네이티브 MapView 경계라 Compose 테마를 직접 못 써 ARGB int 로 넘긴다.
     val markerColorArgb = CafeTheme.colors.primary.toArgb()
     val markerDotColorArgb = CafeTheme.colors.onPrimary.toArgb()
@@ -143,6 +148,11 @@ private fun KakaoStoreMap(
                     object : KakaoMapReadyCallback() {
                         override fun onMapReady(map: KakaoMap) {
                             kakaoMap = map
+                            // 마커(라벨) 탭 → 해당 매장 id 로 onMarkerClick. id 는 라벨 tag 에 실어둔다.
+                            map.setOnLabelClickListener { _, _, label ->
+                                (label.tag as? String)?.let { storeId -> currentOnMarkerClick(storeId) }
+                                true
+                            }
                             map.renderStoreMarkers(markers, markerBitmap)
                             renderedMarkers = markers
                             storesFramed = map.frameStoresOrFallback(markers, context)
@@ -187,7 +197,9 @@ private fun KakaoMap.renderStoreMarkers(
     markers.filter { it.hasValidCoordinate() }.forEach { marker ->
         layer.addLabel(
             LabelOptions.from(LatLng.from(marker.latitude, marker.longitude))
-                .setStyles(styles),
+                .setStyles(styles)
+                // 라벨 탭 시 어느 매장인지 식별할 수 있게 매장 id 를 tag 로 실어둔다.
+                .setTag(marker.id),
         )
     }
 }

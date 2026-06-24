@@ -40,12 +40,13 @@ class RealOwnerOrderRepositoryTest {
         server.enqueue(storeOrdersResponse())
         val repository = realOwnerOrderRepository()
 
-        repository.observeIncomingOrders(OrderStatus.Accepted).test {
+        repository.observeIncomingOrders().test {
             val result = awaitItem()
             assertTrue(result is AppResult.Success)
             val orders = (result as AppResult.Success).data
             assertEquals(listOf("1042", "1041"), orders.map { it.id })
-            assertEquals(listOf(OrderStatus.Paid, OrderStatus.Accepted), orders.map { it.status })
+            // 서버 PENDING=신규(Accepted), ACCEPTED=준비중(Preparing) 으로 매핑된다.
+            assertEquals(listOf(OrderStatus.Accepted, OrderStatus.Preparing), orders.map { it.status })
 
             val first = orders.first()
             assertEquals("1042", first.orderNumber)
@@ -61,7 +62,8 @@ class RealOwnerOrderRepositoryTest {
         assertEquals("/api/stores/my", storesRequest.requestUrl?.encodedPath)
         val ordersRequest = server.takeRequest()
         assertEquals("/api/stores/7/orders", ordersRequest.requestUrl?.encodedPath)
-        assertEquals("ACCEPTED", ordersRequest.requestUrl?.queryParameter("status"))
+        // 점주 화면은 필터 없이 전체를 조회하고 클라이언트에서 탭별로 거른다.
+        assertEquals(null, ordersRequest.requestUrl?.queryParameter("status"))
     }
 
     @Test
@@ -94,16 +96,17 @@ class RealOwnerOrderRepositoryTest {
     }
 
     @Test
-    fun advanceStatusAcceptedCallsAcceptEndpointAndConfirmsStatus() = runTest(testDispatcher) {
+    fun advanceStatusPreparingCallsAcceptEndpointAndConfirmsPreparing() = runTest(testDispatcher) {
+        // "접수하기" = 신규 → 준비중. 서버 accept 엔드포인트(ACCEPTED)를 호출하고 준비중으로 확정.
         server.enqueue(orderStatusResponse("ACCEPTED"))
         val repository = realOwnerOrderRepository()
 
-        val result = repository.advanceStatus("1042", OrderStatus.Accepted)
+        val result = repository.advanceStatus("1042", OrderStatus.Preparing)
 
         assertTrue(result is AppResult.Success)
         val order = (result as AppResult.Success).data
         assertEquals("1042", order.id)
-        assertEquals(OrderStatus.Accepted, order.status)
+        assertEquals(OrderStatus.Preparing, order.status)
 
         val request = server.takeRequest()
         assertEquals("PATCH", request.method)
@@ -157,25 +160,45 @@ class RealOwnerOrderRepositoryTest {
     }
 
     @Test
-    fun advanceStatusPreparingIsLocalAndSkipsServer() = runTest(testDispatcher) {
-        val repository = realOwnerOrderRepository()
-
-        val result = repository.advanceStatus("1042", OrderStatus.Preparing)
-
-        assertTrue(result is AppResult.Success)
-        assertEquals(OrderStatus.Preparing, (result as AppResult.Success).data.status)
-        // 서버에 대응 엔드포인트가 없는 Preparing 은 네트워크 호출을 하지 않는다.
-        assertEquals(0, server.requestCount)
-    }
-
-    @Test
     fun advanceStatusHttpErrorMapsToFailure() = runTest(testDispatcher) {
         server.enqueue(MockResponse().setResponseCode(404))
         val repository = realOwnerOrderRepository()
 
-        val result = repository.advanceStatus("1042", OrderStatus.Accepted)
+        val result = repository.advanceStatus("1042", OrderStatus.Preparing)
 
         assertEquals(AppResult.Failure(DomainError.NotFound), result)
+    }
+
+    @Test
+    fun advanceStatusReflectsInObservedOrders() = runTest(testDispatcher) {
+        server.enqueue(myStoresResponse())
+        server.enqueue(storeOrdersResponse())
+        server.enqueue(orderStatusResponse("ACCEPTED")) // 접수 endpoint 응답
+        val repository = realOwnerOrderRepository()
+
+        repository.observeIncomingOrders().test {
+            val initial = (awaitItem() as AppResult.Success).data
+            // 접수 전: 신규(Accepted) 주문이 큐에 있다.
+            assertEquals(OrderStatus.Accepted, initial.first { it.id == "1042" }.status)
+
+            // "접수하기" = 신규 → 준비중. 서버 accept 호출 후 관찰 중인 목록이 즉시 갱신돼야 한다.
+            repository.advanceStatus("1042", OrderStatus.Preparing)
+            val updated = (awaitItem() as AppResult.Success).data
+            val advanced = updated.first { it.id == "1042" }
+            assertEquals(OrderStatus.Preparing, advanced.status)
+            // 항목/번호/금액 등 기존 정보는 보존된다(전이로 사라지지 않음).
+            assertEquals("1042", advanced.orderNumber)
+            assertEquals(9_300, advanced.totalAmount)
+
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        // 접수 시 실제로 /api/orders/{id}/accept 가 호출됐는지 확인한다.
+        server.takeRequest() // stores/my
+        server.takeRequest() // stores/{id}/orders
+        val acceptRequest = server.takeRequest()
+        assertEquals("PATCH", acceptRequest.method)
+        assertEquals("/api/orders/1042/accept", acceptRequest.requestUrl?.encodedPath)
     }
 
     private fun realOwnerOrderRepository(): RealOwnerOrderRepository =
