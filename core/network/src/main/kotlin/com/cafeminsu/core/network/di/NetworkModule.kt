@@ -9,6 +9,7 @@ import com.cafeminsu.core.network.client.OwnerMenuClient
 import com.cafeminsu.core.network.client.OrderClient
 import com.cafeminsu.core.network.client.OwnerStoreClient
 import com.cafeminsu.core.network.client.PaymentClient
+import com.cafeminsu.core.network.client.OwnerPaymentClient
 import com.cafeminsu.core.network.client.StampClient
 import com.cafeminsu.core.network.client.StoreClient
 import com.cafeminsu.core.network.service.AuthService
@@ -20,6 +21,7 @@ import com.cafeminsu.core.network.service.OrderService
 import com.cafeminsu.core.network.service.OwnerOrderService
 import com.cafeminsu.core.network.service.OwnerStoreService
 import com.cafeminsu.core.network.service.PaymentService
+import com.cafeminsu.core.network.service.OwnerPaymentService
 import com.cafeminsu.core.network.service.StampService
 import com.cafeminsu.core.network.service.StoreService
 import com.skydoves.sandwich.retrofit.adapters.ApiResponseCallAdapterFactory
@@ -104,6 +106,11 @@ internal object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideOwnerPaymentService(retrofit: Retrofit): OwnerPaymentService =
+        retrofit.create(OwnerPaymentService::class.java)
+
+    @Provides
+    @Singleton
     fun provideStoreService(retrofit: Retrofit): StoreService =
         retrofit.create(StoreService::class.java)
 
@@ -146,6 +153,11 @@ internal object NetworkModule {
     @Provides
     @Singleton
     fun providePaymentClient(service: PaymentService): PaymentClient = PaymentClient(service)
+
+    @Provides
+    @Singleton
+    fun provideOwnerPaymentClient(service: OwnerPaymentService): OwnerPaymentClient =
+        OwnerPaymentClient(service)
 
     @Provides
     @Singleton
