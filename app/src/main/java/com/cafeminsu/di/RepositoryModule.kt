@@ -1,6 +1,9 @@
 package com.cafeminsu.di
 
+import com.cafeminsu.data.payment.KakaoPayPgClient
+import com.cafeminsu.data.payment.KakaoPayRedirectBridge
 import com.cafeminsu.data.payment.MockPgClient
+import com.cafeminsu.data.payment.NoOpKakaoPayRedirectBridge
 import com.cafeminsu.data.payment.PgClient
 import com.cafeminsu.data.repository.MockCartRepository
 import com.cafeminsu.data.repository.MockCouponRepository
@@ -65,13 +68,27 @@ abstract class RepositoryModule {
 
     @Binds
     @Singleton
-    abstract fun bindPgClient(client: MockPgClient): PgClient
+    abstract fun bindKakaoPayRedirectBridge(
+        bridge: NoOpKakaoPayRedirectBridge,
+    ): KakaoPayRedirectBridge
 
     @Binds
     @Singleton
     abstract fun bindCouponRepository(repository: MockCouponRepository): CouponRepository
 
     companion object {
+        @Provides
+        @Singleton
+        fun providePgClient(
+            real: Provider<KakaoPayPgClient>,
+            mock: Provider<MockPgClient>,
+        ): PgClient =
+            if (com.cafeminsu.BuildConfig.KAKAOPAY_ENABLED) {
+                real.get()
+            } else {
+                mock.get()
+            }
+
         @Provides
         @Singleton
         fun provideNotificationRepository(
