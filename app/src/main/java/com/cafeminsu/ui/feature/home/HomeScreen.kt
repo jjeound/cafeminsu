@@ -10,6 +10,7 @@ import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.rememberScrollState
@@ -386,14 +387,14 @@ private fun RecentOrderCard(
 
     CafeCard(
         modifier = modifier
-            .height(spacing.space18 * RecentOrderCardHeightMultiplier + spacing.space2)
+            .heightIn(min = spacing.space18 * RecentOrderCardHeightMultiplier + spacing.space2)
             .clickable(onClick = onClick)
             .semantics(mergeDescendants = true) {},
         type = CafeCardType.Default,
     ) {
         Column(
-            modifier = Modifier.fillMaxSize(),
-            verticalArrangement = Arrangement.SpaceBetween,
+            modifier = Modifier.fillMaxWidth(),
+            verticalArrangement = Arrangement.spacedBy(spacing.space3),
         ) {
             Column(verticalArrangement = Arrangement.spacedBy(spacing.space2)) {
                 Row(
@@ -443,7 +444,7 @@ private fun ReorderPill(price: Int) {
     ) {
         Box(
             modifier = Modifier.padding(
-                horizontal = CafeTheme.spacing.space3,
+                horizontal = CafeTheme.spacing.space2,
                 vertical = CafeTheme.spacing.space2,
             ),
             contentAlignment = Alignment.Center,
