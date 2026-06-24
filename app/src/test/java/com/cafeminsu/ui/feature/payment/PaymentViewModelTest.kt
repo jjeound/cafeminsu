@@ -18,11 +18,15 @@ import com.cafeminsu.domain.model.PaymentResult
 import com.cafeminsu.domain.model.PaymentStatus
 import com.cafeminsu.domain.model.StampCard
 import com.cafeminsu.domain.model.StampEvent
+import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.CouponRepository
 import com.cafeminsu.domain.repository.OrderRepository
 import com.cafeminsu.domain.repository.PaymentRepository
 import com.cafeminsu.domain.repository.RewardRepository
 import com.cafeminsu.ui.navigation.Routes
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -199,6 +203,130 @@ class PaymentViewModelTest {
 
             cancelAndIgnoreRemainingEvents()
         }
+    }
+
+    @Test
+    fun approvedPaymentClearsCartExactlyOnce() = runTest {
+        val cartRepository = mockk<CartRepository>(relaxed = true)
+        coEvery { cartRepository.clear() } returns AppResult.Success(Unit)
+        val paymentRepository = FakePaymentRepository(
+            payResults = mutableListOf(
+                AppResult.Success(paymentResult(status = PaymentStatus.Approved)),
+            ),
+        )
+        val viewModel = viewModel(
+            paymentRepository = paymentRepository,
+            cartRepository = cartRepository,
+        )
+
+        viewModel.uiState.test {
+            awaitContent()
+
+            viewModel.events.test {
+                viewModel.onPay()
+
+                assertEquals(PaymentEvent.PaymentApproved("order-1"), awaitItem())
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        coVerify(exactly = 1) { cartRepository.clear() }
+    }
+
+    @Test
+    fun cartClearFailureDoesNotBlockApprovedPaymentEvent() = runTest {
+        val cartRepository = mockk<CartRepository>(relaxed = true)
+        coEvery { cartRepository.clear() } returns AppResult.Failure(DomainError.Unknown)
+        val paymentRepository = FakePaymentRepository(
+            payResults = mutableListOf(
+                AppResult.Success(paymentResult(status = PaymentStatus.Approved)),
+            ),
+        )
+        val viewModel = viewModel(
+            paymentRepository = paymentRepository,
+            cartRepository = cartRepository,
+        )
+
+        viewModel.uiState.test {
+            awaitContent()
+
+            viewModel.events.test {
+                viewModel.onPay()
+
+                assertEquals(PaymentEvent.PaymentApproved("order-1"), awaitItem())
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        coVerify(exactly = 1) { cartRepository.clear() }
+    }
+
+    @Test
+    fun failedPaymentDoesNotClearCart() = runTest {
+        val cartRepository = mockk<CartRepository>(relaxed = true)
+        val paymentRepository = FakePaymentRepository(
+            payResults = mutableListOf(
+                AppResult.Success(paymentResult(status = PaymentStatus.Failed)),
+            ),
+        )
+        val viewModel = viewModel(
+            paymentRepository = paymentRepository,
+            cartRepository = cartRepository,
+        )
+
+        viewModel.uiState.test {
+            awaitContent()
+
+            viewModel.events.test {
+                viewModel.onPayFailure()
+
+                awaitContentWithProgress<PaymentProgress.Failed>()
+                assertEquals(PaymentEvent.PaymentFailed("order-1"), awaitItem())
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        coVerify(exactly = 0) { cartRepository.clear() }
+    }
+
+    @Test
+    fun cancelledPaymentDoesNotClearCart() = runTest {
+        val cartRepository = mockk<CartRepository>(relaxed = true)
+        val paymentRepository = FakePaymentRepository(
+            payResults = mutableListOf(
+                AppResult.Success(paymentResult(status = PaymentStatus.Cancelled)),
+            ),
+        )
+        val viewModel = viewModel(
+            paymentRepository = paymentRepository,
+            cartRepository = cartRepository,
+        )
+
+        viewModel.uiState.test {
+            awaitContent()
+
+            viewModel.events.test {
+                viewModel.onPay()
+
+                awaitContentWithProgress<PaymentProgress.Failed>()
+                assertEquals(PaymentEvent.PaymentFailed("order-1"), awaitItem())
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        coVerify(exactly = 0) { cartRepository.clear() }
     }
 
     @Test
@@ -444,6 +572,7 @@ class PaymentViewModelTest {
         paymentRepository: FakePaymentRepository = FakePaymentRepository(),
         rewardRepository: FakePaymentRewardRepository = FakePaymentRewardRepository(),
         couponRepository: FakePaymentCouponRepository = FakePaymentCouponRepository(),
+        cartRepository: CartRepository = mockk(relaxed = true),
     ): PaymentViewModel =
         PaymentViewModel(
             savedStateHandle = SavedStateHandle(mapOf(Routes.PAYMENT_ORDER_ID to orderId)),
@@ -451,6 +580,7 @@ class PaymentViewModelTest {
             orderRepository = orderRepository,
             rewardRepository = rewardRepository,
             couponRepository = couponRepository,
+            cartRepository = cartRepository,
         )
 
     private suspend fun ReceiveTurbine<PaymentUiState>.awaitContent(): PaymentUiState.Content {

@@ -13,6 +13,7 @@ import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.PaymentRequest
 import com.cafeminsu.domain.model.PaymentResult
 import com.cafeminsu.domain.model.PaymentStatus
+import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.CouponRepository
 import com.cafeminsu.domain.repository.OrderRepository
 import com.cafeminsu.domain.repository.PaymentRepository
@@ -39,6 +40,7 @@ class PaymentViewModel @Inject constructor(
     private val orderRepository: OrderRepository,
     private val rewardRepository: RewardRepository,
     private val couponRepository: CouponRepository,
+    private val cartRepository: CartRepository,
 ) : ViewModel() {
     private val orderId = savedStateHandle.get<String>(Routes.PAYMENT_ORDER_ID).orEmpty()
     private val _uiState = MutableStateFlow<PaymentUiState>(PaymentUiState.Loading)
@@ -283,7 +285,14 @@ class PaymentViewModel @Inject constructor(
         finishPayment(PaymentProgress.Approved)
         grantStampForApprovedOrder(approvedOrderId)
         redeemSelectedCoupon()
+        clearCartAfterApproval()
         _events.emit(PaymentEvent.PaymentApproved(approvedOrderId))
+    }
+
+    private suspend fun clearCartAfterApproval() {
+        // 결제 승인이 확정된 이후에만 장바구니를 비운다(낙관적 처리 금지).
+        // clear()는 AppResult를 반환하므로 실패는 무시한다 — 성공 흐름을 막지 않는다.
+        cartRepository.clear()
     }
 
     private suspend fun redeemSelectedCoupon() {
