@@ -458,6 +458,10 @@ private val paymentMethods = listOf(
         token = "tok_simple_pay_mock",
     ),
     PaymentMethod(
+        id = "kakaopay",
+        token = "tok_kakaopay_mock",
+    ),
+    PaymentMethod(
         id = "coupon",
         token = "tok_coupon_mock",
     ),

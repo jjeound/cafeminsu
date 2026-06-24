@@ -30,6 +30,11 @@ interface GifticonApi {
     suspend fun shareGifticon(
         @Path("gifticonId") gifticonId: Long,
     ): GifticonShareRes
+
+    @POST("api/gifticons/claim")
+    suspend fun claimGifticon(
+        @Body request: GifticonClaimReq,
+    ): GifticonClaimRes
 }
 
 @JsonClass(generateAdapter = true)
@@ -45,6 +50,7 @@ data class GifticonPurchaseRes(
     val gifticonId: Long?,
     val qrCode: String?,
     val merchantUid: String?,
+    val claimCode: String? = null,
 )
 
 @JsonClass(generateAdapter = true)
@@ -81,4 +87,20 @@ data class GifticonUseRes(
 data class GifticonShareRes(
     val shareLink: String?,
     val deepLink: String?,
+    val claimCode: String? = null,
+)
+
+@JsonClass(generateAdapter = true)
+data class GifticonClaimReq(
+    val claimCode: String,
+)
+
+@JsonClass(generateAdapter = true)
+data class GifticonClaimRes(
+    val gifticonId: Long?,
+    val title: String?,
+    val barcodeValue: String?,
+    val qrValue: String?,
+    val expiresAtMillis: Long?,
+    val status: String?,
 )

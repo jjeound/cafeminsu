@@ -10,6 +10,7 @@ import com.cafeminsu.data.remote.createRetrofit
 import com.cafeminsu.domain.model.AuthState
 import com.cafeminsu.domain.model.GiftChannel
 import com.cafeminsu.domain.model.GiftSendRequest
+import com.cafeminsu.domain.model.GifticonStatus
 import com.cafeminsu.domain.model.UserProfile
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -46,7 +47,7 @@ class RealGiftRepositoryTest {
         val result = repository.sendGift(
             giftRequest(
                 channel = GiftChannel.KakaoTalk,
-                recipientRef = "42",
+                recipientRef = "friend-uuid-secret",
                 message = "오늘 하루 수고 많았어",
             ),
         )
@@ -61,8 +62,11 @@ class RealGiftRepositoryTest {
         assertEquals(null, purchase.requestUrl?.queryParameter("userId"))
         val purchaseBody = purchase.body.readUtf8()
         assertTrue(purchaseBody.contains("\"amount\":10000"))
-        assertTrue(purchaseBody.contains("\"receiverId\":42"))
         assertTrue(purchaseBody.contains("\"message\":\"오늘 하루 수고 많았어\""))
+        // 친구 선물: 수신자 미지정 구매. 친구 uuid 는 서버로 보내지 않는다.
+        assertFalse(purchaseBody.contains("receiverId"))
+        assertFalse(purchaseBody.contains("receiverPhone"))
+        assertFalse(purchaseBody.contains("friend-uuid-secret"))
         assertFalse(purchaseBody.contains("shareLink"))
         assertFalse(purchaseBody.contains("qr-sensitive-value"))
 
@@ -70,6 +74,23 @@ class RealGiftRepositoryTest {
         assertEquals("/api/gifticons/55/share", share.requestUrl?.encodedPath)
         assertEquals(null, share.requestUrl?.queryParameter("userId"))
         assertEquals("", share.body.readUtf8())
+    }
+
+    @Test
+    fun sendGiftKakaoChannelMapsShareLinkAndDeepLink() = runTest(testDispatcher) {
+        server.enqueue(purchaseResponse(gifticonId = 60))
+        server.enqueue(shareResponse())
+        val repository = realGiftRepository()
+
+        val result = repository.sendGift(
+            giftRequest(channel = GiftChannel.KakaoTalk, recipientRef = "42"),
+        )
+
+        assertTrue(result is AppResult.Success)
+        val gift = (result as AppResult.Success).data
+        assertEquals("https://cafeminsu.example/gift/secret", gift.shareLink)
+        assertEquals("cafeminsu://gift/secret", gift.deepLink)
+        assertEquals("GFT-XXXX-XXXX", gift.claimCode)
     }
 
     @Test
@@ -138,6 +159,70 @@ class RealGiftRepositoryTest {
         assertEquals(0, server.requestCount)
     }
 
+    @Test
+    fun claimGiftMapsResponseToGifticon() = runTest(testDispatcher) {
+        server.enqueue(claimResponse())
+        val repository = realGiftRepository()
+
+        val result = repository.claimGift("GFT-1234-5678")
+
+        assertTrue(result is AppResult.Success)
+        val gifticon = (result as AppResult.Success).data
+        assertEquals("123", gifticon.id)
+        assertEquals("금액형 기프티콘 10,000원", gifticon.title)
+        assertEquals("barcode-sensitive-value", gifticon.barcodeValue)
+        assertEquals("qr-sensitive-value", gifticon.qrValue)
+        assertEquals(1_750_000_000_000L, gifticon.expiresAtMillis)
+        assertEquals(GifticonStatus.Available, gifticon.status)
+
+        val request = server.takeRequest()
+        assertEquals("/api/gifticons/claim", request.requestUrl?.encodedPath)
+        assertEquals(null, request.requestUrl?.queryParameter("userId"))
+        assertTrue(request.body.readUtf8().contains("\"claimCode\":\"GFT-1234-5678\""))
+    }
+
+    @Test
+    fun claimGiftBlankCodeBlocksBeforeNetworkCall() = runTest(testDispatcher) {
+        val repository = realGiftRepository()
+
+        val result = repository.claimGift("   ")
+
+        assertEquals(AppResult.Failure(DomainError.Validation("claimCode")), result)
+        assertEquals(0, server.requestCount)
+    }
+
+    @Test
+    fun claimGiftGuestSessionBlocksBeforeNetworkCall() = runTest(testDispatcher) {
+        val repository = realGiftRepository(authState = AuthState.Guest)
+
+        val result = repository.claimGift("GFT-1234-5678")
+
+        assertEquals(AppResult.Failure(DomainError.Unauthorized), result)
+        assertEquals(0, server.requestCount)
+    }
+
+    @Test
+    fun claimGiftAlreadyClaimedMapsToPaymentError() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setResponseCode(409))
+        val repository = realGiftRepository()
+
+        val result = repository.claimGift("GFT-1234-5678")
+
+        assertEquals(AppResult.Failure(DomainError.Payment("already-claimed")), result)
+        assertEquals(1, server.requestCount)
+        assertEquals("/api/gifticons/claim", server.takeRequest().requestUrl?.encodedPath)
+    }
+
+    @Test
+    fun claimGiftNotFoundMapsToNotFound() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setResponseCode(404))
+        val repository = realGiftRepository()
+
+        val result = repository.claimGift("GFT-1234-5678")
+
+        assertEquals(AppResult.Failure(DomainError.NotFound), result)
+    }
+
     private fun realGiftRepository(
         authState: AuthState = authenticatedState(),
         nowMillis: () -> Long = { 1_782_000_000_000L },
@@ -189,7 +274,24 @@ class RealGiftRepositoryTest {
                 """
                 {
                   "shareLink": "https://cafeminsu.example/gift/secret",
-                  "deepLink": "cafeminsu://gift/secret"
+                  "deepLink": "cafeminsu://gift/secret",
+                  "claimCode": "GFT-XXXX-XXXX"
+                }
+                """.trimIndent(),
+            )
+
+    private fun claimResponse(): MockResponse =
+        MockResponse()
+            .setResponseCode(200)
+            .setBody(
+                """
+                {
+                  "gifticonId": 123,
+                  "title": "금액형 기프티콘 10,000원",
+                  "barcodeValue": "barcode-sensitive-value",
+                  "qrValue": "qr-sensitive-value",
+                  "expiresAtMillis": 1750000000000,
+                  "status": "AVAILABLE"
                 }
                 """.trimIndent(),
             )

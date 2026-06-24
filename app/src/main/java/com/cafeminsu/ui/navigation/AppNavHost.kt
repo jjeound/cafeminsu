@@ -36,12 +36,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import com.cafeminsu.R
 import com.cafeminsu.domain.auth.OwnerAuthProvider
 import com.cafeminsu.domain.repository.SessionRepository
 import com.cafeminsu.ui.feature.cart.CartRoute
 import com.cafeminsu.ui.feature.coupon.CouponRoute
 import com.cafeminsu.ui.feature.gift.GiftRoute
+import com.cafeminsu.ui.feature.gift.claim.GiftClaimDeepLink
+import com.cafeminsu.ui.feature.gift.claim.GiftClaimRoute
 import com.cafeminsu.ui.feature.gifticon.GifticonDetailRoute
 import com.cafeminsu.ui.feature.history.HistoryRoute
 import com.cafeminsu.ui.feature.home.HomeRoute
@@ -339,6 +342,36 @@ fun AppNavHost(
                 GiftRoute(
                     onBackClick = { navController.popBackStack() },
                     onLoginClick = { navController.navigate(Routes.LOGIN) },
+                    onClaimEntryClick = { navController.navigate(Routes.giftClaim()) },
+                )
+            }
+            composable(
+                route = Routes.GIFT_CLAIM,
+                arguments = listOf(
+                    navArgument(Routes.GIFT_CLAIM_CODE) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                ),
+                // 딥링크는 화이트리스트(cafeminsu://gift)만 수락한다(SECURITY §6). code 검증은 ViewModel.
+                deepLinks = listOf(navDeepLink { uriPattern = GiftClaimDeepLink.URI_PATTERN }),
+            ) {
+                GiftClaimRoute(
+                    onBackClick = {
+                        if (!navController.popBackStack()) {
+                            navController.navigate(Routes.HOME) {
+                                popUpTo(Routes.HOME) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    },
+                    onClaimed = {
+                        navController.navigate(Routes.GIFTICON) {
+                            popUpTo(Routes.GIFT_CLAIM) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
                 )
             }
             composable(

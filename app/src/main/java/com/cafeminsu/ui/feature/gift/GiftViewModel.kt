@@ -7,6 +7,7 @@ import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.AuthState
 import com.cafeminsu.domain.model.GiftChannel
 import com.cafeminsu.domain.model.GiftSendRequest
+import com.cafeminsu.domain.model.GiftSendResult
 import com.cafeminsu.domain.repository.GiftRepository
 import com.cafeminsu.domain.repository.SessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -85,6 +86,19 @@ class GiftViewModel @Inject constructor(
         }
     }
 
+    /**
+     * 친구 피커에서 선택된 친구. uuid 는 메시지 전송 전용으로만 보관하며 서버 구매에는 보내지 않는다.
+     * uuid/표시이름은 로깅하지 않는다(SECURITY §4).
+     */
+    fun onFriendSelected(uuid: String, displayName: String) {
+        formState.update { form ->
+            form.copy(
+                selectedFriendUuid = uuid,
+                selectedFriendName = displayName,
+            )
+        }
+    }
+
     fun onMessageChanged(value: String) {
         formState.update { form ->
             form.copy(message = value.take(MaxMessageLength))
@@ -115,11 +129,16 @@ class GiftViewModel @Inject constructor(
 
         formState.update { current -> current.copy(sending = true) }
 
+        val friendUuid = form.selectedFriendUuid.orEmpty()
         viewModelScope.launch {
             val request = GiftSendRequest(
                 amount = content.selectedAmount,
                 channel = content.selectedChannel,
-                recipientRef = content.recipient.trim(),
+                // KakaoTalk 은 친구 uuid 를 식별자로 전달(서버 미전송, 수신자 미지정 구매). SMS 는 연락처.
+                recipientRef = when (content.selectedChannel) {
+                    GiftChannel.KakaoTalk -> friendUuid
+                    GiftChannel.Sms -> content.recipient.trim()
+                },
                 message = content.message.ifBlank { null },
             )
             when (val result = sendGiftSafely(request)) {
@@ -129,9 +148,11 @@ class GiftViewModel @Inject constructor(
                             sending = false,
                             recipient = "",
                             message = "",
+                            selectedFriendUuid = null,
+                            selectedFriendName = null,
                         )
                     }
-                    _events.emit(GiftEvent.SendSucceeded("선물을 보냈어요"))
+                    _events.emit(successEvent(content.selectedChannel, friendUuid, result.data))
                 }
 
                 is AppResult.Failure -> {
@@ -139,6 +160,27 @@ class GiftViewModel @Inject constructor(
                     _events.emit(GiftEvent.SendFailed(result.error.toGiftMessage()))
                 }
             }
+        }
+    }
+
+    private fun successEvent(
+        channel: GiftChannel,
+        friendUuid: String,
+        result: GiftSendResult,
+    ): GiftEvent {
+        val hasShareLink =
+            !result.shareLink.isNullOrBlank() || !result.deepLink.isNullOrBlank()
+        return if (channel == GiftChannel.KakaoTalk && friendUuid.isNotBlank() && hasShareLink) {
+            GiftEvent.SendKakaoMessage(
+                receiverUuid = friendUuid,
+                target = KakaoShareTarget(
+                    shareLink = result.shareLink,
+                    deepLink = result.deepLink,
+                ),
+                message = "선물을 보냈어요",
+            )
+        } else {
+            GiftEvent.SendSucceeded("선물을 보냈어요")
         }
     }
 
@@ -173,6 +215,7 @@ class GiftViewModel @Inject constructor(
             selectedChannel = selectedChannel,
             recipient = recipient,
             message = message,
+            selectedFriendName = selectedFriendName,
             customAmountText = customAmountText,
             sending = sending,
         )
@@ -193,6 +236,8 @@ class GiftViewModel @Inject constructor(
         val selectedChannel: GiftChannel = GiftChannel.KakaoTalk,
         val recipient: String = "",
         val message: String = "오늘 하루 수고 많았어 ☕",
+        val selectedFriendUuid: String? = null,
+        val selectedFriendName: String? = null,
         val customAmountText: String = "",
         val sending: Boolean = false,
     )

@@ -70,8 +70,8 @@ class GiftViewModelTest {
     }
 
     @Test
-    fun successfulSendUsesRepositoryAndDoesNotExposeRecipientInEvent() = runTest {
-        val recipient = "010-1234-5678"
+    fun successfulSendUsesSelectedFriendUuidAndDoesNotExposeItInEvent() = runTest {
+        val friendUuid = "friend-uuid-secret"
         val giftRepository = FakeGiftRepository(
             result = AppResult.Success(
                 GiftSendResult(
@@ -84,7 +84,7 @@ class GiftViewModelTest {
 
         viewModel.uiState.test {
             awaitContent()
-            viewModel.onRecipientChanged(recipient)
+            viewModel.onFriendSelected(uuid = friendUuid, displayName = "친구")
             awaitContent()
 
             viewModel.events.test {
@@ -92,8 +92,9 @@ class GiftViewModelTest {
 
                 val sent = awaitItem()
                 assertTrue(sent is GiftEvent.SendSucceeded)
-                assertFalse(sent.message.contains(recipient))
-                assertEquals(recipient, giftRepository.requests.single().recipientRef)
+                assertFalse(sent.message.contains(friendUuid))
+                // KakaoTalk: 친구 uuid 가 식별자로 repository 에 전달(서버 미전송은 data 레이어 책임).
+                assertEquals(friendUuid, giftRepository.requests.single().recipientRef)
                 assertEquals(10_000, giftRepository.requests.single().amount)
                 assertEquals(GiftChannel.KakaoTalk, giftRepository.requests.single().channel)
 
@@ -105,8 +106,79 @@ class GiftViewModelTest {
     }
 
     @Test
-    fun sendFailureProducesFailureEventWithoutRecipient() = runTest {
-        val recipient = "friend-sensitive-id"
+    fun kakaoTalkSendWithSelectedFriendEmitsSendKakaoMessageWithFallbackTarget() = runTest {
+        val friendUuid = "friend-uuid-secret"
+        val giftRepository = FakeGiftRepository(
+            result = AppResult.Success(
+                GiftSendResult(
+                    giftId = "gift-1",
+                    sentAtMillis = 1_803_974_400_000L,
+                    shareLink = "https://cafeminsu.example/gift/abc",
+                    deepLink = "cafeminsu://gift/abc",
+                ),
+            ),
+        )
+        val viewModel = viewModel(giftRepository = giftRepository)
+
+        viewModel.uiState.test {
+            awaitContent()
+            viewModel.onFriendSelected(uuid = friendUuid, displayName = "친구")
+            awaitContent()
+
+            viewModel.events.test {
+                viewModel.sendGift()
+
+                val event = awaitItem()
+                assertTrue(event is GiftEvent.SendKakaoMessage)
+                val message = event as GiftEvent.SendKakaoMessage
+                assertEquals(friendUuid, message.receiverUuid)
+                // 공유 폴백을 위해 클레임 링크를 함께 싣는다.
+                assertEquals("https://cafeminsu.example/gift/abc", message.target.shareLink)
+                assertEquals("cafeminsu://gift/abc", message.target.deepLink)
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun smsSendDoesNotLaunchKakaoShare() = runTest {
+        val giftRepository = FakeGiftRepository(
+            result = AppResult.Success(
+                GiftSendResult(
+                    giftId = "gift-1",
+                    sentAtMillis = 1_803_974_400_000L,
+                    shareLink = "https://cafeminsu.example/gift/abc",
+                ),
+            ),
+        )
+        val viewModel = viewModel(giftRepository = giftRepository)
+
+        viewModel.uiState.test {
+            awaitContent()
+            viewModel.onChannelSelected(GiftChannel.Sms)
+            awaitContent()
+            viewModel.onRecipientChanged("010-1234-5678")
+            awaitContent()
+
+            viewModel.events.test {
+                viewModel.sendGift()
+
+                val event = awaitItem()
+                assertTrue(event is GiftEvent.SendSucceeded)
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun sendFailureProducesFailureEventWithoutFriendIdentifier() = runTest {
+        val friendUuid = "friend-sensitive-id"
         val viewModel = viewModel(
             giftRepository = FakeGiftRepository(
                 result = AppResult.Failure(DomainError.Network),
@@ -115,7 +187,7 @@ class GiftViewModelTest {
 
         viewModel.uiState.test {
             awaitContent()
-            viewModel.onRecipientChanged(recipient)
+            viewModel.onFriendSelected(uuid = friendUuid, displayName = "친구")
             awaitContent()
 
             viewModel.events.test {
@@ -123,7 +195,7 @@ class GiftViewModelTest {
 
                 val failed = awaitItem()
                 assertTrue(failed is GiftEvent.SendFailed)
-                assertFalse(failed.message.contains(recipient))
+                assertFalse(failed.message.contains(friendUuid))
 
                 cancelAndIgnoreRemainingEvents()
             }
@@ -217,6 +289,11 @@ private class FakeGiftRepository(
         requests += request
         return result
     }
+
+    override suspend fun claimGift(
+        claimCode: String,
+    ): AppResult<com.cafeminsu.domain.model.Gifticon> =
+        AppResult.Failure(com.cafeminsu.core.DomainError.Unknown)
 }
 
 private class FakeGiftSessionRepository(

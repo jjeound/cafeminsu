@@ -376,6 +376,66 @@ class PaymentViewModelTest {
         }
     }
 
+    @Test
+    fun kakaoPayMethodApprovalRoutesThroughKakaoPayToken() = runTest {
+        val paymentRepository = FakePaymentRepository(
+            payResults = mutableListOf(
+                AppResult.Success(paymentResult(status = PaymentStatus.Approved)),
+            ),
+        )
+        val viewModel = viewModel(paymentRepository = paymentRepository)
+
+        viewModel.uiState.test {
+            val content = awaitContent()
+            assertTrue(content.methods.any { method -> method.id == "kakaopay" })
+
+            viewModel.onSelectMethod("kakaopay")
+            assertEquals("kakaopay", awaitContent().selectedMethodId)
+
+            viewModel.events.test {
+                viewModel.onPay()
+
+                assertEquals(PaymentEvent.PaymentApproved("order-1"), awaitItem())
+                assertEquals(
+                    "tok_kakaopay_mock",
+                    paymentRepository.payRequests.single().paymentMethodToken,
+                )
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun kakaoPayMethodFailureEmitsFailureEvent() = runTest {
+        val paymentRepository = FakePaymentRepository(
+            payResults = mutableListOf(
+                AppResult.Success(paymentResult(status = PaymentStatus.Failed)),
+            ),
+        )
+        val viewModel = viewModel(paymentRepository = paymentRepository)
+
+        viewModel.uiState.test {
+            awaitContent()
+
+            viewModel.onSelectMethod("kakaopay")
+            assertEquals("kakaopay", awaitContent().selectedMethodId)
+
+            viewModel.events.test {
+                viewModel.onPayFailure()
+
+                awaitContentWithProgress<PaymentProgress.Failed>()
+                assertEquals(PaymentEvent.PaymentFailed("order-1"), awaitItem())
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     private fun viewModel(
         orderId: String = "order-1",
         orderRepository: FakePaymentOrderRepository = FakePaymentOrderRepository(

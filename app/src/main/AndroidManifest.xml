@@ -1,4 +1,5 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
@@ -27,7 +28,8 @@
         android:networkSecurityConfig="@xml/network_security_config"
         android:supportsRtl="true"
         android:theme="@style/Theme.CafeMinsu"
-        android:usesCleartextTraffic="false">
+        android:usesCleartextTraffic="false"
+        tools:replace="android:usesCleartextTraffic">
         <activity
             android:name=".MainActivity"
             android:exported="true"
@@ -36,6 +38,18 @@
                 <action android:name="android.intent.action.MAIN" />
 
                 <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+
+            <!-- 선물 등록(claim) 딥링크. 화이트리스트: scheme=cafeminsu, host=gift 만 수락(SECURITY §6). -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="gift"
+                    android:scheme="cafeminsu" />
             </intent-filter>
         </activity>
         <service
@@ -53,6 +67,25 @@
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_icon"
             android:resource="@drawable/ic_notifications" />
+
+        <!-- 카카오페이 승인 후 pg_token 딥링크 캡처(스킴/호스트 화이트리스트). -->
+        <activity
+            android:name=".ui.feature.payment.KakaoPayRedirectActivity"
+            android:exported="true"
+            android:launchMode="singleTask"
+            android:noHistory="true"
+            android:theme="@android:style/Theme.Translucent.NoTitleBar">
+            <intent-filter>
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="kakaopay"
+                    android:scheme="cafeminsu" />
+            </intent-filter>
+        </activity>
 
         <activity
             android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
