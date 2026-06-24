@@ -48,7 +48,7 @@
       "status": "completed",
       "started_at": "2026-06-24T23:57:58+0900",
       "summary": "점주 대시보드 헤더에 여러 매장 선택 드롭다운 추가. OwnerStore 도메인 모델 + OwnerAuthProvider.getStores()/selectStore() 계약 추가. MockOwnerAuthProvider가 강남/홍대/판교 3개 매장(매장별 영업상태)을 시드해 전환 제공, RealOwnerAuthProvider는 다중매장 API 부재로 로그인 매장 단일 항목만 노출. OwnerHomeViewModel이 init에서 getStores 로드 후 OwnerStoreUiModel 목록을 Content/Empty 상태로 노출하고 selectStore로 활성 매장 전환(헤더 매장명·영업 토글 반영, 전환 중복 가드). OwnerHomeScreen 헤더 \"$storeName ▾\"를 Material3 DropdownMenu(surfaceCard 토큰)로 전환하되 매장 2개 이상일 때만 활성. ViewModel 전환·Mock/Real getStores·selectStore·Screen 드롭다운 테스트 추가, 기존 5개 fake OwnerAuthProvider 구현에 신규 메서드 보강.",
-      "completed_at": "2026-06-25T00:08:24+0900"
+      "completed_at": "2026-06-25T00:08:51+0900"
     },
     {
       "step": 6,
