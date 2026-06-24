@@ -1,7 +1,5 @@
 package com.cafeminsu.core.data.model
 
-import android.os.Build
-import androidx.annotation.RequiresApi
 import com.cafeminsu.core.database.model.entity.notification.NotificationEntity
 import com.cafeminsu.core.model.notification.AppNotification
 import com.cafeminsu.core.model.notification.NotificationType
@@ -16,8 +14,17 @@ fun NotificationResponse.asEntity(): NotificationEntity =
         type = type,
         isRead = isRead,
         relatedEntityId = relatedEntityId,
-        createdAtMillis = runCatching { Instant.parse(createdAt).toEpochMilli() }.getOrDefault(0L),
+        createdAtMillis = Instant.parse(createdAt).toEpochMilli(),
     )
+
+fun NotificationResponse.asExternalModel() = AppNotification(
+    id.toString(),
+    type.asNotificationType(),
+    title,
+    body,
+    Instant.parse(createdAt).toEpochMilli(),
+    isRead
+)
 
 fun NotificationEntity.asExternalModel(): AppNotification =
     AppNotification(
