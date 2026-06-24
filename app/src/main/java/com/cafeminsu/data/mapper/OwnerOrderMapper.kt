@@ -50,27 +50,29 @@ private fun List<MenuSummary>.toOwnerCartItems(orderId: Long): List<CartItem> =
         )
     }
 
-// 점주 큐는 결제 완료된 주문만 들어온다 — 서버 PENDING(접수 대기)을 도메인 Paid 로 본다.
+// 서버 주문 상태 → 점주 큐 도메인 상태. 점주 화면 탭과 1:1 로 맞춘다:
+// PENDING(접수 대기)=신규(Accepted), ACCEPTED(접수됨)=준비중(Preparing),
+// READY=준비완료(Ready), DONE=픽업완료(Completed), CANCELLED=취소(Cancelled).
 internal fun String?.toOwnerOrderStatus(): OrderStatus? =
     when (this) {
-        "PENDING" -> OrderStatus.Paid
-        "ACCEPTED" -> OrderStatus.Accepted
+        "PENDING" -> OrderStatus.Accepted
+        "ACCEPTED" -> OrderStatus.Preparing
         "READY" -> OrderStatus.Ready
         "DONE" -> OrderStatus.Completed
         "CANCELLED" -> OrderStatus.Cancelled
         else -> null
     }
 
-// 도메인 상태 → 서버 주문 상태 쿼리. 서버에 대응이 없는 상태는 null(필터 미적용).
+// 점주 큐 도메인 상태 → 서버 주문 상태 쿼리. 서버에 대응이 없는 상태는 null(필터 미적용).
 internal fun OrderStatus.toServerOrderStatus(): String? =
     when (this) {
-        OrderStatus.Paid -> "PENDING"
-        OrderStatus.Accepted -> "ACCEPTED"
+        OrderStatus.Accepted -> "PENDING"
+        OrderStatus.Preparing -> "ACCEPTED"
         OrderStatus.Ready -> "READY"
         OrderStatus.Completed -> "DONE"
         OrderStatus.Cancelled -> "CANCELLED"
         OrderStatus.PendingPayment,
-        OrderStatus.Preparing,
+        OrderStatus.Paid,
         OrderStatus.Failed,
         -> null
     }

@@ -18,8 +18,15 @@ import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.MutableStateFlow
+import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.filterNotNull
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
+import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlinx.coroutines.withContext
 
 @Singleton
@@ -27,10 +34,33 @@ class RealOwnerOrderRepository @Inject constructor(
     private val ownerOrderApi: OwnerOrderApi,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : OwnerOrderRepository {
+    // 점주 화면이 상태 전이(접수/준비완료/픽업완료)를 즉시 반영하도록 주문 목록을 메모리에
+    // 캐시한다. advanceStatus 가 이 캐시를 갱신하면 옵저버가 재방출한다(Mock 과 동일 계약).
+    private val cachedOrders = MutableStateFlow<AppResult<List<Order>>?>(null)
+    private val loadMutex = Mutex()
+
     override fun observeIncomingOrders(filter: OrderStatus?): Flow<AppResult<List<Order>>> =
         flow {
-            emit(loadIncomingOrders(filter))
+            // 최초 구독 시 1회만 서버에서 로드해 캐시를 채운다(두 점주 화면이 함께 구독해도 1회).
+            loadMutex.withLock {
+                if (cachedOrders.value == null) {
+                    cachedOrders.value = loadIncomingOrders(filter)
+                }
+            }
+            emitAll(
+                cachedOrders
+                    .filterNotNull()
+                    .map { result -> result.applyFilter(filter) },
+            )
         }.flowOn(ioDispatcher)
+
+    private fun AppResult<List<Order>>.applyFilter(filter: OrderStatus?): AppResult<List<Order>> =
+        when (this) {
+            is AppResult.Success ->
+                if (filter == null) this else AppResult.Success(data.filter { it.status == filter })
+
+            is AppResult.Failure -> this
+        }
 
     private suspend fun loadIncomingOrders(filter: OrderStatus?): AppResult<List<Order>> {
         val storeId = when (val result = resolveStoreId()) {
@@ -64,13 +94,9 @@ class RealOwnerOrderRepository @Inject constructor(
             val serverOrderId = orderId.toLongOrNull()
                 ?: return@withContext AppResult.Failure(DomainError.NotFound)
 
-            // 서버에 대응 엔드포인트가 없는 Preparing 은 서버 호출 없이 로컬 전이로 확정한다.
-            if (to == OrderStatus.Preparing) {
-                return@withContext AppResult.Success(advancedOrder(orderId, to))
-            }
-
             val statusResult: AppResult<OrderStatus> = when (to) {
-                OrderStatus.Accepted ->
+                // 접수하기: 신규(PENDING) 주문을 서버 accept 엔드포인트로 접수하고 준비중으로 확정한다.
+                OrderStatus.Preparing ->
                     runCatchingToAppResult { ownerOrderApi.acceptOrder(serverOrderId) }
                         .confirmedStatus(to)
 
@@ -90,12 +116,31 @@ class RealOwnerOrderRepository @Inject constructor(
                 else -> return@withContext AppResult.Failure(DomainError.Validation("status"))
             }
 
-            statusResult.map { status -> advancedOrder(orderId, status) }
+            statusResult.map { status -> applyAdvancedStatus(orderId, status) }
         }
 
     // 서버가 확정한 상태를 우선 쓰고(운영 액션도 낙관적 UI 금지), 본문이 없으면 요청 target 으로 확정.
     private fun AppResult<OrderStatusRes?>.confirmedStatus(fallback: OrderStatus): AppResult<OrderStatus> =
         map { response -> response?.status.toOwnerOrderStatus() ?: fallback }
+
+    // 캐시의 해당 주문 상태만 갱신해 옵저버가 재방출하도록 한다(항목/금액/번호는 보존).
+    // 캐시가 비어 있으면(observe 전에 직접 호출) id/상태만 담은 최소 Order 로 확정한다.
+    private fun applyAdvancedStatus(orderId: String, status: OrderStatus): Order {
+        var updated: Order? = null
+        cachedOrders.update { current ->
+            val success = current as? AppResult.Success ?: return@update current
+            AppResult.Success(
+                success.data.map { order ->
+                    if (order.id == orderId) {
+                        order.copy(status = status).also { updated = it }
+                    } else {
+                        order
+                    }
+                },
+            )
+        }
+        return updated ?: advancedOrder(orderId, status)
+    }
 
     // 상태 전이 결과는 id/상태만 확정하면 충분하다(전이 응답엔 항목/금액/번호가 없음).
     private fun advancedOrder(orderId: String, status: OrderStatus): Order =
