@@ -5,6 +5,7 @@ import com.cafeminsu.core.network.client.AuthClient
 import com.cafeminsu.core.network.client.GifticonClient
 import com.cafeminsu.core.network.client.MenuClient
 import com.cafeminsu.core.network.client.NotificationClient
+import com.cafeminsu.core.network.client.OwnerMenuClient
 import com.cafeminsu.core.network.client.OrderClient
 import com.cafeminsu.core.network.client.PaymentClient
 import com.cafeminsu.core.network.client.StampClient
@@ -13,6 +14,7 @@ import com.cafeminsu.core.network.service.AuthService
 import com.cafeminsu.core.network.service.GifticonService
 import com.cafeminsu.core.network.service.MenuService
 import com.cafeminsu.core.network.service.NotificationService
+import com.cafeminsu.core.network.service.OwnerMenuService
 import com.cafeminsu.core.network.service.OrderService
 import com.cafeminsu.core.network.service.OwnerOrderService
 import com.cafeminsu.core.network.service.PaymentService
@@ -80,6 +82,11 @@ internal object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideOwnerMenuService(retrofit: Retrofit): OwnerMenuService =
+        retrofit.create(OwnerMenuService::class.java)
+
+    @Provides
+    @Singleton
     fun provideOrderService(retrofit: Retrofit): OrderService =
         retrofit.create(OrderService::class.java)
 
@@ -120,6 +127,10 @@ internal object NetworkModule {
     @Provides
     @Singleton
     fun provideMenuClient(service: MenuService): MenuClient = MenuClient(service)
+
+    @Provides
+    @Singleton
+    fun provideOwnerMenuClient(service: OwnerMenuService): OwnerMenuClient = OwnerMenuClient(service)
 
     @Provides
     @Singleton

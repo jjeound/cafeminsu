@@ -2,7 +2,6 @@ package com.cafeminsu.core.network.service
 
 import com.cafeminsu.core.network.model.response.menu.MenuDetailResponse
 import com.cafeminsu.core.network.model.response.menu.MenuListItemResponse
-import com.skydoves.sandwich.ApiResponse
 import retrofit2.http.GET
 import retrofit2.http.Path
 import retrofit2.http.Query
