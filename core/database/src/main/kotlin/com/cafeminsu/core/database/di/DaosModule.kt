@@ -1,6 +1,7 @@
 package com.cafeminsu.core.database.di
 
 import com.cafeminsu.core.database.CafeDatabase
+import com.cafeminsu.core.database.dao.CartDao
 import com.cafeminsu.core.database.dao.MenuDao
 import com.cafeminsu.core.database.dao.NotificationDao
 import com.cafeminsu.core.database.dao.OrderDao
@@ -14,6 +15,11 @@ import dagger.hilt.components.SingletonComponent
 @Module
 @InstallIn(SingletonComponent::class)
 internal object DaosModule {
+    @Provides
+    fun provideCartDao(
+        database: CafeDatabase
+    ): CartDao = database.cartDao()
+
     @Provides
     fun provideStoreDao(
         database: CafeDatabase

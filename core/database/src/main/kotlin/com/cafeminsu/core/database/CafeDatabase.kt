@@ -2,11 +2,13 @@ package com.cafeminsu.core.database
 
 import androidx.room.Database
 import androidx.room.RoomDatabase
+import com.cafeminsu.core.database.dao.CartDao
 import com.cafeminsu.core.database.dao.MenuDao
 import com.cafeminsu.core.database.dao.NotificationDao
 import com.cafeminsu.core.database.dao.OrderDao
 import com.cafeminsu.core.database.dao.StampDao
 import com.cafeminsu.core.database.dao.StoreDao
+import com.cafeminsu.core.database.model.entity.cart.CartItemEntity
 import com.cafeminsu.core.database.model.entity.menu.MenuDetailEntity
 import com.cafeminsu.core.database.model.entity.menu.MenuEntity
 import com.cafeminsu.core.database.model.entity.menu.MenuOptionEntity
@@ -20,6 +22,7 @@ import com.cafeminsu.core.database.model.entity.store.StoreSearchEntity
 
 @Database(
     entities = [
+        CartItemEntity::class,
         StoreEntity::class,
         StoreDetailEntity::class,
         StoreSearchEntity::class,
@@ -35,6 +38,8 @@ import com.cafeminsu.core.database.model.entity.store.StoreSearchEntity
     exportSchema = false,
 )
 abstract class CafeDatabase : RoomDatabase() {
+    abstract fun cartDao(): CartDao
+
     abstract fun storeDao(): StoreDao
 
     abstract fun menuDao(): MenuDao
