@@ -7,6 +7,7 @@ import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.AuthState
 import com.cafeminsu.domain.model.GiftChannel
 import com.cafeminsu.domain.model.GiftSendRequest
+import com.cafeminsu.domain.model.GiftSendResult
 import com.cafeminsu.domain.repository.GiftRepository
 import com.cafeminsu.domain.repository.SessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -131,7 +132,7 @@ class GiftViewModel @Inject constructor(
                             message = "",
                         )
                     }
-                    _events.emit(GiftEvent.SendSucceeded("선물을 보냈어요"))
+                    _events.emit(successEvent(content.selectedChannel, result.data))
                 }
 
                 is AppResult.Failure -> {
@@ -139,6 +140,25 @@ class GiftViewModel @Inject constructor(
                     _events.emit(GiftEvent.SendFailed(result.error.toGiftMessage()))
                 }
             }
+        }
+    }
+
+    private fun successEvent(
+        channel: GiftChannel,
+        result: GiftSendResult,
+    ): GiftEvent {
+        val hasShareLink =
+            !result.shareLink.isNullOrBlank() || !result.deepLink.isNullOrBlank()
+        return if (channel == GiftChannel.KakaoTalk && hasShareLink) {
+            GiftEvent.LaunchKakaoShare(
+                target = KakaoShareTarget(
+                    shareLink = result.shareLink,
+                    deepLink = result.deepLink,
+                ),
+                message = "선물을 보냈어요",
+            )
+        } else {
+            GiftEvent.SendSucceeded("선물을 보냈어요")
         }
     }
 

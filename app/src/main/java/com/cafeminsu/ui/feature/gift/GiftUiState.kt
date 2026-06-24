@@ -59,7 +59,17 @@ sealed interface GiftEvent {
     data class SendFailed(
         override val message: String,
     ) : GiftEvent
+
+    data class LaunchKakaoShare(
+        val target: KakaoShareTarget,
+        override val message: String,
+    ) : GiftEvent
 }
+
+data class KakaoShareTarget(
+    val shareLink: String?,
+    val deepLink: String?,
+)
 
 internal fun formatGiftNumber(amount: Int): String = formatNumber(amount)
 

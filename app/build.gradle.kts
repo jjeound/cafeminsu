@@ -102,6 +102,7 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kakao.user)
+    implementation(libs.kakao.share)
     implementation(libs.kakao.map)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)

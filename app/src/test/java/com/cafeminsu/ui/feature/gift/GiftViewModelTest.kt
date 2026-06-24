@@ -105,6 +105,74 @@ class GiftViewModelTest {
     }
 
     @Test
+    fun kakaoTalkSendWithShareLinkEmitsLaunchKakaoShare() = runTest {
+        val giftRepository = FakeGiftRepository(
+            result = AppResult.Success(
+                GiftSendResult(
+                    giftId = "gift-1",
+                    sentAtMillis = 1_803_974_400_000L,
+                    shareLink = "https://cafeminsu.example/gift/abc",
+                    deepLink = "cafeminsu://gift/abc",
+                ),
+            ),
+        )
+        val viewModel = viewModel(giftRepository = giftRepository)
+
+        viewModel.uiState.test {
+            awaitContent()
+            viewModel.onRecipientChanged("카카오친구")
+            awaitContent()
+
+            viewModel.events.test {
+                viewModel.sendGift()
+
+                val event = awaitItem()
+                assertTrue(event is GiftEvent.LaunchKakaoShare)
+                val launch = event as GiftEvent.LaunchKakaoShare
+                assertEquals("https://cafeminsu.example/gift/abc", launch.target.shareLink)
+                assertEquals("cafeminsu://gift/abc", launch.target.deepLink)
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun smsSendDoesNotLaunchKakaoShare() = runTest {
+        val giftRepository = FakeGiftRepository(
+            result = AppResult.Success(
+                GiftSendResult(
+                    giftId = "gift-1",
+                    sentAtMillis = 1_803_974_400_000L,
+                    shareLink = "https://cafeminsu.example/gift/abc",
+                ),
+            ),
+        )
+        val viewModel = viewModel(giftRepository = giftRepository)
+
+        viewModel.uiState.test {
+            awaitContent()
+            viewModel.onChannelSelected(GiftChannel.Sms)
+            awaitContent()
+            viewModel.onRecipientChanged("010-1234-5678")
+            awaitContent()
+
+            viewModel.events.test {
+                viewModel.sendGift()
+
+                val event = awaitItem()
+                assertTrue(event is GiftEvent.SendSucceeded)
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
     fun sendFailureProducesFailureEventWithoutRecipient() = runTest {
         val recipient = "friend-sensitive-id"
         val viewModel = viewModel(

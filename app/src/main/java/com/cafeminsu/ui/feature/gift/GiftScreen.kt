@@ -1,5 +1,8 @@
 package com.cafeminsu.ui.feature.gift
 
+import android.content.Context
+import android.content.Intent
+import android.net.Uri
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -27,6 +30,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.hilt.navigation.compose.hiltViewModel
+import com.cafeminsu.BuildConfig
 import com.cafeminsu.R
 import com.cafeminsu.domain.model.GiftChannel
 import com.cafeminsu.ui.components.CafeButton
@@ -37,6 +41,9 @@ import com.cafeminsu.ui.components.EmptyView
 import com.cafeminsu.ui.components.ErrorView
 import com.cafeminsu.ui.components.LoadingView
 import com.cafeminsu.ui.theme.CafeTheme
+import com.kakao.sdk.share.ShareClient
+import com.kakao.sdk.template.model.Link
+import com.kakao.sdk.template.model.TextTemplate
 
 @Composable
 fun GiftRoute(
@@ -50,6 +57,9 @@ fun GiftRoute(
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
+            if (event is GiftEvent.LaunchKakaoShare) {
+                launchKakaoShare(context, event.target)
+            }
             Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
         }
     }
@@ -426,6 +436,39 @@ private fun SectionLabel(text: String) {
     )
 }
 
+// 서버 구매/공유로 받은 링크를 카카오톡 공유 SDK로 띄운다.
+// 카카오 공유 실패/취소는 선물 전송 실패가 아니므로 조용히 흡수하거나 웹 공유로 폴백한다.
+// 링크/수신자는 로깅하지 않는다(SECURITY §4).
+private fun launchKakaoShare(context: Context, target: KakaoShareTarget) {
+    if (BuildConfig.KAKAO_NATIVE_APP_KEY.isBlank()) return
+    val webLink = target.shareLink?.takeIf { it.isNotBlank() }
+        ?: target.deepLink?.takeIf { it.isNotBlank() }
+        ?: return
+
+    if (ShareClient.instance.isKakaoTalkSharingAvailable(context)) {
+        val template = TextTemplate(
+            text = ShareMessage,
+            link = Link(webUrl = webLink, mobileWebUrl = webLink),
+        )
+        ShareClient.instance.shareDefault(context, template) { result, _ ->
+            if (result != null) {
+                runCatching { context.startActivity(result.intent) }
+            } else {
+                openWebShare(context, webLink)
+            }
+        }
+    } else {
+        openWebShare(context, webLink)
+    }
+}
+
+private fun openWebShare(context: Context, url: String) {
+    val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    runCatching { context.startActivity(intent) }
+}
+
+private const val ShareMessage = "카페민수 기프티콘이 도착했어요. 아래 링크에서 확인해 주세요."
 private const val FormWeight = 1f
 private const val AmountOptionWeight = 1f
 private const val ChannelCardWeight = 1f
