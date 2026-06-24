@@ -1,0 +1,36 @@
+{
+  "project": "CafeMinsu",
+  "phase": "owner-pay-fixes",
+  "steps": [
+    {
+      "step": 0,
+      "name": "menu-image-upload",
+      "status": "pending"
+    },
+    {
+      "step": 1,
+      "name": "owner-store-selector",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "home-coupon-count",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "name": "gift-share-intent",
+      "status": "pending"
+    },
+    {
+      "step": 4,
+      "name": "kakaopay-real-checkout",
+      "status": "pending"
+    },
+    {
+      "step": 5,
+      "name": "menu-image-fallback",
+      "status": "pending"
+    }
+  ]
+}
