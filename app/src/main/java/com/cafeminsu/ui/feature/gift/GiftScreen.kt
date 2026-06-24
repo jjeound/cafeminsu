@@ -63,6 +63,7 @@ import kotlinx.coroutines.suspendCancellableCoroutine
 fun GiftRoute(
     onBackClick: () -> Unit,
     onLoginClick: () -> Unit,
+    onClaimEntryClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: GiftViewModel = hiltViewModel(),
 ) {
@@ -86,6 +87,7 @@ fun GiftRoute(
         state = state,
         onBackClick = onBackClick,
         onLoginClick = onLoginClick,
+        onClaimEntryClick = onClaimEntryClick,
         onRetry = viewModel::retry,
         onAmountSelected = viewModel::onAmountSelected,
         onCustomAmountChanged = viewModel::onCustomAmountChanged,
@@ -116,6 +118,7 @@ fun GiftScreen(
     onSendClick: () -> Unit,
     modifier: Modifier = Modifier,
     onCustomAmountChanged: (String) -> Unit = {},
+    onClaimEntryClick: () -> Unit = {},
 ) {
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -133,6 +136,14 @@ fun GiftScreen(
                     )
                 },
                 onNavigationClick = onBackClick,
+                actionIcon = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_ticket),
+                        contentDescription = "선물 등록",
+                        tint = CafeTheme.colors.ink,
+                    )
+                },
+                onActionClick = onClaimEntryClick,
             )
 
             when (state) {

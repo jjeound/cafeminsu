@@ -39,6 +39,18 @@
 
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
+
+            <!-- 선물 등록(claim) 딥링크. 화이트리스트: scheme=cafeminsu, host=gift 만 수락(SECURITY §6). -->
+            <intent-filter android:autoVerify="false">
+                <action android:name="android.intent.action.VIEW" />
+
+                <category android:name="android.intent.category.DEFAULT" />
+                <category android:name="android.intent.category.BROWSABLE" />
+
+                <data
+                    android:host="gift"
+                    android:scheme="cafeminsu" />
+            </intent-filter>
         </activity>
         <service
             android:name=".messaging.CafeMessagingService"
