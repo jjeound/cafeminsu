@@ -355,8 +355,9 @@ class PaymentViewModel @Inject constructor(
     }
 
     private fun Gifticon.toPaymentCouponUiModel(items: List<CartItem>): PaymentCouponUiModel {
-        // 기프티콘(무료 음료)은 가장 비싼 한 잔 가격만큼 할인한다.
-        val discount = items.maxOfOrNull { item -> item.unitPrice } ?: 0
+        // 금액권(amount>0)은 잔액만큼만 할인하고,
+        // 금액 정보가 없는 교환권(무료 음료 등)만 가장 비싼 한 잔 가격으로 폴백한다.
+        val discount = if (amount > 0) amount else items.maxOfOrNull { item -> item.unitPrice } ?: 0
         return PaymentCouponUiModel(
             id = id,
             label = title,

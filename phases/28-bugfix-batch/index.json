@@ -5,7 +5,9 @@
     {
       "step": 0,
       "name": "coupon-amount-discount",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-06-24T23:37:22+0900",
+      "summary": "Gifticon에 amount(잔액) 필드 추가 + RewardMapper가 balance를 채우고, PaymentViewModel이 금액권(amount>0)은 잔액만큼만(아니면 가장 비싼 한 잔으로 폴백) 할인하도록 수정. MockData 정합 + 신규 테스트 추가."
     },
     {
       "step": 1,
@@ -37,5 +39,6 @@
       "name": "owner-menu-image-upload",
       "status": "pending"
     }
-  ]
+  ],
+  "created_at": "2026-06-24T23:37:22+0900"
 }

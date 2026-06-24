@@ -213,6 +213,7 @@ object MockData {
             qrValue = "CAFE-MINSU-QR-0002",
             expiresAtMillis = 1_827_619_200_000L,
             status = GifticonStatus.Expired,
+            amount = 2_000,
         ),
     )
 
