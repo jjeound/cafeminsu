@@ -20,6 +20,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.Assert.assertEquals
+import org.junit.Assert.assertFalse
 import org.junit.Assert.assertTrue
 import org.junit.Rule
 import org.junit.Test
@@ -91,7 +92,7 @@ class GiftViewModelTest {
     }
 
     @Test
-    fun kakaoTalkSendWithClaimCodeEmitsShareGiftLinkWithDeepLink() = runTest {
+    fun sendWithClaimCodeEmitsShareGiftLinkWithCodeAndNoCustomScheme() = runTest {
         val giftRepository = FakeGiftRepository(
             result = AppResult.Success(
                 GiftSendResult(
@@ -112,9 +113,9 @@ class GiftViewModelTest {
                 val event = awaitItem()
                 assertTrue(event is GiftEvent.ShareGiftLink)
                 val share = event as GiftEvent.ShareGiftLink
-                // shareLink 부재 시 claimCode 로 등록 딥링크를 만들어 공유 텍스트에 싣는다.
-                assertTrue(share.shareText.contains("cafeminsu://gift?code=GFT-1234-5678"))
-                assertTrue(share.shareText.contains("GFT-1234-5678"))
+                // 등록 코드만 안내하고, 카톡에서 열리지 않는 cafeminsu:// 커스텀 스킴은 넣지 않는다.
+                assertTrue(share.shareText.contains("등록 코드: GFT-1234-5678"))
+                assertFalse(share.shareText.contains("cafeminsu://"))
 
                 cancelAndIgnoreRemainingEvents()
             }

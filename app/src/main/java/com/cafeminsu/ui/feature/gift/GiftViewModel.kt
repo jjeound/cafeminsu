@@ -9,7 +9,6 @@ import com.cafeminsu.domain.model.GiftSendRequest
 import com.cafeminsu.domain.model.GiftSendResult
 import com.cafeminsu.domain.repository.GiftRepository
 import com.cafeminsu.domain.repository.SessionRepository
-import com.cafeminsu.ui.feature.gift.claim.GiftClaimDeepLink
 import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.CancellationException
@@ -129,17 +128,18 @@ class GiftViewModel @Inject constructor(
         }
     }
 
-    // 클레임 링크를 공유 텍스트로 만들어 ShareGiftLink 로 신호한다.
-    // shareLink(서버 제공) 우선, 없으면 claimCode 로 딥링크를 생성한다. 둘 다 없으면 일반 성공 처리.
+    // 등록 코드를 공유 텍스트로 만들어 ShareGiftLink 로 신호한다.
+    // 커스텀 스킴(cafeminsu://) 링크는 카톡 인앱 브라우저에서 열리지 않으므로 공유 텍스트에 넣지 않는다.
+    // 서버가 실제 http(s) 공유 페이지를 주면 그 링크를 함께 싣고, 그 외엔 등록 코드 안내만 보낸다.
     private fun successEvent(
         message: String,
         result: GiftSendResult,
     ): GiftEvent {
-        val link = result.shareLink?.takeIf { it.isNotBlank() }
-            ?: result.claimCode?.takeIf { it.isNotBlank() }?.let(GiftClaimDeepLink::buildClaimUri)
-        return if (link != null) {
+        val code = result.claimCode?.takeIf { it.isNotBlank() }
+        val webLink = result.shareLink?.takeIf { it.startsWith("http", ignoreCase = true) }
+        return if (code != null || webLink != null) {
             GiftEvent.ShareGiftLink(
-                shareText = buildShareText(message, link, result.claimCode),
+                shareText = buildShareText(message, code, webLink),
                 message = SendSuccessMessage,
             )
         } else {
@@ -147,7 +147,7 @@ class GiftViewModel @Inject constructor(
         }
     }
 
-    private fun buildShareText(message: String, link: String, claimCode: String?): String =
+    private fun buildShareText(message: String, code: String?, webLink: String?): String =
         buildString {
             val note = message.trim()
             if (note.isNotEmpty()) {
@@ -155,10 +155,12 @@ class GiftViewModel @Inject constructor(
                 appendLine()
             }
             appendLine(ShareGuide)
-            append(link)
-            if (!claimCode.isNullOrBlank()) {
-                appendLine()
-                append("등록 코드: $claimCode")
+            if (code != null) {
+                append("등록 코드: $code")
+            }
+            if (webLink != null) {
+                if (code != null) appendLine()
+                append(webLink)
             }
         }
 
@@ -218,6 +220,7 @@ class GiftViewModel @Inject constructor(
         const val EventBufferCapacity = 1
         const val MaxMessageLength = 100
         const val SendSuccessMessage = "선물을 보냈어요"
-        const val ShareGuide = "카페민수 기프티콘이 도착했어요. 아래 링크 또는 코드로 등록해 주세요."
+        const val ShareGuide =
+            "카페민수 기프티콘이 도착했어요! 카페민수 앱 > 선물하기 > 선물 등록에서 아래 코드를 입력해 주세요."
     }
 }
