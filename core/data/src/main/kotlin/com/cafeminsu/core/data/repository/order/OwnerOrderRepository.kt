@@ -5,7 +5,17 @@ import com.cafeminsu.core.model.order.OrderStatus
 import kotlinx.coroutines.flow.Flow
 
 interface OwnerOrderRepository {
-    fun observeIncomingOrders(filter: OrderStatus? = null): Flow<List<OrderSummary>>
+    fun getStoreOrders(
+        storeId: Long,
+        status: OrderStatus = OrderStatus.All,
+        date: String? = null,
+    ): Flow<List<OrderSummary>>
 
-    fun advanceStatus(orderId: Long, to: OrderStatus): Flow<OrderSummary>
+    fun getOrder(orderId: Long): Flow<OrderSummary>
+
+    fun acceptOrder(orderId: Long): Flow<OrderStatus>
+
+    fun markOrderReady(orderId: Long): Flow<OrderStatus>
+
+    fun completeOrder(orderId: Long): Flow<OrderStatus>
 }

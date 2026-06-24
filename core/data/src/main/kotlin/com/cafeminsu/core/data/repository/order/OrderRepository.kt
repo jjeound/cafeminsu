@@ -1,13 +1,26 @@
 package com.cafeminsu.core.data.repository.order
 
-import com.cafeminsu.core.model.cart.Cart
+import com.cafeminsu.core.model.order.OrderStatus
 import com.cafeminsu.core.model.order.OrderSummary
+import com.cafeminsu.core.network.model.request.order.OrderCancelRequest
+import com.cafeminsu.core.network.model.request.order.OrderCreateRequest
 import kotlinx.coroutines.flow.Flow
 
 interface OrderRepository {
-    fun createOrderFromCart(cart: Cart): Flow<OrderSummary>
+    fun createOrder(request: OrderCreateRequest): Flow<OrderSummary>
 
-    fun observeOrder(orderId: Long): Flow<OrderSummary>
+    fun getOrder(orderId: Long): Flow<OrderSummary>
 
-    fun observeOrderHistory(): Flow<List<OrderSummary>>
+    fun getMyOrders(
+        status: OrderStatus = OrderStatus.All,
+        page: Int = 0,
+        size: Int = 20,
+    ): Flow<List<OrderSummary>>
+
+    fun getRecentOrders(): Flow<List<OrderSummary>>
+
+    fun cancelOrder(orderId: Long, request: OrderCancelRequest): Flow<Unit>
+
+    fun reorder(previousOrderId: Long): Flow<OrderSummary>
+
 }
