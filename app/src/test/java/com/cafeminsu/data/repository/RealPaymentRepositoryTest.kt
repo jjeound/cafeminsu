@@ -181,7 +181,7 @@ class RealPaymentRepositoryTest {
         PaymentRequest(
             orderId = "77",
             amount = 10_000,
-            paymentMethodToken = "tok_credit_card_mock",
+            paymentMethodToken = "tok_kakaopay_mock",
             idempotencyKey = idempotencyKey,
         )
 

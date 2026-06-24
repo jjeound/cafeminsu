@@ -452,22 +452,11 @@ private enum class MockPaymentOutcome {
     Failure,
 }
 
+// 결제수단은 카카오페이로 통합(defaultPaymentMethods 와 일관). 진입 시 기본 선택도 카카오페이다.
 private val paymentMethods = listOf(
-    PaymentMethod(
-        id = "credit-card",
-        token = "tok_credit_card_mock",
-    ),
-    PaymentMethod(
-        id = "simple-pay",
-        token = "tok_simple_pay_mock",
-    ),
     PaymentMethod(
         id = "kakaopay",
         token = "tok_kakaopay_mock",
-    ),
-    PaymentMethod(
-        id = "coupon",
-        token = "tok_coupon_mock",
     ),
 )
 

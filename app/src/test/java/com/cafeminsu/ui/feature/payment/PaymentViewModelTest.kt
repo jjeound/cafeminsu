@@ -561,10 +561,9 @@ class PaymentViewModelTest {
 
         viewModel.uiState.test {
             val content = awaitContent()
+            // 결제는 카카오페이로 통합 — 기본 선택이 카카오페이다.
+            assertEquals("kakaopay", content.selectedMethodId)
             assertTrue(content.methods.any { method -> method.id == "kakaopay" })
-
-            viewModel.onSelectMethod("kakaopay")
-            assertEquals("kakaopay", awaitContent().selectedMethodId)
 
             viewModel.events.test {
                 viewModel.onPay()
@@ -592,10 +591,8 @@ class PaymentViewModelTest {
         val viewModel = viewModel(paymentRepository = paymentRepository)
 
         viewModel.uiState.test {
-            awaitContent()
-
-            viewModel.onSelectMethod("kakaopay")
-            assertEquals("kakaopay", awaitContent().selectedMethodId)
+            val content = awaitContent()
+            assertEquals("kakaopay", content.selectedMethodId)
 
             viewModel.events.test {
                 viewModel.onPayFailure()
