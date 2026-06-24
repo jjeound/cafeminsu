@@ -13,7 +13,10 @@
     {
       "step": 1,
       "name": "noti-hide-read",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-06-24T23:40:20+0900",
+      "summary": "NotiViewModel에 세션 노출 id 집합(sessionVisibleIds) 도입 — 구독 시작 시 onStart로 비우고 emission마다 read==false 알림 id를 누적, 그 집합에 든 알림만 표시. 진입 시 markAllRead로 읽어도 세션 동안은 유지되고 이미 읽은 알림은 숨김, 재구독 시 사라짐. 테스트를 새 동작에 맞게 수정.",
+      "completed_at": "2026-06-24T23:42:30+0900"
     },
     {
       "step": 2,
