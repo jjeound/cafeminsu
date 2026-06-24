@@ -183,7 +183,8 @@
     {
       "dir": "26-kakao-gift-friend-message",
       "name": "kakao-gift-friend-message",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-24T11:30:42+0900"
     },
     {
       "dir": "27-gift-claim-register",
