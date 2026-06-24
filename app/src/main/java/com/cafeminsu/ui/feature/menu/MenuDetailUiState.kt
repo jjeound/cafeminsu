@@ -9,6 +9,7 @@ sealed interface MenuDetailUiState {
         val description: String,
         val basePrice: Int,
         val isSoldOut: Boolean,
+        val imageUrl: String? = null,
         val optionGroups: List<MenuDetailOptionGroupUiModel>,
         val selectedOptionIdsByGroup: Map<String, Set<String>>,
         val quantity: Int,

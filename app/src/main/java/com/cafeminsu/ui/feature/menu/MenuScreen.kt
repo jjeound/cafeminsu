@@ -29,12 +29,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.cafeminsu.R
 import com.cafeminsu.ui.components.CafeChip
 import com.cafeminsu.ui.components.EmptyView
@@ -313,7 +315,7 @@ private fun MenuListItem(
         horizontalArrangement = Arrangement.spacedBy(spacing.space4),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        MenuThumbnail()
+        MenuThumbnail(imageUrl = menu.imageUrl)
 
         Column(
             modifier = Modifier.weight(MenuInfoWeight),
@@ -356,6 +358,7 @@ private fun MenuListItem(
 
 @Composable
 private fun MenuThumbnail(
+    imageUrl: String?,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -363,7 +366,17 @@ private fun MenuThumbnail(
         shape = CafeTheme.shapes.radiusSm,
         color = CafeTheme.colors.surfaceCard,
         contentColor = CafeTheme.colors.surfaceCard,
-    ) {}
+    ) {
+        AsyncImage(
+            model = imageUrl?.takeIf { it.isNotBlank() },
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+            placeholder = painterResource(R.drawable.img_menu_default),
+            error = painterResource(R.drawable.img_menu_default),
+            fallback = painterResource(R.drawable.img_menu_default),
+        )
+    }
 }
 
 @Composable
