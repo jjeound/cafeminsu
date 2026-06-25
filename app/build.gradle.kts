@@ -1,8 +1,11 @@
 import java.util.Properties
+import org.jetbrains.kotlin.gradle.dsl.JvmTarget
+import org.jetbrains.kotlin.gradle.tasks.KotlinCompile
 
 plugins {
     alias(libs.plugins.android.application)
     alias(libs.plugins.compose.compiler)
+    alias(libs.plugins.kotlinx.serialization)
     alias(libs.plugins.hilt.plugin)
     alias(libs.plugins.ksp)
     alias(libs.plugins.google.services)
@@ -57,6 +60,13 @@ android {
         targetCompatibility = JavaVersion.VERSION_17
     }
 
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(JvmTarget.JVM_17)
+            freeCompilerArgs.add("-Xskip-prerelease-check")
+        }
+    }
+
     buildTypes {
         release {
             isMinifyEnabled = false
@@ -70,6 +80,10 @@ android {
 
 // litertlm-android는 더 최신 Kotlin(stdlib/reflect 2.2.x)을 transitive로 끌어온다.
 // Hilt 메타데이터 리더(≤2.1.0)·프로젝트 Kotlin(2.0.21)과 충돌하므로 프로젝트 버전으로 고정한다.
+tasks.withType<KotlinCompile>().configureEach {
+    exclude("**/com/cafeminsu/**")
+}
+
 configurations.all {
     resolutionStrategy {
         val kotlinVersion = libs.versions.kotlin.get()
@@ -88,6 +102,13 @@ tasks.withType<Test>().configureEach {
 }
 
 dependencies {
+    implementation(projects.core.data)
+    implementation(projects.core.designsystem)
+    implementation(projects.core.model)
+    implementation(projects.core.navigation)
+    implementation(projects.feature.auth)
+    implementation(projects.feature.home)
+
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)

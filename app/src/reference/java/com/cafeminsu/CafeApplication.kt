@@ -7,10 +7,8 @@ import com.cafeminsu.data.messaging.FcmTokenSessionObserver
 import com.cafeminsu.data.messaging.PushNotificationFactory
 import com.kakao.sdk.common.KakaoSdk
 import com.kakao.vectormap.KakaoMapSdk
-import dagger.hilt.android.HiltAndroidApp
 import javax.inject.Inject
 
-@HiltAndroidApp
 class CafeApplication : Application() {
     @Inject
     lateinit var fcmTokenSessionObserver: FcmTokenSessionObserver

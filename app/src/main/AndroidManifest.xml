@@ -25,7 +25,7 @@
     </queries>
 
     <application
-        android:name=".CafeApplication"
+        android:name="com.ssafy.cafeminsu.CafeMinsuApplication"
         android:allowBackup="true"
         android:icon="@mipmap/ic_launcher"
         android:roundIcon="@mipmap/ic_launcher_round"
@@ -36,7 +36,7 @@
         android:usesCleartextTraffic="false"
         tools:replace="android:usesCleartextTraffic">
         <activity
-            android:name=".MainActivity"
+            android:name="com.ssafy.cafeminsu.MainActivity"
             android:exported="true"
             android:theme="@style/Theme.CafeMinsu.Splash">
             <intent-filter>
@@ -57,14 +57,6 @@
                     android:scheme="cafeminsu" />
             </intent-filter>
         </activity>
-        <service
-            android:name=".messaging.CafeMessagingService"
-            android:exported="false">
-            <intent-filter>
-                <action android:name="com.google.firebase.MESSAGING_EVENT" />
-            </intent-filter>
-        </service>
-
         <!-- 백그라운드 수신 시 시스템이 사용할 기본 채널/아이콘. 코드에서 동일 채널을 생성한다. -->
         <meta-data
             android:name="com.google.firebase.messaging.default_notification_channel_id"
@@ -74,24 +66,6 @@
             android:resource="@drawable/ic_notifications" />
 
         <!-- 카카오페이 승인 후 pg_token 딥링크 캡처(스킴/호스트 화이트리스트). -->
-        <activity
-            android:name=".ui.feature.payment.KakaoPayRedirectActivity"
-            android:exported="true"
-            android:launchMode="singleTask"
-            android:noHistory="true"
-            android:theme="@android:style/Theme.Translucent.NoTitleBar">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-
-                <data
-                    android:host="kakaopay"
-                    android:scheme="cafeminsu" />
-            </intent-filter>
-        </activity>
-
         <activity
             android:name="com.kakao.sdk.auth.AuthCodeHandlerActivity"
             android:exported="true">

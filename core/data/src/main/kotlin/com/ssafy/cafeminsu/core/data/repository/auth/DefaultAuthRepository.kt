@@ -15,10 +15,13 @@ import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
 import javax.inject.Inject
+import javax.inject.Provider
+import javax.inject.Singleton
 
+@Singleton
 class DefaultAuthRepository @Inject constructor(
     private val kakaoAuthDataSource: KakaoAuthDataSource,
-    private val authClient: AuthClient,
+    private val authClientProvider: Provider<AuthClient>,
     private val sessionPreferences: SessionPreferencesDataSource,
 ) : AuthRepository {
     private val mutableAuthState = MutableStateFlow<AuthState>(AuthState.Unknown)
@@ -26,6 +29,7 @@ class DefaultAuthRepository @Inject constructor(
     override val authState: Flow<AuthState> = mutableAuthState.asStateFlow()
 
     override fun signInWithKakao(): Flow<AuthState> = flow {
+        val authClient = authClientProvider.get()
         val kakaoAccessToken = kakaoAuthDataSource.getAccessToken()
         val response = authClient.kakaoLogin(KakaoLoginRequest(kakaoAccessToken))
         sessionPreferences.setTokens(response.accessToken, response.refreshToken)
@@ -37,6 +41,7 @@ class DefaultAuthRepository @Inject constructor(
         if (tokens.refreshToken.isBlank()) {
             emitAndStore(AuthState.Guest)
         } else {
+            val authClient = authClientProvider.get()
             val token = authClient.refresh(tokens.refreshToken)
             sessionPreferences.setAccessToken(token.accessToken)
             val profile = authClient.getMyProfile()
@@ -45,11 +50,11 @@ class DefaultAuthRepository @Inject constructor(
     }
 
     override fun isNicknameAvailable(nickname: String): Flow<Boolean> = flow {
-        emit(authClient.checkNickname(nickname.trim()).available)
+        emit(authClientProvider.get().checkNickname(nickname.trim()).available)
     }
 
     override fun completeSignUp(nickname: String): Flow<AuthState> = flow {
-        val response = authClient.signup(SignupRequest(nickname.trim()))
+        val response = authClientProvider.get().signup(SignupRequest(nickname.trim()))
         emitAndStore(AuthState.Authenticated(UserProfile(response.userId.toString(), response.nickname, PhoneLast4.Unavailable)))
     }
 

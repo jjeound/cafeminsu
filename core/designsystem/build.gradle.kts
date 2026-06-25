@@ -8,6 +8,8 @@ android {
 }
 
 dependencies {
+    api(platform(libs.androidx.compose.bom))
+
     // splash screen
     api(libs.androidx.core.splashscreen)
 

@@ -1,7 +1,6 @@
 plugins {
     alias(libs.plugins.cafeminsu.android.library)
     alias(libs.plugins.cafeminsu.hilt)
-    alias(libs.plugins.protobuf)
 }
 
 android {
@@ -22,24 +21,4 @@ dependencies {
 
     testImplementation(libs.junit)
     testImplementation(libs.kotlinx.coroutines.test)
-}
-
-protobuf {
-
-    protoc {
-        artifact = libs.protobuf.protoc.get().toString()
-    }
-
-    generateProtoTasks {
-        all().forEach { task ->
-            task.builtins {
-                register("java") {
-                    option("lite")
-                }
-                register("kotlin") {
-                    option("lite")
-                }
-            }
-        }
-    }
 }

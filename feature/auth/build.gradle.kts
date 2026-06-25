@@ -6,3 +6,7 @@ plugins {
 android {
     namespace = "com.ssafy.cafeminsu.compose.feature.auth"
 }
+
+dependencies {
+    implementation(libs.androidx.hilt.navigation.compose)
+}

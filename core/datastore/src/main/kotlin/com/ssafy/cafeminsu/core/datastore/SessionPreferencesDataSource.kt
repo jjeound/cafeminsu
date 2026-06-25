@@ -5,7 +5,7 @@ import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.map
 import javax.inject.Inject
 
-data class SessionTokens(
+data class StoredSessionTokens(
     val accessToken: String,
     val refreshToken: String,
 )
@@ -13,8 +13,8 @@ data class SessionTokens(
 class SessionPreferencesDataSource @Inject constructor(
     private val sessionTokens: DataStore<SessionTokensProto>,
 ) {
-    val tokens: Flow<SessionTokens> = sessionTokens.data.map {
-        SessionTokens(accessToken = it.accessToken, refreshToken = it.refreshToken)
+    val tokens: Flow<StoredSessionTokens> = sessionTokens.data.map {
+        StoredSessionTokens(accessToken = it.accessToken, refreshToken = it.refreshToken)
     }
 
     suspend fun setTokens(accessToken: String, refreshToken: String) {
