@@ -143,3 +143,6 @@ include(":core:data")
 include(":core:navigation")
 include(":core:designsystem")
 include(":core:common")
+
+include(":feature:auth")
+include(":feature:home")
