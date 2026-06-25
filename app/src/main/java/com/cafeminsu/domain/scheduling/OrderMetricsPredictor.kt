@@ -2,7 +2,24 @@ package com.cafeminsu.domain.scheduling
 
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.domain.model.Order
-import com.cafeminsu.domain.proximity.ProximitySignal
+
+/**
+ * 한 주문에 대한 고객 근접 신호 한 건(도착확률 보정 입력).
+ *
+ * 비콘(BLE) 신호원은 제거됐고(phase 29 step0), 현재는 이 AI 보정 레이어의 도착확률 추정 입력 타입으로만 남는다.
+ * 보안: 민감정보를 싣지 않고 **주문 참조 ID** 만 둔다. rssi/식별자는 로깅하지 않는다(`docs/SECURITY.md`).
+ *
+ * @param orderId 신호가 가리키는 주문 식별자(참조 ID).
+ * @param rssi 신호 세기(dBm, 보통 음수). 0 에 가까울수록 가깝다(강하다).
+ * @param estimatedArrivalSeconds 예상 도착까지 남은 시간(초). 작을수록 임박.
+ * @param atMillis 신호 수신 시각(epoch millis).
+ */
+data class ProximitySignal(
+    val orderId: String,
+    val rssi: Int,
+    val estimatedArrivalSeconds: Int,
+    val atMillis: Long,
+)
 
 /**
  * 스케줄러 입력값(제조시간·혼잡도·도착확률)을 **보정**하는 온디바이스 AI 추정 계약(선택 레이어).

@@ -5,9 +5,9 @@ import com.cafeminsu.domain.model.CartItem
 import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.OrderStatus
 import com.cafeminsu.domain.model.SelectedOption
-import com.cafeminsu.domain.proximity.ProximitySignal
 import com.cafeminsu.domain.scheduling.AiPrepTimeEstimator
 import com.cafeminsu.domain.scheduling.CongestionLevel
+import com.cafeminsu.domain.scheduling.ProximitySignal
 import com.cafeminsu.domain.scheduling.RulePrepTimeEstimator
 import com.cafeminsu.domain.scheduling.SchedulingWeights
 import com.cafeminsu.domain.voice.VoiceLlmEngine

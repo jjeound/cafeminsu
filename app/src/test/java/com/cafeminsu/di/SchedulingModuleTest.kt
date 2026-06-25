@@ -2,11 +2,11 @@ package com.cafeminsu.di
 
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.domain.model.Order
-import com.cafeminsu.domain.proximity.ProximitySignal
 import com.cafeminsu.domain.scheduling.AiPrepTimeEstimator
 import com.cafeminsu.domain.scheduling.CongestionLevel
 import com.cafeminsu.domain.scheduling.OrderMetricsPredictor
 import com.cafeminsu.domain.scheduling.PrepTimeEstimator
+import com.cafeminsu.domain.scheduling.ProximitySignal
 import com.cafeminsu.domain.scheduling.RulePrepTimeEstimator
 import com.cafeminsu.domain.scheduling.SchedulingWeights
 import com.cafeminsu.domain.time.SystemClock
