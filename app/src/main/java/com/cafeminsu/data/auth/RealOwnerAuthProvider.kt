@@ -4,7 +4,9 @@ import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.data.local.prefs.UserPreferencesDataStore
 import com.cafeminsu.data.remote.AuthApi
+import com.cafeminsu.data.remote.MyStoreRes
 import com.cafeminsu.data.remote.OwnerLoginReq
+import com.cafeminsu.data.remote.OwnerOrderApi
 import com.cafeminsu.data.remote.runCatchingToAppResult
 import com.cafeminsu.data.remote.toOwnerLoginExchange
 import com.cafeminsu.domain.auth.OwnerAuthProvider
@@ -22,11 +24,17 @@ import javax.inject.Singleton
 @Singleton
 class RealOwnerAuthProvider @Inject constructor(
     private val authApi: AuthApi,
+    // 매장명 실연동: 매장 목록·이름은 stores/my 에서 가져온다(로그인 닉네임 아님).
+    private val ownerOrderApi: OwnerOrderApi,
     private val tokenStore: SessionTokenStore,
     private val preferences: UserPreferencesDataStore,
 ) : OwnerAuthProvider {
     @Volatile
     private var ownerProfile: OwnerProfile? = null
+
+    // selectStore 에서 이름을 찾을 수 있도록 마지막 getStores 결과를 캐시한다.
+    @Volatile
+    private var cachedStores: List<OwnerStore> = emptyList()
 
     override suspend fun login(loginId: String, password: String): AppResult<OwnerProfile> {
         val exchange = when (
@@ -70,20 +78,43 @@ class RealOwnerAuthProvider @Inject constructor(
     }
 
     override suspend fun getStores(): AppResult<List<OwnerStore>> {
-        // 실서버 다중매장 API 부재(`stores/my` 빈 배열) — 로그인 매장 단일 항목만 노출한다.
         val current = ownerProfile
             ?: return AppResult.Failure(DomainError.Unauthorized)
-        return AppResult.Success(listOf(OwnerStore(id = current.storeId, name = current.storeName)))
+        // 매장명·목록은 stores/my 실서버 값을 단일 진실로 쓴다.
+        return when (val response = runCatchingToAppResult { ownerOrderApi.getMyStores() }) {
+            is AppResult.Success -> {
+                val stores = response.data.mapNotNull { it.toOwnerStoreOrNull() }
+                if (stores.isEmpty()) {
+                    // 서버가 매장을 안 주면(빈 배열) 로그인 매장 단일 항목으로 폴백한다.
+                    AppResult.Success(loginStoreFallback(current))
+                } else {
+                    cachedStores = stores
+                    AppResult.Success(stores)
+                }
+            }
+            // 조회 실패 시에도 대시보드가 동작하도록 로그인 매장으로 폴백한다(무회귀).
+            is AppResult.Failure -> AppResult.Success(loginStoreFallback(current))
+        }
     }
 
     override suspend fun selectStore(storeId: String): AppResult<OwnerProfile> {
         val current = ownerProfile
             ?: return AppResult.Failure(DomainError.Unauthorized)
-        // 단일 매장만 보유하므로 활성 매장과 동일할 때만 성공 처리한다.
-        return if (storeId == current.storeId) {
-            AppResult.Success(current)
-        } else {
-            AppResult.Failure(DomainError.NotFound)
-        }
+        if (storeId == current.storeId) return AppResult.Success(current)
+        // 캐시된 stores/my 목록에서 선택 매장을 찾아 활성 프로필을 갱신한다.
+        val store = cachedStores.firstOrNull { it.id == storeId }
+            ?: return AppResult.Failure(DomainError.NotFound)
+        val updated = current.copy(storeId = store.id, storeName = store.name)
+        ownerProfile = updated
+        return AppResult.Success(updated)
+    }
+
+    private fun loginStoreFallback(current: OwnerProfile): List<OwnerStore> =
+        listOf(OwnerStore(id = current.storeId, name = current.storeName))
+
+    private fun MyStoreRes.toOwnerStoreOrNull(): OwnerStore? {
+        val id = id ?: return null
+        val storeName = name?.trim()?.takeIf { it.isNotEmpty() } ?: return null
+        return OwnerStore(id = id.toString(), name = storeName)
     }
 }

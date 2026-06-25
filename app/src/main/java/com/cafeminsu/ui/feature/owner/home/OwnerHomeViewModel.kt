@@ -163,7 +163,12 @@ class OwnerHomeViewModel @Inject constructor(
     ): OwnerHomeUiState {
         operationError?.let { return it.toOwnerHomeError() }
 
-        val storeUiModels = stores.toOwnerStoreUiModels(ownerProfile.storeId)
+        // 헤더 매장명은 실제 매장 목록(stores/my)의 활성 매장에서 가져온다. 프로필 storeId 와 일치하는
+        // 매장이 없으면(초기엔 일치 안 함) 첫 매장으로, 목록이 비면 프로필명으로 폴백한다(무회귀).
+        val activeStore = stores.firstOrNull { it.id == ownerProfile.storeId } ?: stores.firstOrNull()
+        val activeStoreId = activeStore?.id ?: ownerProfile.storeId
+        val storeName = activeStore?.name ?: ownerProfile.storeName
+        val storeUiModels = stores.toOwnerStoreUiModels(activeStoreId)
         val orders = when (orderResult) {
             is AppResult.Success -> orderResult.data
             is AppResult.Failure -> return orderResult.error.toOwnerHomeError()
