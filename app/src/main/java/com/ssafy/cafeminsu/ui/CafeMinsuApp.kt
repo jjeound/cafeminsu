@@ -13,7 +13,20 @@ import com.ssafy.cafeminsu.feature.auth.SignInRoute
 import com.ssafy.cafeminsu.feature.home.HomeRoute
 import com.ssafy.cafeminsu.feature.menu.MenuRoute
 import com.ssafy.cafeminsu.feature.my.MyRoute
+import com.ssafy.cafeminsu.feature.notification.NotificationRoute
+import com.ssafy.cafeminsu.feature.coupon.CouponRoute
+import com.ssafy.cafeminsu.feature.gift.GiftRoute
+import com.ssafy.cafeminsu.feature.history.HistoryRoute
+import com.ssafy.cafeminsu.feature.payment.PaymentRoute
+import com.ssafy.cafeminsu.feature.signup.SignupRoute
+import com.ssafy.cafeminsu.feature.stamp.StampRoute
+import com.ssafy.cafeminsu.feature.voice.VoiceRoute
 import com.ssafy.cafeminsu.feature.store.StoreRoute
+import com.ssafy.cafeminsu.feature.owner.home.OwnerHomeRoute
+import com.ssafy.cafeminsu.feature.owner.login.OwnerLoginRoute
+import com.ssafy.cafeminsu.feature.owner.menu.OwnerMenuRoute
+import com.ssafy.cafeminsu.feature.owner.orders.OwnerOrdersRoute
+import com.ssafy.cafeminsu.feature.owner.sales.OwnerSalesRoute
 import com.ssafy.cafeminsu.navigation.CafeMinsuRoute
 
 @Composable
@@ -40,23 +53,113 @@ fun CafeMinsuApp(
         backStack = backStack,
         entryProvider = entryProvider {
             entry<CafeMinsuRoute.SignIn> {
-                SignInRoute()
+                SignInRoute(
+                    onOwnerLoginClick = {
+                        backStack.clear()
+                        backStack += CafeMinsuRoute.OwnerLogin
+                    },
+                )
             }
             entry<CafeMinsuRoute.Home> {
                 HomeRoute(
-                    onStoreClick = { backStack.clear(); backStack += CafeMinsuRoute.Store },
-                    onMenuClick = { backStack.clear(); backStack += CafeMinsuRoute.Menu },
-                    onMyClick = { backStack.clear(); backStack += CafeMinsuRoute.My },
+                    onNotificationClick = {
+                        backStack.clear()
+                        backStack += CafeMinsuRoute.Notification
+                    },
+                    onBrowseMenuClick = {
+                        backStack.clear()
+                        backStack += CafeMinsuRoute.Store
+                    },
+                    onStoreClick = {
+                        backStack.clear()
+                        backStack += CafeMinsuRoute.Store
+                    },
+                    onMenuClick = {
+                        backStack.clear()
+                        backStack += CafeMinsuRoute.Menu
+                    },
+                    onMyClick = {
+                        backStack.clear()
+                        backStack += CafeMinsuRoute.My
+                    },
                 )
             }
             entry<CafeMinsuRoute.Store> {
-                StoreRoute()
+                StoreRoute(
+                    onNavigateToMenu = {
+                        backStack.clear()
+                        backStack += CafeMinsuRoute.Menu
+                    },
+                )
             }
             entry<CafeMinsuRoute.Menu> {
-                MenuRoute()
+                MenuRoute(
+                    onCartClick = {
+                        backStack.clear()
+                        backStack += CafeMinsuRoute.Voice
+                    },
+                )
             }
             entry<CafeMinsuRoute.My> {
-                MyRoute()
+                MyRoute(
+                    onHistoryClick = {
+                        backStack.clear()
+                        backStack += CafeMinsuRoute.History
+                    },
+                    onGiftClick = {
+                        backStack.clear()
+                        backStack += CafeMinsuRoute.Gift
+                    },
+                    onCouponClick = {
+                        backStack.clear()
+                        backStack += CafeMinsuRoute.Coupon
+                    },
+                    onLoginClick = {
+                        backStack.clear()
+                        backStack += CafeMinsuRoute.SignIn
+                    },
+                )
+            }
+            entry<CafeMinsuRoute.Notification> {
+                NotificationRoute()
+            }
+            entry<CafeMinsuRoute.Coupon> {
+                CouponRoute()
+            }
+            entry<CafeMinsuRoute.Gift> {
+                GiftRoute()
+            }
+            entry<CafeMinsuRoute.History> {
+                HistoryRoute()
+            }
+            entry<CafeMinsuRoute.Payment> {
+                PaymentRoute()
+            }
+            entry<CafeMinsuRoute.Signup> {
+                SignupRoute()
+            }
+            entry<CafeMinsuRoute.Stamp> {
+                StampRoute()
+            }
+            entry<CafeMinsuRoute.Voice> {
+                VoiceRoute()
+            }
+            entry<CafeMinsuRoute.OwnerLogin> {
+                OwnerLoginRoute(
+                    modifier = androidx.compose.ui.Modifier,
+                )
+            }
+            entry<CafeMinsuRoute.OwnerHome> {
+                OwnerHomeRoute()
+            }
+            entry<CafeMinsuRoute.OwnerOrders> {
+                OwnerOrdersRoute()
+            }
+            entry<CafeMinsuRoute.OwnerMenu> {
+                OwnerMenuRoute()
+            }
+            entry<CafeMinsuRoute.OwnerSales> {
+                OwnerSalesRoute()
             }
         },
     )

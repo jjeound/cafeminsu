@@ -42,6 +42,7 @@ import kotlinx.coroutines.flow.update
 
 @Composable
 fun StoreRoute(
+    onNavigateToMenu: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: StoreViewModel = viewModel(),
 ) {
@@ -52,7 +53,7 @@ fun StoreRoute(
         onQueryChange = viewModel::onQueryChange,
         onStoreClick = viewModel::onStoreClick,
         onDismissDetail = viewModel::onDismissDetail,
-        onStartOrder = viewModel::onStartOrder,
+        onStartOrder = { onNavigateToMenu() },
         modifier = modifier,
     )
 }

@@ -35,6 +35,10 @@ import kotlinx.coroutines.flow.asStateFlow
 
 @Composable
 fun MyRoute(
+    onHistoryClick: () -> Unit = {},
+    onGiftClick: () -> Unit = {},
+    onCouponClick: () -> Unit = {},
+    onLoginClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: MyViewModel = viewModel(),
 ) {
@@ -42,6 +46,10 @@ fun MyRoute(
 
     MyScreen(
         state = uiState,
+        onHistoryClick = onHistoryClick,
+        onGiftClick = onGiftClick,
+        onCouponClick = onCouponClick,
+        onLoginClick = onLoginClick,
         modifier = modifier,
     )
 }
@@ -49,6 +57,10 @@ fun MyRoute(
 @Composable
 fun MyScreen(
     state: MyUiState,
+    onHistoryClick: () -> Unit,
+    onGiftClick: () -> Unit,
+    onCouponClick: () -> Unit,
+    onLoginClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = CafeMinsuTheme.colors
@@ -64,8 +76,16 @@ fun MyScreen(
     ) {
         ProfileCard(state = state)
         StatsRow(stats = state.stats)
-        QuickMenuSection(items = state.quickMenus)
-        SettingsList(items = state.settings)
+        QuickMenuSection(
+            items = state.quickMenus,
+            onHistoryClick = onHistoryClick,
+            onGiftClick = onGiftClick,
+            onCouponClick = onCouponClick,
+        )
+        SettingsList(
+            items = state.settings,
+            onLoginClick = onLoginClick,
+        )
         Spacer(modifier = Modifier.height(spacing.space8))
     }
 }
@@ -131,17 +151,30 @@ private fun StatCell(
 }
 
 @Composable
-private fun QuickMenuSection(items: List<QuickMenuUiModel>) {
+private fun QuickMenuSection(
+    items: List<QuickMenuUiModel>,
+    onHistoryClick: () -> Unit,
+    onGiftClick: () -> Unit,
+    onCouponClick: () -> Unit,
+) {
     val colors = CafeMinsuTheme.colors
     val spacing = CafeMinsuTheme.spacing
 
     Column(verticalArrangement = Arrangement.spacedBy(spacing.space3)) {
         Text(text = "바로가기", style = CafeMinsuTheme.typography.h2, color = colors.ink)
         Row(horizontalArrangement = Arrangement.spacedBy(spacing.space3), modifier = Modifier.fillMaxWidth()) {
-            items.chunked(2).forEach { columnItems ->
+            items.chunked(2).forEachIndexed { columnIndex, columnItems ->
                 Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(spacing.space3)) {
-                    columnItems.forEach { item ->
-                        QuickMenuTile(item = item)
+                    columnItems.forEachIndexed { itemIndex, item ->
+                        QuickMenuTile(
+                            item = item,
+                            onClick = when (columnIndex * 2 + itemIndex) {
+                                0 -> onHistoryClick
+                                1 -> onGiftClick
+                                2 -> onCouponClick
+                                else -> item.onClick
+                            },
+                        )
                     }
                 }
             }
@@ -150,13 +183,16 @@ private fun QuickMenuSection(items: List<QuickMenuUiModel>) {
 }
 
 @Composable
-private fun QuickMenuTile(item: QuickMenuUiModel) {
+private fun QuickMenuTile(
+    item: QuickMenuUiModel,
+    onClick: () -> Unit,
+) {
     val colors = CafeMinsuTheme.colors
 
     Surface(
         modifier = Modifier
             .fillMaxWidth()
-            .clickable(onClick = item.onClick),
+            .clickable(onClick = onClick),
         color = colors.surfaceCard,
         shape = CafeMinsuTheme.shapes.radiusLg,
     ) {
@@ -183,17 +219,22 @@ private fun QuickMenuTile(item: QuickMenuUiModel) {
 }
 
 @Composable
-private fun SettingsList(items: List<SettingUiModel>) {
+private fun SettingsList(
+    items: List<SettingUiModel>,
+    onLoginClick: () -> Unit,
+) {
     val colors = CafeMinsuTheme.colors
     val spacing = CafeMinsuTheme.spacing
 
     Column(verticalArrangement = Arrangement.spacedBy(spacing.space3)) {
         Text(text = "설정", style = CafeMinsuTheme.typography.h2, color = colors.ink)
-        items.forEach { item ->
+        items.forEachIndexed { index, item ->
             Surface(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .clickable(onClick = item.onClick),
+                    .clickable(
+                        onClick = if (index == items.lastIndex) onLoginClick else item.onClick,
+                    ),
                 color = colors.surfaceCard,
                 shape = CafeMinsuTheme.shapes.radiusLg,
             ) {

@@ -41,6 +41,8 @@ import kotlinx.coroutines.flow.update
 
 @Composable
 fun MenuRoute(
+    onVoiceClick: () -> Unit = {},
+    onCartClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: MenuViewModel = viewModel(),
 ) {
@@ -50,7 +52,7 @@ fun MenuRoute(
         state = uiState,
         onCategoryClick = viewModel::onCategoryClick,
         onMenuClick = viewModel::onMenuClick,
-        onCartClick = viewModel::onCartClick,
+        onCartClick = onCartClick,
         modifier = modifier,
     )
 }

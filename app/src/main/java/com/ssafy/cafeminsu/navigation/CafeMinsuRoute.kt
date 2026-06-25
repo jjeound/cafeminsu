@@ -19,4 +19,43 @@ sealed interface CafeMinsuRoute : NavKey {
 
     @Serializable
     data object My : CafeMinsuRoute
+
+    @Serializable
+    data object Notification : CafeMinsuRoute
+
+    @Serializable
+    data object Coupon : CafeMinsuRoute
+
+    @Serializable
+    data object Gift : CafeMinsuRoute
+
+    @Serializable
+    data object History : CafeMinsuRoute
+
+    @Serializable
+    data object Payment : CafeMinsuRoute
+
+    @Serializable
+    data object Signup : CafeMinsuRoute
+
+    @Serializable
+    data object Stamp : CafeMinsuRoute
+
+    @Serializable
+    data object Voice : CafeMinsuRoute
+
+    @Serializable
+    data object OwnerLogin : CafeMinsuRoute
+
+    @Serializable
+    data object OwnerHome : CafeMinsuRoute
+
+    @Serializable
+    data object OwnerOrders : CafeMinsuRoute
+
+    @Serializable
+    data object OwnerMenu : CafeMinsuRoute
+
+    @Serializable
+    data object OwnerSales : CafeMinsuRoute
 }

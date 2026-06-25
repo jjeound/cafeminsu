@@ -42,6 +42,7 @@ import com.ssafy.cafeminsu.core.designsystem.theme.CafeMinsuTheme
 
 @Composable
 fun SignInRoute(
+    onOwnerLoginClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: SignInViewModel = hiltViewModel(),
 ) {
@@ -59,7 +60,7 @@ fun SignInRoute(
     SignInScreen(
         isSigningIn = uiState.isSigningIn,
         onKakaoLoginClick = viewModel::signInWithKakao,
-        onOwnerLoginClick = {},
+        onOwnerLoginClick = onOwnerLoginClick,
         snackbarHostState = snackbarHostState,
         modifier = modifier,
     )
