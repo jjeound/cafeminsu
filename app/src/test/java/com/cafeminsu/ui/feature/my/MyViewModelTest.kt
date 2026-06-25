@@ -324,6 +324,8 @@ private class FakeMyOrderRepository(
         MutableStateFlow(AppResult.Failure(DomainError.NotFound))
 
     override fun observeOrderHistory(): Flow<AppResult<List<Order>>> = orderHistory
+
+    override fun observeRecentOrders(): Flow<AppResult<List<Order>>> = orderHistory
 }
 
 private class FakeMyRewardRepository(

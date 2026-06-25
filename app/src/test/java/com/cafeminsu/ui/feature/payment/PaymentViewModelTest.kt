@@ -669,6 +669,9 @@ private class FakePaymentOrderRepository(
 
     override fun observeOrderHistory(): Flow<AppResult<List<Order>>> =
         MutableStateFlow(AppResult.Success(emptyList()))
+
+    override fun observeRecentOrders(): Flow<AppResult<List<Order>>> =
+        MutableStateFlow(AppResult.Success(emptyList()))
 }
 
 private class FakePaymentRepository(

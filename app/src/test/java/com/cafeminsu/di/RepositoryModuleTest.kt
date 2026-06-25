@@ -533,6 +533,10 @@ private class FakeOrderRepository : OrderRepository {
     override fun observeOrderHistory():
         kotlinx.coroutines.flow.Flow<com.cafeminsu.core.AppResult<List<com.cafeminsu.domain.model.Order>>> =
         kotlinx.coroutines.flow.flowOf(com.cafeminsu.core.AppResult.Success(emptyList()))
+
+    override fun observeRecentOrders():
+        kotlinx.coroutines.flow.Flow<com.cafeminsu.core.AppResult<List<com.cafeminsu.domain.model.Order>>> =
+        kotlinx.coroutines.flow.flowOf(com.cafeminsu.core.AppResult.Success(emptyList()))
 }
 
 private class FakePaymentRepository : PaymentRepository {

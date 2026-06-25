@@ -21,10 +21,18 @@ class AuthedEndpointsLiveTest {
     }
 
     @Test
-    fun getMyOrdersParsesOrderListItemRes() = runBlocking {
+    fun getMyOrdersParsesOrderDetailRes() = runBlocking {
         assumeLiveAuth()
         val orders = orderApi().getMyOrders()
         assertNotNull("주문 목록 역직렬화 실패", orders)
+        orders.forEach { assertNotNull("order id 가 null", it.orderId) }
+    }
+
+    @Test
+    fun getRecentOrdersParsesOrderDetailRes() = runBlocking {
+        assumeLiveAuth()
+        val orders = orderApi().getRecentOrders()
+        assertNotNull("최근 주문 목록 역직렬화 실패", orders)
         orders.forEach { assertNotNull("order id 가 null", it.orderId) }
     }
 

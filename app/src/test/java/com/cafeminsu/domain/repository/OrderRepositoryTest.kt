@@ -21,9 +21,13 @@ class OrderRepositoryTest {
 
             override fun observeOrderHistory(): Flow<AppResult<List<Order>>> =
                 flowOf(AppResult.Success(emptyList()))
+
+            override fun observeRecentOrders(): Flow<AppResult<List<Order>>> =
+                flowOf(AppResult.Success(emptyList()))
         }
 
         val orderHistory: Flow<AppResult<List<Order>>> = repository.observeOrderHistory()
         assertNotNull(orderHistory)
+        assertNotNull(repository.observeRecentOrders())
     }
 }

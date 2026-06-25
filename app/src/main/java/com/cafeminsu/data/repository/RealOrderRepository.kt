@@ -20,9 +20,6 @@ import com.cafeminsu.domain.repository.OrderRepository
 import javax.inject.Inject
 import javax.inject.Singleton
 import kotlinx.coroutines.CoroutineDispatcher
-import kotlinx.coroutines.async
-import kotlinx.coroutines.awaitAll
-import kotlinx.coroutines.coroutineScope
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
@@ -118,13 +115,11 @@ class RealOrderRepository @Inject constructor(
                     }
                 ) {
                     is AppResult.Success ->
+                        // 목록 응답이 이제 라인아이템(items)을 포함하므로 상세 보강 없이 그대로 매핑·write-through.
                         when (val mapped = response.data.toOrders()) {
                             is AppResult.Success -> {
-                                // 목록 API는 라인아이템을 주지 않아 메뉴명·재주문이 비활성된다 →
-                                // 상세 API로 각 주문의 items를 병렬 보강한 뒤 write-through·방출한다.
-                                val enriched = mapped.data.withItems()
-                                localDataSource.replaceHistory(enriched)
-                                AppResult.Success(enriched)
+                                localDataSource.replaceHistory(mapped.data)
+                                mapped
                             }
                             is AppResult.Failure -> mapped
                         }
@@ -137,28 +132,33 @@ class RealOrderRepository @Inject constructor(
             )
         }.flowOn(ioDispatcher)
 
-    // 목록의 각 주문을 상세 API(items 포함)로 병렬 보강한다. 상세가 실패하면 원본(빈 items)을 유지하고
-    // 예외는 전파하지 않는다(runCatchingToAppResult). 페이지 크기가 작아(20) 병렬 조회 비용은 허용된다.
-    private suspend fun List<Order>.withItems(): List<Order> = coroutineScope {
-        map { order ->
-            async {
-                val serverId = order.id.toLongOrNull() ?: return@async order
-                when (
-                    val response = runCatchingToAppResult {
-                        orderApi.getOrder(orderId = serverId)
-                    }
-                ) {
-                    is AppResult.Success ->
-                        when (val detail = response.data.toOrder()) {
-                            is AppResult.Success -> order.copy(items = detail.data.items)
-                            is AppResult.Failure -> order
-                        }
-
-                    is AppResult.Failure -> order
+    override fun observeRecentOrders(): Flow<AppResult<List<Order>>> =
+        flow {
+            // 전체 내역과 동일하게 인증 게이트를 먼저 통과한다(미인증 시 캐시도 보지 않음).
+            when (val result = ensureAuthenticated()) {
+                is AppResult.Success -> Unit
+                is AppResult.Failure -> {
+                    emit(result)
+                    return@flow
                 }
             }
-        }.awaitAll()
-    }
+
+            emit(
+                when (
+                    val response = runCatchingToAppResult {
+                        orderApi.getRecentOrders()
+                    }
+                ) {
+                    // 최근 주문도 items 를 포함한다. 전체 내역 캐시를 덮어쓰지 않도록 write-through 는 하지 않고,
+                    // 실패 시에는 읽기 전용 캐시 폴백만 한다.
+                    is AppResult.Success -> response.data.toOrders()
+                    is AppResult.Failure -> {
+                        val cached = localDataSource.cachedHistory()
+                        if (cached.isEmpty()) response else AppResult.Success(cached)
+                    }
+                },
+            )
+        }.flowOn(ioDispatcher)
 
     private fun ensureAuthenticated(): AppResult<Unit> {
         val authState = sessionStateHolder.authState.value

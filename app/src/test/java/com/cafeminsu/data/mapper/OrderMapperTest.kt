@@ -6,7 +6,6 @@ import com.cafeminsu.data.remote.ItemRes
 import com.cafeminsu.data.remote.OptionRes
 import com.cafeminsu.data.remote.OrderCreateRes
 import com.cafeminsu.data.remote.OrderDetailRes
-import com.cafeminsu.data.remote.OrderListItemRes
 import com.cafeminsu.domain.model.CartItem
 import com.cafeminsu.domain.model.OrderStatus
 import com.cafeminsu.domain.model.SelectedOption
@@ -78,6 +77,7 @@ class OrderMapperTest {
         assertEquals("101", order.items.single().menuItemId)
         assertEquals("바닐라라떼", order.items.single().name)
         assertEquals("1", order.items.single().selectedOptions.single().optionId)
+        assertEquals("카페민수 강남점", order.storeName)
     }
 
     @Test
@@ -88,14 +88,7 @@ class OrderMapperTest {
             .toEpochMilli()
 
         val result = listOf(
-            OrderListItemRes(
-                orderId = 77,
-                orderNumber = "A-2543",
-                storeName = "카페민수 강남점",
-                totalAmount = 10_000,
-                status = "DONE",
-                createdAt = "2026-06-20T10:15:30",
-            ),
+            historyDetail(createdAt = "2026-06-20T10:15:30"),
         ).toOrders()
 
         assertTrue(result is AppResult.Success)
@@ -105,16 +98,10 @@ class OrderMapperTest {
     }
 
     @Test
-    fun historyItemMapsWithoutItemDetails() {
+    fun historyDetailListMapsStatusAndItems() {
+        // 목록 응답(orders/my · orders/my/recent)도 이제 상세(items 포함) 형태다.
         val result = listOf(
-            OrderListItemRes(
-                orderId = 77,
-                orderNumber = "A-2543",
-                storeName = "카페민수 강남점",
-                totalAmount = 10_000,
-                status = "DONE",
-                createdAt = "2026-06-20T01:15:30Z",
-            ),
+            historyDetail(createdAt = "2026-06-20T01:15:30Z"),
         ).toOrders()
 
         assertTrue(result is AppResult.Success)
@@ -122,8 +109,36 @@ class OrderMapperTest {
         assertEquals("77", order.id)
         assertEquals(OrderStatus.Completed, order.status)
         assertEquals(10_000, order.totalAmount)
-        assertEquals(emptyList<com.cafeminsu.domain.model.CartItem>(), order.items)
+        assertEquals("101", order.items.single().menuItemId)
+        assertEquals("바닐라라떼", order.items.single().name)
+        // 목록 응답의 매장명이 도메인 모델까지 보존돼 주문내역 UI가 실매장명을 쓸 수 있어야 한다.
+        assertEquals("카페민수 강남점", order.storeName)
     }
+
+    private fun historyDetail(createdAt: String): OrderDetailRes =
+        OrderDetailRes(
+            orderId = 77,
+            orderNumber = "A-2543",
+            storeId = 11,
+            storeName = "카페민수 강남점",
+            orderType = "MOBILE",
+            orderMethod = null,
+            status = "DONE",
+            totalAmount = 10_000,
+            cancelReason = null,
+            items = listOf(
+                ItemRes(
+                    menuId = 101,
+                    menuName = "바닐라라떼",
+                    quantity = 1,
+                    unitPrice = 5_500,
+                    options = emptyList(),
+                    subtotal = 5_500,
+                ),
+            ),
+            payment = null,
+            createdAt = createdAt,
+        )
 
     @Test
     fun missingOrderIdMapsToUnknownError() {
