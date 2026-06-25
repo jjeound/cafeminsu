@@ -32,7 +32,7 @@
       "status": "completed",
       "started_at": "2026-06-25T15:02:02+0900",
       "summary": "NfcAdapter reader mode로 NDEF(URI/Text) 읽어 NfcTagCode 추출→NfcClaimViewModel.onTagRead 발급. NfcClaimScreen/Route+AppNavHost+NFC권한/feature(required=false). NFC미지원·비활성 graceful(설정유도), 성공시 토스트+발급결과 다이얼로그→내 기프티콘 이동(목록 재조회=새로고침), 따닥 가드·미로깅. 진입점=기프티콘 화면.",
-      "completed_at": "2026-06-25T15:18:00+0900"
+      "completed_at": "2026-06-25T15:12:05+0900"
     }
   ],
   "created_at": "2026-06-25T14:44:57+0900"
