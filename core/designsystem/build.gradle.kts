@@ -4,7 +4,7 @@ plugins {
 }
 
 android {
-    namespace = "com.ssafy.cafeminsu.designsystem"
+    namespace = "com.ssafy.cafeminsu.core.designsystem"
 }
 
 dependencies {

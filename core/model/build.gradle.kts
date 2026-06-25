@@ -1,4 +1,4 @@
-plugins {
+﻿plugins {
     alias(libs.plugins.cafeminsu.android.library)
     alias(libs.plugins.kotlinx.serialization)
     alias(libs.plugins.kotlin.parcelize)
@@ -6,7 +6,7 @@ plugins {
 }
 
 android {
-    namespace = "com.cafeminsu.core.model"
+    namespace = "com.ssafy.cafeminsu.core.model"
 }
 
 dependencies {

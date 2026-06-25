@@ -5,7 +5,7 @@ plugins {
 }
 
 android {
-    namespace = "com.ssafy.cafeminsu.compose.core.datastore"
+    namespace = "com.ssafy.cafeminsu.core.datastore"
 
     defaultConfig {
         consumerProguardFiles("consumer-rules.pro")

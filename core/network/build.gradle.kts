@@ -1,4 +1,4 @@
-import java.util.Properties
+﻿import java.util.Properties
 
 val baseUrl = Properties().run {
     val localPropertiesFile = rootProject.file("local.properties")
@@ -18,7 +18,7 @@ plugins {
 }
 
 android {
-    namespace = "com.cafeminsu.core.network"
+    namespace = "com.ssafy.cafeminsu.core.network"
 
     defaultConfig {
         buildConfigField("String", "BASE_URL", baseUrl.toBuildConfigLiteral())

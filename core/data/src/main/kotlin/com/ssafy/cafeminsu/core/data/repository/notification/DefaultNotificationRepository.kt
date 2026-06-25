@@ -1,0 +1,33 @@
+﻿package com.ssafy.cafeminsu.core.data.repository.notification
+
+import com.ssafy.cafeminsu.core.common.network.CafeMinsuDispatcher
+import com.ssafy.cafeminsu.core.common.network.Dispatcher
+import com.ssafy.cafeminsu.core.data.model.asExternalModel
+import com.ssafy.cafeminsu.core.model.notification.AppNotification
+import com.ssafy.cafeminsu.core.network.client.NotificationClient
+import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.flow.Flow
+import kotlinx.coroutines.flow.flow
+import kotlinx.coroutines.flow.flowOn
+import javax.inject.Inject
+
+class DefaultNotificationRepository @Inject constructor(
+    private val client: NotificationClient,
+    @Dispatcher(CafeMinsuDispatcher.IO) private val ioDispatcher: CoroutineDispatcher,
+) : NotificationRepository {
+    override fun getNotifications(isRead: Boolean?, limit: Int): Flow<List<AppNotification>> = flow {
+        emit(client.getNotifications(isRead, limit).map { it.asExternalModel() })
+    }.flowOn(ioDispatcher)
+
+    override fun getUnreadCount(): Flow<Int> = flow {
+        emit(client.getUnreadCount().count)
+    }.flowOn(ioDispatcher)
+
+    override fun markRead(id: Long): Flow<Unit> = flow {
+        emit(client.markRead(id))
+    }.flowOn(ioDispatcher)
+
+    override fun markAllRead(): Flow<Unit> = flow {
+        emit(client.markAllRead())
+    }.flowOn(ioDispatcher)
+}
