@@ -1,6 +1,7 @@
 package com.ssafy.cafeminsu.ui
 
 import androidx.activity.compose.BackHandler
+import androidx.compose.foundation.layout.padding
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.ArrowBack
 import androidx.compose.material.icons.filled.Home
@@ -19,7 +20,6 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
-import androidx.compose.foundation.layout.padding
 import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
@@ -62,12 +62,14 @@ fun CafeMinsuApp(
     val destination = when (uiState.authState) {
         MainActivityAuthState.Loading,
         MainActivityAuthState.SignedOut,
-        -> CafeMinsuRoute.SignIn
+            -> CafeMinsuRoute.SignIn
+
         MainActivityAuthState.SignedIn -> CafeMinsuRoute.Home
     }
     val backStack = rememberNavBackStack(destination)
     val currentRoute = backStack.lastOrNull() as? CafeMinsuRoute
-    val showTopBar = backStack.size > 1 && currentRoute !in topLevelRoutes && currentRoute != CafeMinsuRoute.Menu
+    val showTopBar =
+        backStack.size > 1 && currentRoute !in topLevelRoutes && currentRoute != CafeMinsuRoute.Menu
     val showBottomBar = currentRoute in topLevelRoutes || currentRoute == CafeMinsuRoute.Menu
 
     LaunchedEffect(destination) {
@@ -117,6 +119,7 @@ fun CafeMinsuApp(
                         onStoreClick = { backStack += CafeMinsuRoute.Store },
                         onMenuClick = { backStack += CafeMinsuRoute.Menu },
                         onMyClick = { backStack += CafeMinsuRoute.My },
+                        onOrderAgainClick = {},
                     )
                 }
                 entry<CafeMinsuRoute.Store> {
@@ -129,6 +132,8 @@ fun CafeMinsuApp(
                     MenuRoute(
                         onBackClick = { backStack.removeLastOrNull() },
                         onCartClick = { backStack += CafeMinsuRoute.Voice },
+                        onVoiceClick = {},
+                        onMenuClick = {},
                     )
                 }
                 entry<CafeMinsuRoute.My> {

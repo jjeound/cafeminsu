@@ -13,14 +13,12 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
@@ -30,32 +28,29 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.ViewModel
-import androidx.lifecycle.viewmodel.compose.viewModel
+import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ssafy.cafeminsu.core.designsystem.component.CafeMinsuButton
 import com.ssafy.cafeminsu.core.designsystem.component.CafeMinsuButtonVariant
 import com.ssafy.cafeminsu.core.designsystem.theme.CafeMinsuTheme
-import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.update
 
 @Composable
 fun HomeRoute(
-    onNotificationClick: () -> Unit = {},
-    onBrowseMenuClick: () -> Unit = {},
-    onStoreClick: () -> Unit = {},
-    onMenuClick: () -> Unit = {},
-    onMyClick: () -> Unit = {},
+    onNotificationClick: () -> Unit,
+    onOrderAgainClick: (String) -> Unit,
+    onBrowseMenuClick: () -> Unit,
+    onStoreClick: () -> Unit,
+    onMenuClick: () -> Unit,
+    onMyClick: () -> Unit,
     modifier: Modifier = Modifier,
-    viewModel: HomeViewModel = viewModel(),
+    viewModel: HomeViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val state by viewModel.uiState.collectAsStateWithLifecycle()
 
     HomeScreen(
-        state = uiState,
+        state = state,
         onNotificationClick = onNotificationClick,
-        onOrderAgainClick = viewModel::onOrderAgainClick,
+        onOrderAgainClick = onOrderAgainClick,
         onBrowseMenuClick = onBrowseMenuClick,
         onStoreClick = onStoreClick,
         onMenuClick = onMenuClick,
@@ -88,6 +83,7 @@ fun HomeScreen(
     ) {
         HomeHeader(
             greeting = state.greeting,
+            selectedStoreName = state.selectedStoreName,
             onNotificationClick = onNotificationClick,
         )
 
@@ -107,6 +103,7 @@ fun HomeScreen(
 @Composable
 private fun HomeHeader(
     greeting: String,
+    selectedStoreName: String?,
     onNotificationClick: () -> Unit,
 ) {
     val colors = CafeMinsuTheme.colors
@@ -119,18 +116,23 @@ private fun HomeHeader(
     ) {
         Column(
             modifier = Modifier.weight(1f),
-            verticalArrangement = Arrangement.spacedBy(spacing.space1),
+            verticalArrangement = Arrangement.spacedBy(spacing.space2),
         ) {
             Text(
                 text = greeting,
                 style = CafeMinsuTheme.typography.h1,
                 color = colors.ink,
             )
+
             Text(
-                text = "오늘은 가까운 매장에서 바로 주문해보세요.",
+                text = "오늘의 추천 메뉴와 최근 주문을 확인해보세요.",
                 style = CafeMinsuTheme.typography.body,
                 color = colors.muted,
             )
+
+            if (!selectedStoreName.isNullOrBlank()) {
+                StoreNameTag(storeName = selectedStoreName)
+            }
         }
 
         Box(
@@ -142,6 +144,7 @@ private fun HomeHeader(
             contentAlignment = Alignment.Center,
         ) {
             NotificationIcon(color = colors.ink)
+
             Box(
                 modifier = Modifier
                     .align(Alignment.TopEnd)
@@ -156,7 +159,7 @@ private fun HomeHeader(
 
 @Composable
 private fun FeaturedMenuCard(
-    menu: HomeRecommendedMenu,
+    menu: HomeRecommendedMenu?,
     onBrowseMenuClick: () -> Unit,
 ) {
     val colors = CafeMinsuTheme.colors
@@ -177,49 +180,74 @@ private fun FeaturedMenuCard(
                 horizontalArrangement = Arrangement.SpaceBetween,
                 verticalAlignment = Alignment.Top,
             ) {
-                Column(
-                    modifier = Modifier.weight(1f),
-                    verticalArrangement = Arrangement.spacedBy(spacing.space2),
-                ) {
-                    Text(
-                        text = "오늘의 추천",
-                        style = CafeMinsuTheme.typography.caption,
-                        color = colors.mutedSoft,
-                    )
-                    Text(
-                        text = menu.name,
-                        style = CafeMinsuTheme.typography.h2,
-                        color = colors.onDark,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                    Text(
-                        text = menu.description,
-                        style = CafeMinsuTheme.typography.body,
-                        color = colors.mutedSoft,
-                        maxLines = 2,
-                        overflow = TextOverflow.Ellipsis,
-                    )
-                }
+                Text(
+                    text = "추천 메뉴",
+                    style = CafeMinsuTheme.typography.caption,
+                    color = colors.mutedSoft,
+                )
 
-                MenuThumbnail()
+                val storeName = menu?.storeName
+                if (!storeName.isNullOrBlank()) {
+                    StoreNameTag(storeName = storeName)
+                }
             }
 
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                horizontalArrangement = Arrangement.SpaceBetween,
-                verticalAlignment = Alignment.CenterVertically,
-            ) {
-                StoreNameTag(menu.storeName)
+            if (menu == null) {
                 Text(
-                    text = menu.priceLabel,
-                    style = CafeMinsuTheme.typography.h3.copy(fontWeight = FontWeight.Bold),
+                    text = "아직 추천할 메뉴가 없어요.",
+                    style = CafeMinsuTheme.typography.h3,
                     color = colors.onDark,
                 )
+
+                Text(
+                    text = "매장을 선택하면 메뉴를 불러올 수 있어요.",
+                    style = CafeMinsuTheme.typography.body,
+                    color = colors.mutedSoft,
+                )
+            } else {
+                Row(
+                    modifier = Modifier.fillMaxWidth(),
+                    horizontalArrangement = Arrangement.spacedBy(spacing.space4),
+                    verticalAlignment = Alignment.CenterVertically,
+                ) {
+                    MenuThumbnail(
+                        text = "C",
+                        modifier = Modifier.size(spacing.space18 + spacing.space2),
+                    )
+
+                    Column(
+                        modifier = Modifier.weight(1f),
+                        verticalArrangement = Arrangement.spacedBy(spacing.space1),
+                    ) {
+                        Text(
+                            text = menu.name,
+                            style = CafeMinsuTheme.typography.h3,
+                            color = colors.onDark,
+                            maxLines = 1,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+
+                        Text(
+                            text = menu.description,
+                            style = CafeMinsuTheme.typography.caption,
+                            color = colors.muted,
+                            maxLines = 2,
+                            overflow = TextOverflow.Ellipsis,
+                        )
+
+                        Text(
+                            text = menu.priceLabel,
+                            style = CafeMinsuTheme.typography.h3.copy(
+                                fontWeight = FontWeight.Bold,
+                            ),
+                            color = colors.primary,
+                        )
+                    }
+                }
             }
 
             CafeMinsuButton(
-                text = "메뉴 보러가기",
+                text = "메뉴 둘러보기",
                 onClick = onBrowseMenuClick,
                 modifier = Modifier.fillMaxWidth(),
                 variant = CafeMinsuButtonVariant.Secondary,
@@ -249,7 +277,7 @@ private fun StoreNameTag(storeName: String) {
 
 @Composable
 private fun RecentOrdersSection(
-    orders: List<RecentOrderUiModel>,
+    orders: List<HomeRecentOrderUiModel>,
     onOrderAgainClick: (String) -> Unit,
     onBrowseMenuClick: () -> Unit,
 ) {
@@ -267,6 +295,7 @@ private fun RecentOrdersSection(
                 style = CafeMinsuTheme.typography.h2,
                 color = colors.ink,
             )
+
             Text(
                 text = "전체보기",
                 style = CafeMinsuTheme.typography.body,
@@ -285,7 +314,9 @@ private fun RecentOrdersSection(
                     rowOrders.forEach { order ->
                         RecentOrderCard(
                             order = order,
-                            onOrderAgainClick = { onOrderAgainClick(order.id) },
+                            onOrderAgainClick = {
+                                onOrderAgainClick(order.id.toString())
+                            },
                             modifier = Modifier.weight(1f),
                         )
                     }
@@ -301,7 +332,7 @@ private fun RecentOrdersSection(
 
 @Composable
 private fun RecentOrderCard(
-    order: RecentOrderUiModel,
+    order: HomeRecentOrderUiModel,
     onOrderAgainClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -327,37 +358,37 @@ private fun RecentOrderCard(
                 ) {
                     MenuThumbnail(
                         modifier = Modifier.size(spacing.space8),
+                        text = "#",
                     )
+
                     Text(
-                        text = order.orderedAt,
+                        text = order.orderedAtLabel,
                         style = CafeMinsuTheme.typography.meta,
                         color = colors.muted,
                     )
                 }
+
                 Text(
-                    text = order.menuName,
+                    text = order.orderNumber,
                     style = CafeMinsuTheme.typography.h3,
                     color = colors.ink,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
-                Text(
-                    text = order.storeName,
-                    style = CafeMinsuTheme.typography.caption,
-                    color = colors.muted,
-                    maxLines = 1,
-                    overflow = TextOverflow.Ellipsis,
-                )
+
+                StatusChip(status = order.statusLabel)
             }
 
             Text(
                 text = order.priceLabel,
-                style = CafeMinsuTheme.typography.h3.copy(fontWeight = FontWeight.Bold),
+                style = CafeMinsuTheme.typography.h3.copy(
+                    fontWeight = FontWeight.Bold,
+                ),
                 color = colors.primary,
             )
 
             CafeMinsuButton(
-                text = "다시 주문하기",
+                text = "다시 주문",
                 onClick = onOrderAgainClick,
                 modifier = Modifier.fillMaxWidth(),
                 variant = CafeMinsuButtonVariant.Primary,
@@ -367,8 +398,28 @@ private fun RecentOrderCard(
 }
 
 @Composable
-private fun EmptyOrdersCard(onBrowseMenuClick: () -> Unit) {
+private fun StatusChip(status: String) {
     val colors = CafeMinsuTheme.colors
+
+    Surface(
+        color = colors.accentSoft,
+        shape = CafeMinsuTheme.shapes.radiusPill,
+    ) {
+        Text(
+            text = status,
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+            style = CafeMinsuTheme.typography.caption,
+            color = colors.primary,
+        )
+    }
+}
+
+@Composable
+private fun EmptyOrdersCard(
+    onBrowseMenuClick: () -> Unit,
+) {
+    val colors = CafeMinsuTheme.colors
+
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = colors.surfaceCard,
@@ -379,12 +430,13 @@ private fun EmptyOrdersCard(onBrowseMenuClick: () -> Unit) {
             verticalArrangement = Arrangement.spacedBy(12.dp),
         ) {
             Text(
-                text = "최근 주문이 없어요.",
+                text = "아직 최근 주문이 없어요.",
                 style = CafeMinsuTheme.typography.body,
                 color = colors.muted,
             )
+
             CafeMinsuButton(
-                text = "메뉴 보러가기",
+                text = "메뉴 둘러보기",
                 onClick = onBrowseMenuClick,
                 modifier = Modifier.fillMaxWidth(),
                 variant = CafeMinsuButtonVariant.Secondary,
@@ -394,8 +446,12 @@ private fun EmptyOrdersCard(onBrowseMenuClick: () -> Unit) {
 }
 
 @Composable
-private fun MenuThumbnail(modifier: Modifier = Modifier) {
+private fun MenuThumbnail(
+    modifier: Modifier = Modifier,
+    text: String,
+) {
     val colors = CafeMinsuTheme.colors
+
     Box(
         modifier = modifier
             .clip(CafeMinsuTheme.shapes.radiusLg)
@@ -403,7 +459,7 @@ private fun MenuThumbnail(modifier: Modifier = Modifier) {
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = "☕",
+            text = text,
             style = CafeMinsuTheme.typography.h2,
             color = colors.primaryHover,
         )
@@ -411,12 +467,18 @@ private fun MenuThumbnail(modifier: Modifier = Modifier) {
 }
 
 @Composable
-private fun NotificationIcon(color: Color, modifier: Modifier = Modifier) {
-    androidx.compose.foundation.Canvas(modifier = modifier.size(22.dp)) {
+private fun NotificationIcon(
+    color: Color,
+    modifier: Modifier = Modifier,
+) {
+    androidx.compose.foundation.Canvas(
+        modifier = modifier.size(22.dp),
+    ) {
         val bellWidth = size.width * 0.56f
         val bellHeight = size.height * 0.56f
         val left = (size.width - bellWidth) / 2f
         val top = size.height * 0.12f
+
         drawRoundRect(
             color = color,
             topLeft = androidx.compose.ui.geometry.Offset(left, top),
@@ -424,74 +486,14 @@ private fun NotificationIcon(color: Color, modifier: Modifier = Modifier) {
             style = Stroke(width = size.width * 0.14f),
             cornerRadius = androidx.compose.ui.geometry.CornerRadius(size.width * 0.18f),
         )
+
         drawCircle(
             color = color,
             radius = size.width * 0.06f,
-            center = androidx.compose.ui.geometry.Offset(size.width / 2f, size.height * 0.82f),
+            center = androidx.compose.ui.geometry.Offset(
+                x = size.width / 2f,
+                y = size.height * 0.82f,
+            ),
         )
     }
 }
-
-class HomeViewModel : ViewModel() {
-    private val mutableUiState = MutableStateFlow(
-        HomeUiState(
-            greeting = "카페미수",
-            recommendedMenu = HomeRecommendedMenu(
-                id = "recommended-1",
-                name = "카페라떼",
-                description = "부드럽고 진한 커피의 기본.",
-                storeName = "카페미수 강남점",
-                priceLabel = "5,200원",
-            ),
-            recentOrders = listOf(
-                RecentOrderUiModel(
-                    id = "order-1",
-                    menuName = "아메리카노",
-                    storeName = "카페미수 신촌점",
-                    orderedAt = "오늘 10:24",
-                    priceLabel = "4,000원",
-                ),
-                RecentOrderUiModel(
-                    id = "order-2",
-                    menuName = "바닐라 라떼",
-                    storeName = "카페미수 잠실점",
-                    orderedAt = "어제 18:10",
-                    priceLabel = "5,100원",
-                ),
-            ),
-        ),
-    )
-    val uiState: StateFlow<HomeUiState> = mutableUiState.asStateFlow()
-
-    fun onNotificationClick() = Unit
-
-    fun onOrderAgainClick(orderId: String) {
-        mutableUiState.update { state ->
-            state.copy(greeting = "선택한 주문: $orderId")
-        }
-    }
-
-    fun onBrowseMenuClick() = Unit
-}
-
-data class HomeUiState(
-    val greeting: String = "카페미수",
-    val recommendedMenu: HomeRecommendedMenu = HomeRecommendedMenu(),
-    val recentOrders: List<RecentOrderUiModel> = emptyList(),
-)
-
-data class HomeRecommendedMenu(
-    val id: String = "",
-    val name: String = "오늘의 추천 메뉴",
-    val description: String = "메뉴가 준비되면 여기에 표시됩니다.",
-    val storeName: String = "가까운 매장",
-    val priceLabel: String = "0원",
-)
-
-data class RecentOrderUiModel(
-    val id: String,
-    val menuName: String,
-    val storeName: String,
-    val orderedAt: String,
-    val priceLabel: String,
-)

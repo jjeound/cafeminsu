@@ -22,7 +22,9 @@ class AndroidFeatureConventionPlugin : Plugin<Project> {
                 add("implementation", project(":core:designsystem"))
                 add("implementation", project(":core:navigation"))
                 add("implementation", project(":core:data"))
+                add("implementation", project(":core:common"))
                 add("api", libs.findLibrary("androidx.lifecycle.viewModelCompose").get())
+                add("api", libs.findLibrary("androidx.hilt.lifecycle.viewModelCompose").get())
             }
 
             extensions.configure<LibraryExtension> {
