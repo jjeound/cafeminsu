@@ -7,49 +7,56 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import javax.inject.Inject
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
-import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.onCompletion
 import kotlinx.coroutines.flow.onStart
-import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 
 @HiltViewModel
 class SignInViewModel @Inject constructor(
     private val authRepository: AuthRepository,
 ) : ViewModel() {
-    private val mutableUiState = MutableStateFlow(SignInUiState())
-    val uiState: StateFlow<SignInUiState> = mutableUiState.asStateFlow()
+
+    val uiState: StateFlow<SignInUiState>
+        field = MutableStateFlow<SignInUiState>(SignInUiState.Idle)
 
     fun signInWithKakao() {
+        if (uiState.value is SignInUiState.SigningIn) return
+
         viewModelScope.launch {
             authRepository.signInWithKakao()
                 .onStart {
-                    mutableUiState.update { state ->
-                        state.copy(isSigningIn = true, errorMessage = null)
-                    }
+                    uiState.value = SignInUiState.SigningIn
                 }
                 .catch {
-                    mutableUiState.update { state ->
-                        state.copy(
-                            isSigningIn = false,
-                            errorMessage = "로그인에 실패했어요. 잠시 후 다시 시도해 주세요.",
-                        )
-                    }
+                    uiState.value = SignInUiState.Error(
+                        message = "로그인에 실패했어요. 잠시 후 다시 시도해 주세요.",
+                    )
                 }
                 .onCompletion {
-                    mutableUiState.update { state -> state.copy(isSigningIn = false) }
+                    if (uiState.value is SignInUiState.SigningIn) {
+                        uiState.value = SignInUiState.Idle
+                    }
                 }
-                .collect { }
+                .collect {
+                    uiState.value = SignInUiState.Idle
+                }
         }
     }
 
     fun dismissError() {
-        mutableUiState.update { state -> state.copy(errorMessage = null) }
+        if (uiState.value is SignInUiState.Error) {
+            uiState.value = SignInUiState.Idle
+        }
     }
 }
 
-data class SignInUiState(
-    val isSigningIn: Boolean = false,
-    val errorMessage: String? = null,
-)
+sealed interface SignInUiState {
+    data object Idle : SignInUiState
+
+    data object SigningIn : SignInUiState
+
+    data class Error(
+        val message: String,
+    ) : SignInUiState
+}

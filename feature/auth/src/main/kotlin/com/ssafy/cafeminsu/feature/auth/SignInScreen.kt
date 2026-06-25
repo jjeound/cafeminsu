@@ -1,6 +1,5 @@
 package com.ssafy.cafeminsu.feature.auth
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -12,6 +11,7 @@ import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.material3.Icon
 import androidx.compose.material3.LocalContentColor
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Snackbar
@@ -22,22 +22,17 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.geometry.CornerRadius
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.geometry.Size
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
-import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.ssafy.cafeminsu.core.designsystem.theme.CafeMinsuTheme
 
 @Composable
@@ -46,19 +41,19 @@ fun SignInRoute(
     modifier: Modifier = Modifier,
     viewModel: SignInViewModel = hiltViewModel(),
 ) {
-    val uiState by viewModel.uiState.collectAsState()
+    val uiState by viewModel.uiState.collectAsStateWithLifecycle()
     val snackbarHostState = remember { SnackbarHostState() }
 
-    LaunchedEffect(uiState.errorMessage) {
-        val message = uiState.errorMessage
-        if (message != null) {
-            snackbarHostState.showSnackbar(message)
+    LaunchedEffect(uiState) {
+        val errorState = uiState as? SignInUiState.Error
+        if (errorState != null) {
+            snackbarHostState.showSnackbar(errorState.message)
             viewModel.dismissError()
         }
     }
 
     SignInScreen(
-        isSigningIn = uiState.isSigningIn,
+        isSigningIn = uiState is SignInUiState.SigningIn,
         onKakaoLoginClick = viewModel::signInWithKakao,
         onOwnerLoginClick = onOwnerLoginClick,
         snackbarHostState = snackbarHostState,
@@ -99,16 +94,22 @@ private fun SignInScreen(
                 .padding(horizontal = spacing.space5),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Spacer(modifier = Modifier.weight(LogoTopWeight))
+            Spacer(modifier = Modifier.weight(1.4f))
+
             LoginBrand()
-            Spacer(modifier = Modifier.weight(LogoBottomWeight))
+
+            Spacer(modifier = Modifier.weight(1.2f))
+
             KakaoLoginButton(
                 enabled = !isSigningIn,
                 onClick = onKakaoLoginClick,
                 modifier = Modifier.fillMaxWidth(),
             )
+
             Spacer(modifier = Modifier.height(spacing.space14 + spacing.space6))
+
             OwnerLoginLink(onClick = onOwnerLoginClick)
+
             Spacer(modifier = Modifier.height(spacing.space18))
         }
     }
@@ -131,6 +132,7 @@ private fun LoginBrand(
             style = CafeMinsuTheme.typography.display,
             color = colors.primary,
         )
+
         Text(
             text = "카페민수",
             style = CafeMinsuTheme.typography.display,
@@ -158,56 +160,31 @@ private fun KakaoLoginButton(
     ) {
         Row(
             modifier = Modifier
-                .height(KakaoButtonHeight)
+                .height(52.dp)
                 .padding(horizontal = spacing.space5),
             horizontalArrangement = Arrangement.Center,
             verticalAlignment = Alignment.CenterVertically,
         ) {
             CompositionLocalProvider(LocalContentColor provides colors.ink) {
-                KakaoTalkBubbleIcon(
-                    modifier = Modifier.size(KakaoIconSize),
-                    color = colors.ink,
-                )
+//                Icon(
+//                    painter = painterResource(id = R.drawable.ic_kakao_talk),
+//                    contentDescription = null,
+//                    modifier = Modifier.size(22.dp),
+//                    tint = colors.ink,
+//                )
+
                 Spacer(modifier = Modifier.size(spacing.space2))
+
                 Text(
                     text = "카카오 로그인",
-                    style = CafeMinsuTheme.typography.body.copy(fontWeight = FontWeight.Medium),
+                    style = CafeMinsuTheme.typography.body.copy(
+                        fontWeight = FontWeight.Medium,
+                    ),
                     color = colors.ink,
                 )
             }
         }
     }
-}
-
-@Composable
-private fun KakaoTalkBubbleIcon(
-    color: Color,
-    modifier: Modifier = Modifier,
-) {
-    Canvas(modifier = modifier) {
-        drawSpeechBubble(color = color)
-    }
-}
-
-private fun DrawScope.drawSpeechBubble(color: Color) {
-    val bubbleWidth = size.width * BubbleWidthRatio
-    val bubbleHeight = size.height * BubbleHeightRatio
-    val bubbleLeft = size.width * BubbleLeftRatio
-    val bubbleTop = size.height * BubbleTopRatio
-    val tailPath = Path().apply {
-        moveTo(size.width * TailStartXRatio, size.height * TailStartYRatio)
-        lineTo(size.width * TailTipXRatio, size.height * TailTipYRatio)
-        lineTo(size.width * TailEndXRatio, size.height * TailEndYRatio)
-        close()
-    }
-
-    drawRoundRect(
-        color = color,
-        topLeft = Offset(bubbleLeft, bubbleTop),
-        size = Size(bubbleWidth, bubbleHeight),
-        cornerRadius = CornerRadius(size.width * BubbleCornerRatio),
-    )
-    drawPath(path = tailPath, color = color)
 }
 
 @Composable
@@ -232,6 +209,7 @@ private fun OwnerLoginLink(
             style = CafeMinsuTheme.typography.body,
             color = colors.muted,
         )
+
         Text(
             text = "  →",
             style = CafeMinsuTheme.typography.body,
@@ -239,19 +217,3 @@ private fun OwnerLoginLink(
         )
     }
 }
-
-private val KakaoButtonHeight = 52.dp
-private val KakaoIconSize = 22.dp
-private const val LogoTopWeight = 1.4f
-private const val LogoBottomWeight = 1.2f
-private const val BubbleWidthRatio = 0.76f
-private const val BubbleHeightRatio = 0.58f
-private const val BubbleLeftRatio = 0.1f
-private const val BubbleTopRatio = 0.16f
-private const val BubbleCornerRatio = 0.22f
-private const val TailStartXRatio = 0.4f
-private const val TailStartYRatio = 0.72f
-private const val TailTipXRatio = 0.28f
-private const val TailTipYRatio = 0.92f
-private const val TailEndXRatio = 0.55f
-private const val TailEndYRatio = 0.72f
