@@ -67,6 +67,60 @@ class RealOwnerOrderRepositoryTest {
     }
 
     @Test
+    fun getStoresMapsMyStoresToOwnerStores() = runTest(testDispatcher) {
+        server.enqueue(multiStoresResponse())
+        val repository = realOwnerOrderRepository()
+
+        val result = repository.getStores()
+
+        assertTrue(result is AppResult.Success)
+        val stores = (result as AppResult.Success).data
+        assertEquals(listOf("7", "8"), stores.map { it.id })
+        assertEquals(listOf("강남점", "판교점"), stores.map { it.name })
+        assertEquals("/api/stores/my", server.takeRequest().requestUrl?.encodedPath)
+    }
+
+    @Test
+    fun selectedStoreResolvesOrdersToThatStore() = runTest(testDispatcher) {
+        val holder = SelectedOwnerStoreHolder().apply { select("8") }
+        server.enqueue(multiStoresResponse())
+        server.enqueue(storeOrdersResponse())
+        val repository = realOwnerOrderRepository(holder)
+
+        repository.observeIncomingOrders().test {
+            assertTrue(awaitItem() is AppResult.Success)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        assertEquals("/api/stores/my", server.takeRequest().requestUrl?.encodedPath)
+        // 선택 매장(8)으로 주문을 조회한다(첫 매장 7 이 아니라).
+        assertEquals("/api/stores/8/orders", server.takeRequest().requestUrl?.encodedPath)
+    }
+
+    @Test
+    fun changingSelectedStoreReloadsOrdersForNewStore() = runTest(testDispatcher) {
+        val holder = SelectedOwnerStoreHolder()
+        // 최초: 선택 없음 → 첫 매장(7). 이후 8 선택 시 8번 매장으로 재조회한다.
+        server.enqueue(multiStoresResponse())
+        server.enqueue(storeOrdersResponse())
+        server.enqueue(multiStoresResponse())
+        server.enqueue(storeOrdersResponse())
+        val repository = realOwnerOrderRepository(holder)
+
+        repository.observeIncomingOrders().test {
+            assertTrue(awaitItem() is AppResult.Success)
+            holder.select("8")
+            assertTrue(awaitItem() is AppResult.Success)
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        server.takeRequest() // stores/my (최초)
+        assertEquals("/api/stores/7/orders", server.takeRequest().requestUrl?.encodedPath)
+        server.takeRequest() // stores/my (재조회)
+        assertEquals("/api/stores/8/orders", server.takeRequest().requestUrl?.encodedPath)
+    }
+
+    @Test
     fun emptyMyStoresReturnsEmptyListWithoutOrdersCall() = runTest(testDispatcher) {
         server.enqueue(MockResponse().setResponseCode(200).setBody("[]"))
         val repository = realOwnerOrderRepository()
@@ -201,9 +255,12 @@ class RealOwnerOrderRepositoryTest {
         assertEquals("/api/orders/1042/accept", acceptRequest.requestUrl?.encodedPath)
     }
 
-    private fun realOwnerOrderRepository(): RealOwnerOrderRepository =
+    private fun realOwnerOrderRepository(
+        selectedOwnerStoreHolder: SelectedOwnerStoreHolder = SelectedOwnerStoreHolder(),
+    ): RealOwnerOrderRepository =
         RealOwnerOrderRepository(
             ownerOrderApi = ownerOrderApi(),
+            selectedOwnerStoreHolder = selectedOwnerStoreHolder,
             ioDispatcher = testDispatcher,
         )
 
@@ -221,6 +278,18 @@ class RealOwnerOrderRepositoryTest {
                 """
                 [
                   { "id": 7, "name": "강남점", "imageUrl": null }
+                ]
+                """.trimIndent(),
+            )
+
+    private fun multiStoresResponse(): MockResponse =
+        MockResponse()
+            .setResponseCode(200)
+            .setBody(
+                """
+                [
+                  { "id": 7, "name": "강남점", "imageUrl": null },
+                  { "id": 8, "name": "판교점", "imageUrl": null }
                 ]
                 """.trimIndent(),
             )
