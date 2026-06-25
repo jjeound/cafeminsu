@@ -9,6 +9,7 @@ import com.cafeminsu.data.remote.OwnerLoginReq
 import com.cafeminsu.data.remote.OwnerOrderApi
 import com.cafeminsu.data.remote.runCatchingToAppResult
 import com.cafeminsu.data.remote.toOwnerLoginExchange
+import com.cafeminsu.data.repository.OwnerSelectedStoreHolder
 import com.cafeminsu.domain.auth.OwnerAuthProvider
 import com.cafeminsu.domain.model.OwnerProfile
 import com.cafeminsu.domain.model.OwnerStore
@@ -28,6 +29,8 @@ class RealOwnerAuthProvider @Inject constructor(
     private val ownerOrderApi: OwnerOrderApi,
     private val tokenStore: SessionTokenStore,
     private val preferences: UserPreferencesDataStore,
+    // 선택 매장을 주문 리포지토리와 공유한다(매장 전환 시 처리할 주문이 즉시 그 매장 기준으로 갱신).
+    private val ownerSelectedStoreHolder: OwnerSelectedStoreHolder,
 ) : OwnerAuthProvider {
     @Volatile
     private var ownerProfile: OwnerProfile? = null
@@ -65,6 +68,7 @@ class RealOwnerAuthProvider @Inject constructor(
     override suspend fun logout(): AppResult<Unit> {
         tokenStore.clear()
         ownerProfile = null
+        ownerSelectedStoreHolder.clear()
         return AppResult.Success(Unit)
     }
 
@@ -106,6 +110,8 @@ class RealOwnerAuthProvider @Inject constructor(
             ?: return AppResult.Failure(DomainError.NotFound)
         val updated = current.copy(storeId = store.id, storeName = store.name)
         ownerProfile = updated
+        // 주문 리포지토리가 선택 매장 기준으로 다시 로드하도록 공유 홀더를 갱신한다.
+        ownerSelectedStoreHolder.select(store.id)
         return AppResult.Success(updated)
     }
 

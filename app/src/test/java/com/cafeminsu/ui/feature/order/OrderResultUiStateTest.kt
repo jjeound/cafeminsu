@@ -15,17 +15,25 @@ class OrderResultUiStateTest {
 
         assertEquals("order-1", summary.orderId)
         assertEquals("A-2543", summary.orderNumber)
-        assertEquals("카페민수 강남점", summary.pickupStoreName)
+        assertEquals("카페민수 역삼점", summary.pickupStoreName)
         assertEquals("약 8분 후", summary.estimatedReadyLabel)
         assertEquals("8,500원", summary.paidAmountLabel)
         assertEquals("스탬프 1개가 적립됐어요 (8/10)", summary.stampMessage)
     }
+
+    @Test
+    fun fallsBackToDefaultStoreNameWhenBlank() {
+        val summary = sampleOrder(storeName = "").toOrderSuccessSummary(stampCard = sampleStampCard())
+
+        assertEquals("카페민수", summary.pickupStoreName)
+    }
 }
 
-private fun sampleOrder(): Order =
+private fun sampleOrder(storeName: String = "카페민수 역삼점"): Order =
     Order(
         id = "order-1",
         orderNumber = "A-2543",
+        storeName = storeName,
         items = listOf(
             CartItem(
                 id = "cart-item-1",

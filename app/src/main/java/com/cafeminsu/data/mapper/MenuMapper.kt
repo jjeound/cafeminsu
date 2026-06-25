@@ -1,5 +1,6 @@
 package com.cafeminsu.data.mapper
 
+import com.cafeminsu.BuildConfig
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.data.remote.MenuCreateReq
@@ -54,7 +55,7 @@ fun MenuDetailRes.toMenuItem(): AppResult<MenuItem> {
             name = name.orEmpty(),
             description = description.orEmpty(),
             basePrice = price ?: DefaultPrice,
-            imageUrl = imageUrl,
+            imageUrl = imageUrl.toAbsoluteImageUrl(),
             isSoldOut = isAvailable != true,
             options = options.orEmpty().toOptionGroups(),
             isVisible = true,
@@ -71,7 +72,7 @@ private fun MenuListItemRes.toMenuItem(): AppResult<MenuItem> {
             name = name.orEmpty(),
             description = "",
             basePrice = price ?: DefaultPrice,
-            imageUrl = imageUrl,
+            imageUrl = imageUrl.toAbsoluteImageUrl(),
             isSoldOut = isAvailable != true,
             options = emptyList(),
             isVisible = true,
@@ -128,6 +129,23 @@ private fun MenuOptionRes.toMenuOption(): MenuOption? {
         extraPrice = additionalPrice ?: DefaultPrice,
         isAvailable = true,
     )
+}
+
+/**
+ * 서버가 내려주는 메뉴 이미지 경로는 상대 경로(예: "/images/menu1.jpg")이므로
+ * [BuildConfig.BASE_URL]을 앞에 붙여 절대 URL로 만든다. 이미 http(s) 절대 URL이거나
+ * 비어 있으면 그대로 둔다.
+ */
+private fun String?.toAbsoluteImageUrl(): String? {
+    val path = this?.trim().orEmpty()
+    if (path.isEmpty()) return null
+    if (path.startsWith("http://", ignoreCase = true) ||
+        path.startsWith("https://", ignoreCase = true)
+    ) {
+        return path
+    }
+    val base = BuildConfig.BASE_URL.trim().ifEmpty { return null }.trimEnd('/')
+    return "$base/${path.trimStart('/')}"
 }
 
 private fun String?.normalizedCategory(): String? =

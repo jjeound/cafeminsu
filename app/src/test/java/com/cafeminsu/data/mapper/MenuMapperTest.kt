@@ -1,5 +1,6 @@
 package com.cafeminsu.data.mapper
 
+import com.cafeminsu.BuildConfig
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.data.remote.MenuDetailRes
@@ -66,6 +67,32 @@ class MenuMapperTest {
         // 서버는 그룹별 선택 제약을 주지 않으므로 옵션 그룹은 단일 선택(maxSelect=1)이어야 한다.
         assertEquals(1, menu.options[0].maxSelect)
         assertEquals(1, menu.options[1].maxSelect)
+    }
+
+    @Test
+    fun absoluteImageUrlPassesThroughUnchanged() {
+        val result = menuDetail(imageUrl = "https://cdn.example/latte.png").toMenuItem()
+
+        val menu = (result as AppResult.Success).data
+        assertEquals("https://cdn.example/latte.png", menu.imageUrl)
+    }
+
+    @Test
+    fun relativeImageUrlIsPrefixedWithBaseUrl() {
+        val result = menuDetail(imageUrl = "/images/latte.png").toMenuItem()
+
+        val menu = (result as AppResult.Success).data
+        val base = BuildConfig.BASE_URL.trim().trimEnd('/')
+        val expected = if (base.isEmpty()) null else "$base/images/latte.png"
+        assertEquals(expected, menu.imageUrl)
+    }
+
+    @Test
+    fun blankImageUrlMapsToNull() {
+        val result = menuDetail(imageUrl = "").toMenuItem()
+
+        val menu = (result as AppResult.Success).data
+        assertEquals(null, menu.imageUrl)
     }
 
     @Test
@@ -142,6 +169,18 @@ class MenuMapperTest {
             category = category,
             imageUrl = null,
             isAvailable = isAvailable,
+        )
+
+    private fun menuDetail(imageUrl: String?): MenuDetailRes =
+        MenuDetailRes(
+            id = 101,
+            name = "바닐라라떼",
+            description = "부드러운 라떼",
+            price = 5_500,
+            category = "커피",
+            imageUrl = imageUrl,
+            isAvailable = true,
+            options = emptyList(),
         )
 
     private fun menuItem(id: String, category: String): MenuItem =
