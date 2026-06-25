@@ -44,11 +44,6 @@ object Routes {
     const val PAYMENT = PAY
     const val ORDER_STATUS_ORDER_ID = HISTORY_ORDER_ID
     const val ORDER_STATUS = HISTORY_DETAIL
-    const val STAMP = COUPON
-    const val GIFTICON = GIFT
-    const val GIFTICON_ID = "gifticonId"
-    private const val GIFTICON_DETAIL_BASE = GIFT
-    const val GIFTICON_DETAIL = "$GIFTICON_DETAIL_BASE/{$GIFTICON_ID}"
 
     fun menuDetail(menuItemId: String, cartItemId: String? = null): String =
         if (cartItemId.isNullOrBlank()) {
@@ -61,7 +56,6 @@ object Routes {
     fun orderOk(orderId: String): String = "$ORDER_OK_BASE/$orderId"
     fun history(orderId: String): String = "$HISTORY/$orderId"
     fun orderStatus(orderId: String): String = history(orderId)
-    fun gifticonDetail(gifticonId: String): String = "$GIFTICON_DETAIL_BASE/$gifticonId"
     fun giftClaim(code: String? = null): String =
         if (code.isNullOrBlank()) {
             GIFT_CLAIM_BASE

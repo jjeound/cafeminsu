@@ -45,7 +45,6 @@ import com.cafeminsu.ui.feature.coupon.CouponRoute
 import com.cafeminsu.ui.feature.gift.GiftRoute
 import com.cafeminsu.ui.feature.gift.claim.GiftClaimDeepLink
 import com.cafeminsu.ui.feature.gift.claim.GiftClaimRoute
-import com.cafeminsu.ui.feature.gifticon.GifticonDetailRoute
 import com.cafeminsu.ui.feature.history.HistoryRoute
 import com.cafeminsu.ui.feature.home.HomeRoute
 import com.cafeminsu.ui.feature.login.LoginRoute
@@ -402,18 +401,6 @@ fun AppNavHost(
                             launchSingleTop = true
                         }
                     },
-                )
-            }
-            composable(
-                route = Routes.GIFTICON_DETAIL,
-                arguments = listOf(
-                    navArgument(Routes.GIFTICON_ID) {
-                        type = NavType.StringType
-                    },
-                ),
-            ) {
-                GifticonDetailRoute(
-                    onLoginClick = { navController.navigate(Routes.LOGIN) },
                 )
             }
             composable(Routes.HISTORY) {
