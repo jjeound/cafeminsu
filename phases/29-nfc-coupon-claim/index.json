@@ -1,0 +1,26 @@
+{
+  "project": "CafeMinsu",
+  "phase": "nfc-coupon-claim",
+  "steps": [
+    {
+      "step": 0,
+      "name": "remove-beacon-proximity",
+      "status": "pending"
+    },
+    {
+      "step": 1,
+      "name": "nfc-claim-data-layer",
+      "status": "pending"
+    },
+    {
+      "step": 2,
+      "name": "nfc-claim-viewmodel",
+      "status": "pending"
+    },
+    {
+      "step": 3,
+      "name": "nfc-reader-screen-nav",
+      "status": "pending"
+    }
+  ]
+}
