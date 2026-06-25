@@ -48,8 +48,11 @@ internal object NetworkModule {
 
     @Provides
     @Singleton
-    fun provideOkHttpClient(): OkHttpClient =
+    fun provideOkHttpClient(
+        authorizationInterceptor: AuthorizationInterceptor,
+    ): OkHttpClient =
         OkHttpClient.Builder()
+            .addInterceptor(authorizationInterceptor)
             .apply {
                 if (BuildConfig.DEBUG) {
                     addNetworkInterceptor(

@@ -14,6 +14,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.flow
+import android.util.Log
 import javax.inject.Inject
 import javax.inject.Provider
 import javax.inject.Singleton
@@ -29,23 +30,44 @@ class DefaultAuthRepository @Inject constructor(
     override val authState: Flow<AuthState> = mutableAuthState.asStateFlow()
 
     override fun signInWithKakao(): Flow<AuthState> = flow {
+        Log.d(TAG, "signInWithKakao: start")
         val authClient = authClientProvider.get()
         val kakaoAccessToken = kakaoAuthDataSource.getAccessToken()
         val response = authClient.kakaoLogin(KakaoLoginRequest(kakaoAccessToken))
         sessionPreferences.setTokens(response.accessToken, response.refreshToken)
-        emitAndStore(AuthState.Authenticated(UserProfile("server-user", response.nickname, PhoneLast4.Unavailable), isNewUser = response.isNewUser))
+        Log.d(TAG, "signInWithKakao: tokens saved, isNewUser=${response.isNewUser}")
+        emitAndStore(
+            AuthState.Authenticated(
+                UserProfile("server-user", response.nickname, PhoneLast4.Unavailable),
+                isNewUser = response.isNewUser,
+            ),
+        )
     }
 
     override fun syncAuthState(): Flow<AuthState> = flow {
         val tokens = sessionPreferences.tokens.first()
+        Log.d(TAG, "syncAuthState: stored access=${tokens.accessToken.isNotBlank()} refresh=${tokens.refreshToken.isNotBlank()}")
         if (tokens.refreshToken.isBlank()) {
+            Log.d(TAG, "syncAuthState: no refresh token -> Guest")
             emitAndStore(AuthState.Guest)
         } else {
-            val authClient = authClientProvider.get()
-            val token = authClient.refresh(tokens.refreshToken)
-            sessionPreferences.setAccessToken(token.accessToken)
-            val profile = authClient.getMyProfile()
-            emitAndStore(AuthState.Authenticated(UserProfile(profile.id.toString(), profile.nickname, PhoneLast4.Unavailable), if (profile.role == "OWNER") UserRole.Owner else UserRole.Customer))
+            try {
+                val authClient = authClientProvider.get()
+                val token = authClient.refresh(tokens.refreshToken)
+                sessionPreferences.setAccessToken(token.accessToken)
+                val profile = authClient.getMyProfile()
+                Log.d(TAG, "syncAuthState: refresh/profile succeeded role=${profile.role}")
+                emitAndStore(
+                    AuthState.Authenticated(
+                        UserProfile(profile.id.toString(), profile.nickname, PhoneLast4.Unavailable),
+                        if (profile.role == "OWNER") UserRole.Owner else UserRole.Customer,
+                    ),
+                )
+            } catch (throwable: Throwable) {
+                Log.w(TAG, "syncAuthState: restore failed -> Guest", throwable)
+                sessionPreferences.clearTokens()
+                emitAndStore(AuthState.Guest)
+            }
         }
     }
 
@@ -74,5 +96,9 @@ class DefaultAuthRepository @Inject constructor(
     private suspend fun kotlinx.coroutines.flow.FlowCollector<AuthState>.emitAndStore(state: AuthState) {
         mutableAuthState.value = state
         emit(state)
+    }
+
+    private companion object {
+        private const val TAG = "DefaultAuthRepository"
     }
 }

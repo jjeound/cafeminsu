@@ -2,6 +2,7 @@ package com.ssafy.cafeminsu
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import android.util.Log
 import com.ssafy.cafeminsu.core.data.repository.auth.AuthRepository
 import com.ssafy.cafeminsu.core.model.auth.AuthState
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -28,6 +29,7 @@ class MainActivityViewModel @Inject constructor(
     private fun observeAuthState() {
         viewModelScope.launch {
             authRepository.authState.collect { authState ->
+                Log.d(TAG, "observeAuthState: $authState")
                 mutableUiState.update { state ->
                     state.copy(authState = authState.toMainActivityAuthState())
                 }
@@ -39,16 +41,22 @@ class MainActivityViewModel @Inject constructor(
         viewModelScope.launch {
             authRepository.syncAuthState()
                 .catch {
+                    Log.w(TAG, "syncAuthState failed", it)
                     mutableUiState.update { state ->
                         state.copy(authState = MainActivityAuthState.SignedOut)
                     }
                 }
                 .collect { authState ->
+                    Log.d(TAG, "syncAuthState emitted: $authState")
                     mutableUiState.update { state ->
                         state.copy(authState = authState.toMainActivityAuthState())
                     }
                 }
         }
+    }
+
+    private companion object {
+        private const val TAG = "MainActivityViewModel"
     }
 }
 
