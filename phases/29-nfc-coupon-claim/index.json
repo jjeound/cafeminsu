@@ -24,7 +24,7 @@
       "status": "completed",
       "started_at": "2026-06-25T14:58:11+0900",
       "summary": "NfcClaimViewModel/UiState — onTagRead(raw)→NfcTagCode.parse→claim, 진행중/따닥 중복가드, 성공시 Claimed 일회성이벤트(낙관 금지), DomainError→한국어 메시지(cooldown/inactive/notfound/unauthorized/network...). Turbine 단위테스트.",
-      "completed_at": "2026-06-25T15:02:00+0900"
+      "completed_at": "2026-06-25T15:02:01+0900"
     },
     {
       "step": 3,
