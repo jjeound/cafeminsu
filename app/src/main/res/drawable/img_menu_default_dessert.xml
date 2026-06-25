@@ -1,0 +1,41 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 디저트 카테고리 기본 이미지: imageUrl 이 null/blank 일 때 표시. Downloads/menu/dessert.svg 를 벡터 드로어블로 변환. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="400"
+    android:viewportHeight="400">
+
+    <!-- 배경 -->
+    <path
+        android:fillColor="#F1D9C2"
+        android:pathData="M0,0 L400,0 L400,400 L0,400 Z" />
+
+    <!-- 접시 그림자 -->
+    <path
+        android:fillColor="#E3C3A3"
+        android:pathData="M68,316 a132,22 0 1 0 264,0 a132,22 0 1 0 -264,0 Z" />
+
+    <!-- 케이크 조각 -->
+    <path
+        android:fillColor="#F4D9A8"
+        android:pathData="M200,150 L292,300 L108,300 Z" />
+
+    <!-- 크림 레이어 -->
+    <path
+        android:fillColor="#FBEFD6"
+        android:pathData="M170,202 L230,202 L238,226 L162,226 Z" />
+    <path
+        android:fillColor="#FBEFD6"
+        android:pathData="M147,263 L253,263 L262,286 L138,286 Z" />
+
+    <!-- 체리 잎 -->
+    <path
+        android:fillColor="#E78AA6"
+        android:pathData="M200,152 q26,28 0,42 q-26,-14 0,-42 z" />
+
+    <!-- 체리 -->
+    <path
+        android:fillColor="#D8456E"
+        android:pathData="M188,148 a12,12 0 1 0 24,0 a12,12 0 1 0 -24,0 Z" />
+</vector>

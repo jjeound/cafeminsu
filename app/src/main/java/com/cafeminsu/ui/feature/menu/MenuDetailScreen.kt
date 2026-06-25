@@ -173,7 +173,7 @@ private fun MenuDetailContent(
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
     ) {
-        MenuImageHero(imageUrl = state.imageUrl)
+        MenuImageHero(imageUrl = state.imageUrl, categoryId = state.categoryId)
 
         Column(
             modifier = Modifier
@@ -201,9 +201,10 @@ private fun MenuDetailContent(
 }
 
 @Composable
-private fun MenuImageHero(imageUrl: String?) {
+private fun MenuImageHero(imageUrl: String?, categoryId: String) {
     val spacing = CafeTheme.spacing
     val colors = CafeTheme.colors
+    val defaultImage = painterResource(defaultMenuImageRes(categoryId))
 
     Surface(
         modifier = Modifier
@@ -220,9 +221,9 @@ private fun MenuImageHero(imageUrl: String?) {
                     .size(spacing.space18 + spacing.space18)
                     .clip(CircleShape),
                 contentScale = ContentScale.Crop,
-                placeholder = painterResource(R.drawable.img_menu_default),
-                error = painterResource(R.drawable.img_menu_default),
-                fallback = painterResource(R.drawable.img_menu_default),
+                placeholder = defaultImage,
+                error = defaultImage,
+                fallback = defaultImage,
             )
         }
     }
