@@ -35,7 +35,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cafeminsu.domain.model.OrderStatus
-import com.cafeminsu.domain.model.OwnerStore
 import com.cafeminsu.ui.components.EmptyView
 import com.cafeminsu.ui.components.ErrorView
 import com.cafeminsu.ui.components.LoadingView
@@ -58,7 +57,6 @@ fun OwnerHomeRoute(
         onAdvanceStatus = viewModel::advanceStatus,
         onViewAllOrders = onViewAllOrders,
         onRetry = viewModel::retry,
-        onSelectStore = viewModel::onSelectStore,
         modifier = modifier,
     )
 }
@@ -70,7 +68,6 @@ fun OwnerHomeScreen(
     onAdvanceStatus: (String) -> Unit,
     onViewAllOrders: () -> Unit,
     onRetry: () -> Unit,
-    onSelectStore: (String) -> Unit = {},
     modifier: Modifier = Modifier,
     onSelectStore: (String) -> Unit = {},
 ) {
@@ -101,13 +98,10 @@ fun OwnerHomeScreen(
                     stats = state.stats,
                     pendingOrders = state.pendingOrders,
                     isStoreOpenUpdating = state.isStoreOpenUpdating,
-                    stores = state.stores,
-                    selectedStoreId = state.selectedStoreId,
                     onToggleStoreOpen = onToggleStoreOpen,
                     onSelectStore = onSelectStore,
                     onAdvanceStatus = onAdvanceStatus,
                     onViewAllOrders = onViewAllOrders,
-                    onSelectStore = onSelectStore,
                 )
 
                 is OwnerHomeUiState.Empty -> OwnerHomeEmpty(
@@ -115,7 +109,6 @@ fun OwnerHomeScreen(
                     onToggleStoreOpen = onToggleStoreOpen,
                     onSelectStore = onSelectStore,
                     onViewAllOrders = onViewAllOrders,
-                    onSelectStore = onSelectStore,
                 )
 
                 is OwnerHomeUiState.Error -> ErrorView(
@@ -137,21 +130,16 @@ private fun OwnerHomeContent(
     stats: OwnerHomeStatsUiModel,
     pendingOrders: List<OwnerHomeOrderUiModel>,
     isStoreOpenUpdating: Boolean,
-    stores: List<OwnerStore>,
-    selectedStoreId: String?,
     onToggleStoreOpen: (Boolean) -> Unit,
     onSelectStore: (String) -> Unit,
     onAdvanceStatus: (String) -> Unit,
     onViewAllOrders: () -> Unit,
-    onSelectStore: (String) -> Unit,
 ) {
     OwnerHomeHeader(
         storeName = storeName,
         stores = stores,
         isStoreOpen = isStoreOpen,
         enabled = !isStoreOpenUpdating,
-        stores = stores,
-        selectedStoreId = selectedStoreId,
         onToggleStoreOpen = onToggleStoreOpen,
         onSelectStore = onSelectStore,
     )
@@ -170,15 +158,12 @@ private fun OwnerHomeEmpty(
     onToggleStoreOpen: (Boolean) -> Unit,
     onSelectStore: (String) -> Unit,
     onViewAllOrders: () -> Unit,
-    onSelectStore: (String) -> Unit,
 ) {
     OwnerHomeHeader(
         storeName = state.storeName,
         stores = state.stores,
         isStoreOpen = state.isStoreOpen,
         enabled = !state.isStoreOpenUpdating,
-        stores = state.stores,
-        selectedStoreId = state.selectedStoreId,
         onToggleStoreOpen = onToggleStoreOpen,
         onSelectStore = onSelectStore,
     )
@@ -198,8 +183,6 @@ private fun OwnerHomeHeader(
     stores: List<OwnerStoreUiModel>,
     isStoreOpen: Boolean,
     enabled: Boolean,
-    stores: List<OwnerStore>,
-    selectedStoreId: String?,
     onToggleStoreOpen: (Boolean) -> Unit,
     onSelectStore: (String) -> Unit,
 ) {
@@ -215,30 +198,11 @@ private fun OwnerHomeHeader(
             modifier = Modifier.weight(HeaderTextWeight),
         )
 
-        DropdownMenu(
-            expanded = expanded,
-            onDismissRequest = { expanded = false },
-        ) {
-            stores.forEach { store ->
-                DropdownMenuItem(
-                    text = {
-                        Text(
-                            text = store.name,
-                            style = CafeTheme.typography.body,
-                            color = if (store.id == selectedStoreId) {
-                                CafeTheme.colors.primary
-                            } else {
-                                CafeTheme.colors.ink
-                            },
-                        )
-                    },
-                    onClick = {
-                        expanded = false
-                        onSelectStore(store.id)
-                    },
-                )
-            }
-        }
+        StoreOpenPill(
+            isStoreOpen = isStoreOpen,
+            enabled = enabled,
+            onClick = { onToggleStoreOpen(!isStoreOpen) },
+        )
     }
 }
 
@@ -607,4 +571,3 @@ private fun Int.toWonLabel(): String =
     "₩${NumberFormat.getNumberInstance(Locale.KOREA).format(this)}"
 
 private const val HeaderTextWeight = 1f
-private const val MinStoresForSelector = 2

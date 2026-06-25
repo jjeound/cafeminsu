@@ -151,15 +151,7 @@ class RealOwnerMenuRepository @Inject constructor(
     // 점주 매장은 stores/my 첫 매장으로 해석한다(step 0 RealOwnerOrderRepository 와 동일).
     private suspend fun resolveStoreId(): AppResult<Long?> =
         when (val response = runCatchingToAppResult { ownerOrderApi.getMyStores() }) {
-            is AppResult.Success -> {
-                val stores = response.data
-                val selectedStoreId = selectedOwnerStoreHolder.current()
-                val chosen = selectedStoreId
-                    ?.let { id -> stores.firstOrNull { it.id?.toString() == id } }
-                    ?: stores.firstOrNull()
-                AppResult.Success(chosen?.id)
-            }
-
+            is AppResult.Success -> AppResult.Success(response.data.firstOrNull()?.id)
             is AppResult.Failure -> response
         }
 
