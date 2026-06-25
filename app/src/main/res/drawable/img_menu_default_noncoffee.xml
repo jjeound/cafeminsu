@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 논커피 카테고리 기본 이미지: imageUrl 이 null/blank 일 때 표시. Downloads/menu/iced-tea.svg 를 벡터 드로어블로 변환. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="400"
+    android:viewportHeight="400">
+
+    <!-- 배경 -->
+    <path
+        android:fillColor="#FFE3C2"
+        android:pathData="M0,0 L400,0 L400,400 L0,400 Z" />
+
+    <!-- 유리컵 외곽 -->
+    <path
+        android:fillColor="#FFFFFF"
+        android:fillAlpha="0.3"
+        android:pathData="M150,110 h100 l-12,200 a16,16 0 0 1 -16,14 h-44 a16,16 0 0 1 -16,-14 z" />
+
+    <!-- 음료 -->
+    <path
+        android:fillColor="#E8A85C"
+        android:pathData="M156,150 h88 l-10,160 a14,14 0 0 1 -14,12 h-40 a14,14 0 0 1 -14,-12 z" />
+
+    <!-- 빨대 -->
+    <group
+        android:rotation="12"
+        android:pivotX="242"
+        android:pivotY="145">
+        <path
+            android:fillColor="#FFFFFF"
+            android:fillAlpha="0.85"
+            android:pathData="M242,70 h0 a6,6 0 0 1 6,6 v138 a6,6 0 0 1 -6,6 h0 a6,6 0 0 1 -6,-6 v-138 a6,6 0 0 1 6,-6 z" />
+    </group>
+
+    <!-- 얼음 1 -->
+    <group
+        android:rotation="15"
+        android:pivotX="183"
+        android:pivotY="183">
+        <path
+            android:fillColor="#FFFFFF"
+            android:fillAlpha="0.5"
+            android:pathData="M172,166 h22 a6,6 0 0 1 6,6 v22 a6,6 0 0 1 -6,6 h-22 a6,6 0 0 1 -6,-6 v-22 a6,6 0 0 1 6,-6 z" />
+    </group>
+
+    <!-- 얼음 2 -->
+    <group
+        android:rotation="-12"
+        android:pivotX="217"
+        android:pivotY="221">
+        <path
+            android:fillColor="#FFFFFF"
+            android:fillAlpha="0.5"
+            android:pathData="M208,206 h18 a6,6 0 0 1 6,6 v18 a6,6 0 0 1 -6,6 h-18 a6,6 0 0 1 -6,-6 v-18 a6,6 0 0 1 6,-6 z" />
+    </group>
+
+    <!-- 레몬 슬라이스 -->
+    <path
+        android:fillColor="#FFB37A"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="4"
+        android:pathData="M224,120 a24,24 0 1 0 48,0 a24,24 0 1 0 -48,0 Z" />
+</vector>

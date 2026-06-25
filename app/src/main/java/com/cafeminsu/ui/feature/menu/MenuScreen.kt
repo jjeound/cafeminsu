@@ -1,5 +1,6 @@
 package com.cafeminsu.ui.feature.menu
 
+import androidx.annotation.DrawableRes
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
@@ -315,7 +316,7 @@ private fun MenuListItem(
         horizontalArrangement = Arrangement.spacedBy(spacing.space4),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        MenuThumbnail(imageUrl = menu.imageUrl)
+        MenuThumbnail(imageUrl = menu.imageUrl, categoryId = menu.categoryId)
 
         Column(
             modifier = Modifier.weight(MenuInfoWeight),
@@ -359,8 +360,10 @@ private fun MenuListItem(
 @Composable
 private fun MenuThumbnail(
     imageUrl: String?,
+    categoryId: String,
     modifier: Modifier = Modifier,
 ) {
+    val defaultImage = painterResource(defaultMenuImageRes(categoryId))
     Surface(
         modifier = modifier.size(CafeTheme.spacing.space18 - CafeTheme.spacing.space2),
         shape = CafeTheme.shapes.radiusSm,
@@ -372,12 +375,24 @@ private fun MenuThumbnail(
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
-            placeholder = painterResource(R.drawable.img_menu_default),
-            error = painterResource(R.drawable.img_menu_default),
-            fallback = painterResource(R.drawable.img_menu_default),
+            placeholder = defaultImage,
+            error = defaultImage,
+            fallback = defaultImage,
         )
     }
 }
+
+/**
+ * 메뉴 [categoryId] 에 맞는 기본 이미지 리소스를 돌려준다.
+ * imageUrl 이 없을 때 카테고리별 디폴트 썸네일로 사용한다.
+ */
+@DrawableRes
+internal fun defaultMenuImageRes(categoryId: String): Int =
+    when (categoryId) {
+        "dessert" -> R.drawable.img_menu_default_dessert
+        "noncoffee" -> R.drawable.img_menu_default_noncoffee
+        else -> R.drawable.img_menu_default
+    }
 
 @Composable
 private fun SoldOutBadge() {
