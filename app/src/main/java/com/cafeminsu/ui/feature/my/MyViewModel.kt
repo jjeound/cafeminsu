@@ -150,7 +150,7 @@ class MyViewModel @Inject constructor(
         return MyProfileUiModel(
             displayName = safeName,
             initial = safeName.take(InitialLength),
-            tierLabel = DefaultTierLabel,
+            tierLabel = "",
         )
     }
 
@@ -233,7 +233,6 @@ class MyViewModel @Inject constructor(
         const val SupportPhone = "1588-1234"
         const val AppVersion = "v1.0.0"
         const val DefaultDisplayName = "민수"
-        const val DefaultTierLabel = "GOLD"
         const val InitialLength = 1
         const val EventBufferCapacity = 1
         const val StateStopTimeoutMillis = 5_000L

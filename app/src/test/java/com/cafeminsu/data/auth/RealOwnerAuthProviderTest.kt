@@ -6,10 +6,12 @@ import com.cafeminsu.core.DomainError
 import com.cafeminsu.data.local.prefs.UserPreferencesDataStore
 import com.cafeminsu.data.remote.AuthApi
 import com.cafeminsu.data.remote.AuthorizationInterceptor
+import com.cafeminsu.data.remote.OwnerOrderApi
 import com.cafeminsu.data.remote.createMoshi
 import com.cafeminsu.data.remote.createOkHttpClient
 import com.cafeminsu.data.remote.createRetrofit
 import com.cafeminsu.domain.model.OwnerProfile
+import com.cafeminsu.domain.model.OwnerStore
 import java.io.File
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Job
@@ -120,6 +122,75 @@ class RealOwnerAuthProviderTest {
     }
 
     @Test
+    fun getStoresReturnsRealStoresFromMyStores() = runTest {
+        server.enqueue(ownerLoginResponse(nickname = "강남점장"))
+        server.enqueue(myStoresResponse())
+        val provider = realOwnerAuthProvider(InMemorySessionTokenStore())
+        provider.login(loginId = "owner02", password = "cafe5678")
+
+        val result = provider.getStores()
+
+        assertTrue(result is AppResult.Success)
+        val stores = (result as AppResult.Success<List<OwnerStore>>).data
+        // 매장명은 로그인 닉네임이 아니라 stores/my 의 실제 이름으로 노출된다.
+        assertEquals(listOf("7", "8"), stores.map { it.id })
+        assertEquals(listOf("강남점", "판교점"), stores.map { it.name })
+        assertEquals("/api/user/owner-login", server.takeRequest().path)
+        assertEquals("/api/stores/my", server.takeRequest().requestUrl?.encodedPath)
+    }
+
+    @Test
+    fun getStoresFallsBackToLoginStoreWhenMyStoresEmpty() = runTest {
+        server.enqueue(ownerLoginResponse(nickname = "강남점장"))
+        server.enqueue(MockResponse().setResponseCode(200).setBody("[]"))
+        val provider = realOwnerAuthProvider(InMemorySessionTokenStore())
+        provider.login(loginId = "owner02", password = "cafe5678")
+
+        val result = provider.getStores()
+
+        assertTrue(result is AppResult.Success)
+        val stores = (result as AppResult.Success<List<OwnerStore>>).data
+        // stores/my 가 비면 로그인 매장 단일 항목으로 폴백한다.
+        assertEquals(1, stores.size)
+        assertEquals("강남점장", stores.single().name)
+    }
+
+    @Test
+    fun getStoresWithoutLoginReturnsUnauthorized() = runTest {
+        val provider = realOwnerAuthProvider(InMemorySessionTokenStore())
+
+        assertEquals(AppResult.Failure(DomainError.Unauthorized), provider.getStores())
+    }
+
+    @Test
+    fun selectStoreWithLoginStoreIdReturnsProfile() = runTest {
+        server.enqueue(ownerLoginResponse(nickname = "강남점장"))
+        val provider = realOwnerAuthProvider(InMemorySessionTokenStore())
+        val loggedIn = (provider.login(loginId = "owner02", password = "cafe5678") as AppResult.Success).data
+
+        val result = provider.selectStore(loggedIn.storeId)
+
+        assertTrue(result is AppResult.Success)
+        assertEquals(loggedIn.storeId, (result as AppResult.Success<OwnerProfile>).data.storeId)
+    }
+
+    @Test
+    fun selectStoreSwitchesToAnotherStoreFromMyStores() = runTest {
+        server.enqueue(ownerLoginResponse(nickname = "강남점장"))
+        server.enqueue(myStoresResponse())
+        val provider = realOwnerAuthProvider(InMemorySessionTokenStore())
+        provider.login(loginId = "owner02", password = "cafe5678")
+        provider.getStores() // stores/my 캐시
+
+        val result = provider.selectStore("8")
+
+        assertTrue(result is AppResult.Success)
+        val profile = (result as AppResult.Success<OwnerProfile>).data
+        assertEquals("8", profile.storeId)
+        assertEquals("판교점", profile.storeName)
+    }
+
+    @Test
     fun logoutClearsStoredTokens() = runTest {
         val tokenStore = InMemorySessionTokenStore(SessionTokens("owner-access", "owner-refresh"))
         val provider = realOwnerAuthProvider(tokenStore)
@@ -133,19 +204,22 @@ class RealOwnerAuthProviderTest {
     private fun TestScope.realOwnerAuthProvider(
         tokenStore: SessionTokenStore,
         preferences: UserPreferencesDataStore = newPreferences(),
-    ): RealOwnerAuthProvider =
-        RealOwnerAuthProvider(
-            authApi = createRetrofit(
-                baseUrl = server.url("/").toString(),
-                moshi = createMoshi(),
-                okHttpClient = createOkHttpClient(
-                    debug = false,
-                    authorizationInterceptor = AuthorizationInterceptor(tokenStore),
-                ),
-            ).create(AuthApi::class.java),
+    ): RealOwnerAuthProvider {
+        val retrofit = createRetrofit(
+            baseUrl = server.url("/").toString(),
+            moshi = createMoshi(),
+            okHttpClient = createOkHttpClient(
+                debug = false,
+                authorizationInterceptor = AuthorizationInterceptor(tokenStore),
+            ),
+        )
+        return RealOwnerAuthProvider(
+            authApi = retrofit.create(AuthApi::class.java),
+            ownerOrderApi = retrofit.create(OwnerOrderApi::class.java),
             tokenStore = tokenStore,
             preferences = preferences,
         )
+    }
 
     private fun TestScope.newPreferences(): UserPreferencesDataStore =
         UserPreferencesDataStore(
@@ -154,6 +228,18 @@ class RealOwnerAuthProviderTest {
                 produceFile = { File(tempFolder.newFolder(), "user.preferences_pb") },
             ),
         )
+
+    private fun myStoresResponse(): MockResponse =
+        MockResponse()
+            .setResponseCode(200)
+            .setBody(
+                """
+                [
+                  { "id": 7, "name": "강남점", "imageUrl": null },
+                  { "id": 8, "name": "판교점", "imageUrl": null }
+                ]
+                """.trimIndent(),
+            )
 
     private fun ownerLoginResponse(nickname: String): MockResponse =
         MockResponse()

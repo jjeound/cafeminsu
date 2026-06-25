@@ -1,6 +1,5 @@
 package com.cafeminsu.ui.feature.my
 
-import android.widget.Toast
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -30,7 +29,6 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.res.painterResource
@@ -52,12 +50,12 @@ fun MyRoute(
     onHistoryClick: () -> Unit,
     onGiftClick: () -> Unit,
     onCouponClick: () -> Unit,
+    onNotificationSettingsClick: () -> Unit,
     onLoginClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: MyViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
-    val context = LocalContext.current
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
@@ -72,9 +70,7 @@ fun MyRoute(
         onHistoryClick = onHistoryClick,
         onGiftClick = onGiftClick,
         onCouponClick = onCouponClick,
-        onNotificationSettingsClick = {
-            Toast.makeText(context, "알림설정은 준비 중이에요", Toast.LENGTH_SHORT).show()
-        },
+        onNotificationSettingsClick = onNotificationSettingsClick,
         onLoginClick = onLoginClick,
         onLogoutClick = viewModel::onLogout,
         onRetry = viewModel::retry,
@@ -245,38 +241,16 @@ private fun ProfileCard(
                         )
                     }
                 }
-                Column(verticalArrangement = Arrangement.spacedBy(spacing.space2)) {
-                    Text(
-                        text = "${profile.displayName} 님",
-                        style = CafeTheme.typography.h2,
-                        color = colors.onDark,
-                    )
-                    TierBadge(label = profile.tierLabel)
-                }
+                Text(
+                    text = "${profile.displayName} 님",
+                    style = CafeTheme.typography.h2,
+                    color = colors.onDark,
+                )
             }
 
             HorizontalDivider(color = colors.ink.copy(alpha = DarkDividerAlpha))
             StatsRow(stats = stats)
         }
-    }
-}
-
-@Composable
-private fun TierBadge(label: String) {
-    Surface(
-        shape = CafeTheme.shapes.radiusPill,
-        color = CafeTheme.colors.accentSoft,
-        contentColor = CafeTheme.colors.primary,
-    ) {
-        Text(
-            modifier = Modifier.padding(
-                horizontal = CafeTheme.spacing.space3,
-                vertical = CafeTheme.spacing.space1,
-            ),
-            text = label,
-            style = CafeTheme.typography.caption,
-            color = CafeTheme.colors.primary,
-        )
     }
 }
 

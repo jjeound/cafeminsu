@@ -5,8 +5,8 @@ import androidx.lifecycle.viewModelScope
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.AuthState
-import com.cafeminsu.domain.model.GiftChannel
 import com.cafeminsu.domain.model.GiftSendRequest
+import com.cafeminsu.domain.model.GiftSendResult
 import com.cafeminsu.domain.repository.GiftRepository
 import com.cafeminsu.domain.repository.SessionRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -73,18 +73,6 @@ class GiftViewModel @Inject constructor(
         }
     }
 
-    fun onChannelSelected(channel: GiftChannel) {
-        formState.update { form ->
-            form.copy(selectedChannel = channel)
-        }
-    }
-
-    fun onRecipientChanged(value: String) {
-        formState.update { form ->
-            form.copy(recipient = value)
-        }
-    }
-
     fun onMessageChanged(value: String) {
         formState.update { form ->
             form.copy(message = value.take(MaxMessageLength))
@@ -109,17 +97,16 @@ class GiftViewModel @Inject constructor(
         }
 
         if (!content.canSend) {
-            _events.tryEmit(GiftEvent.SendFailed("받는 사람을 확인해 주세요"))
+            _events.tryEmit(GiftEvent.SendFailed("선물 금액을 확인해 주세요"))
             return
         }
 
         formState.update { current -> current.copy(sending = true) }
 
         viewModelScope.launch {
+            // 카카오톡 단일 채널: 수신자 미지정 구매(받는 사람은 인텐트 공유로 전달).
             val request = GiftSendRequest(
                 amount = content.selectedAmount,
-                channel = content.selectedChannel,
-                recipientRef = content.recipient.trim(),
                 message = content.message.ifBlank { null },
             )
             when (val result = sendGiftSafely(request)) {
@@ -127,11 +114,10 @@ class GiftViewModel @Inject constructor(
                     formState.update { current ->
                         current.copy(
                             sending = false,
-                            recipient = "",
                             message = "",
                         )
                     }
-                    _events.emit(GiftEvent.SendSucceeded("선물을 보냈어요"))
+                    _events.emit(successEvent(content.message, result.data))
                 }
 
                 is AppResult.Failure -> {
@@ -141,6 +127,34 @@ class GiftViewModel @Inject constructor(
             }
         }
     }
+
+    // 등록 코드(claimCode)만 공유 텍스트로 만들어 ShareGiftLink 로 신호한다.
+    // 링크는 일절 넣지 않는다(커스텀 스킴은 카톡에서 안 열리고, 웹 링크도 보내지 않음).
+    private fun successEvent(
+        message: String,
+        result: GiftSendResult,
+    ): GiftEvent {
+        val code = result.claimCode?.takeIf { it.isNotBlank() }
+        return if (code != null) {
+            GiftEvent.ShareGiftLink(
+                shareText = buildShareText(message, code),
+                message = SendSuccessMessage,
+            )
+        } else {
+            GiftEvent.SendSucceeded(SendSuccessMessage)
+        }
+    }
+
+    private fun buildShareText(message: String, code: String): String =
+        buildString {
+            val note = message.trim()
+            if (note.isNotEmpty()) {
+                appendLine(note)
+                appendLine()
+            }
+            appendLine(ShareGuide)
+            append("등록 코드: $code")
+        }
 
     private suspend fun sendGiftSafely(request: GiftSendRequest) =
         try {
@@ -170,8 +184,6 @@ class GiftViewModel @Inject constructor(
     private fun GiftFormState.toContent(): GiftUiState.Content =
         GiftUiState.Content(
             selectedAmountOption = selectedAmountOption,
-            selectedChannel = selectedChannel,
-            recipient = recipient,
             message = message,
             customAmountText = customAmountText,
             sending = sending,
@@ -190,8 +202,6 @@ class GiftViewModel @Inject constructor(
 
     private data class GiftFormState(
         val selectedAmountOption: GiftAmountOption = GiftAmountOption.TenThousand,
-        val selectedChannel: GiftChannel = GiftChannel.KakaoTalk,
-        val recipient: String = "",
         val message: String = "오늘 하루 수고 많았어 ☕",
         val customAmountText: String = "",
         val sending: Boolean = false,
@@ -201,5 +211,8 @@ class GiftViewModel @Inject constructor(
         const val StateStopTimeoutMillis = 5_000L
         const val EventBufferCapacity = 1
         const val MaxMessageLength = 100
+        const val SendSuccessMessage = "선물을 보냈어요"
+        const val ShareGuide =
+            "카페민수 기프티콘이 도착했어요! 카페민수 앱 > 선물하기 > 선물 등록에서 아래 코드를 입력해 주세요."
     }
 }

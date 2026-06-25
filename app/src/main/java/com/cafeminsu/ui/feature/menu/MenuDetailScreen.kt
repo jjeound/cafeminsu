@@ -32,19 +32,20 @@ import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.cafeminsu.R
 import com.cafeminsu.ui.components.CafeButton
 import com.cafeminsu.ui.components.CafeButtonVariant
 import com.cafeminsu.ui.components.CafeSnackbarHost
-import com.cafeminsu.ui.components.CafeSnackbarType
 import com.cafeminsu.ui.components.CafeTopBar
 import com.cafeminsu.ui.components.ErrorView
 import com.cafeminsu.ui.components.LoadingView
-import com.cafeminsu.ui.components.cafeSnackbar
 import com.cafeminsu.ui.theme.CafeTheme
 import java.text.NumberFormat
 import java.util.Locale
@@ -62,14 +63,8 @@ fun MenuDetailRoute(
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
             when (event) {
-                MenuDetailEvent.AddedToCart -> {
-                    val editing = (state as? MenuDetailUiState.Content)?.isEditing == true
-                    snackbarHostState.cafeSnackbar(
-                        message = if (editing) "변경사항을 저장했어요" else "장바구니에 담았어요",
-                        type = CafeSnackbarType.Success,
-                    )
-                    onAddedToCart()
-                }
+                // 담기 성공 시 스낵바를 기다리지 않고 즉시 이전 화면으로 돌아간다(체감 지연 제거).
+                MenuDetailEvent.AddedToCart -> onAddedToCart()
             }
         }
     }
@@ -115,10 +110,12 @@ fun MenuDetailScreen(
                 },
                 onNavigationClick = onBackClick,
                 actionIcon = {
-                    Text(
-                        text = if (favorite) "♥" else "♡",
-                        style = CafeTheme.typography.h2,
-                        color = if (favorite) colors.primary else colors.ink,
+                    Icon(
+                        painter = painterResource(
+                            if (favorite) R.drawable.ic_heart_filled else R.drawable.ic_heart,
+                        ),
+                        contentDescription = if (favorite) "찜 해제" else "찜하기",
+                        tint = if (favorite) colors.primary else colors.ink,
                     )
                 },
                 onActionClick = { favorite = !favorite },
@@ -176,7 +173,7 @@ private fun MenuDetailContent(
             .fillMaxSize()
             .verticalScroll(rememberScrollState()),
     ) {
-        MenuImageHero()
+        MenuImageHero(imageUrl = state.imageUrl)
 
         Column(
             modifier = Modifier
@@ -204,7 +201,7 @@ private fun MenuDetailContent(
 }
 
 @Composable
-private fun MenuImageHero() {
+private fun MenuImageHero(imageUrl: String?) {
     val spacing = CafeTheme.spacing
     val colors = CafeTheme.colors
 
@@ -216,12 +213,17 @@ private fun MenuImageHero() {
         contentColor = colors.primary,
     ) {
         Box(contentAlignment = Alignment.Center) {
-            Surface(
-                modifier = Modifier.size(spacing.space18 + spacing.space18),
-                shape = CircleShape,
-                color = colors.primary,
-                contentColor = colors.onPrimary,
-            ) {}
+            AsyncImage(
+                model = imageUrl?.takeIf { it.isNotBlank() },
+                contentDescription = null,
+                modifier = Modifier
+                    .size(spacing.space18 + spacing.space18)
+                    .clip(CircleShape),
+                contentScale = ContentScale.Crop,
+                placeholder = painterResource(R.drawable.img_menu_default),
+                error = painterResource(R.drawable.img_menu_default),
+                fallback = painterResource(R.drawable.img_menu_default),
+            )
         }
     }
 }

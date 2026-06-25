@@ -1,0 +1,90 @@
+package com.cafeminsu.data.mapper
+
+import com.cafeminsu.core.AppResult
+import com.cafeminsu.core.DomainError
+import com.cafeminsu.data.remote.MenuSummary
+import com.cafeminsu.data.remote.MyStoreRes
+import com.cafeminsu.data.remote.StoreOrderItemRes
+import com.cafeminsu.domain.model.CartItem
+import com.cafeminsu.domain.model.Order
+import com.cafeminsu.domain.model.OrderStatus
+import com.cafeminsu.domain.model.OwnerStore
+
+// 점주 매장 목록(stores/my) → 도메인 OwnerStore. id 가 없는 항목은 식별 불가라 건너뛴다.
+fun List<MyStoreRes>.toOwnerStores(): List<OwnerStore> =
+    mapNotNull { store ->
+        val id = store.id ?: return@mapNotNull null
+        OwnerStore(id = id.toString(), name = store.name.orEmpty())
+    }
+
+fun List<StoreOrderItemRes>.toOwnerOrders(): AppResult<List<Order>> {
+    val mapped = map { item ->
+        when (val result = item.toOwnerOrder()) {
+            is AppResult.Success -> result.data
+            is AppResult.Failure -> return result
+        }
+    }
+    return AppResult.Success(mapped)
+}
+
+private fun StoreOrderItemRes.toOwnerOrder(): AppResult<Order> {
+    val id = orderId ?: return AppResult.Failure(DomainError.Unknown)
+    val mappedStatus = status.toOwnerOrderStatus()
+        ?: return AppResult.Failure(DomainError.Unknown)
+
+    return AppResult.Success(
+        Order(
+            id = id.toString(),
+            orderNumber = orderNumber.orEmpty(),
+            items = items.orEmpty().toOwnerCartItems(orderId = id),
+            totalAmount = totalAmount ?: OwnerDefaultAmount,
+            status = mappedStatus,
+            // 날짜 파싱은 고객 OrderMapper 의 헬퍼를 재사용한다.
+            createdAtMillis = createdAt.toEpochMillis(),
+        ),
+    )
+}
+
+private fun List<MenuSummary>.toOwnerCartItems(orderId: Long): List<CartItem> =
+    mapNotNull { summary ->
+        val menuId = summary.menuId ?: return@mapNotNull null
+        CartItem(
+            id = "$orderId-$menuId",
+            menuItemId = menuId.toString(),
+            name = summary.menuName.orEmpty(),
+            // 요약 응답엔 단가가 없어 0 으로 둔다(점주 큐는 총액만 표시).
+            unitPrice = OwnerDefaultAmount,
+            selectedOptions = emptyList(),
+            quantity = summary.quantity ?: OwnerDefaultQuantity,
+        )
+    }
+
+// 서버 주문 상태 → 점주 큐 도메인 상태. 점주 화면 탭과 1:1 로 맞춘다:
+// PENDING(접수 대기)=신규(Accepted), ACCEPTED(접수됨)=준비중(Preparing),
+// READY=준비완료(Ready), DONE=픽업완료(Completed), CANCELLED=취소(Cancelled).
+internal fun String?.toOwnerOrderStatus(): OrderStatus? =
+    when (this) {
+        "PENDING" -> OrderStatus.Accepted
+        "ACCEPTED" -> OrderStatus.Preparing
+        "READY" -> OrderStatus.Ready
+        "DONE" -> OrderStatus.Completed
+        "CANCELLED" -> OrderStatus.Cancelled
+        else -> null
+    }
+
+// 점주 큐 도메인 상태 → 서버 주문 상태 쿼리. 서버에 대응이 없는 상태는 null(필터 미적용).
+internal fun OrderStatus.toServerOrderStatus(): String? =
+    when (this) {
+        OrderStatus.Accepted -> "PENDING"
+        OrderStatus.Preparing -> "ACCEPTED"
+        OrderStatus.Ready -> "READY"
+        OrderStatus.Completed -> "DONE"
+        OrderStatus.Cancelled -> "CANCELLED"
+        OrderStatus.PendingPayment,
+        OrderStatus.Paid,
+        OrderStatus.Failed,
+        -> null
+    }
+
+private const val OwnerDefaultAmount = 0
+private const val OwnerDefaultQuantity = 1

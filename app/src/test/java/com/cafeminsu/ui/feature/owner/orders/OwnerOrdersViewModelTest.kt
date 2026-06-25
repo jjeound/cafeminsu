@@ -7,6 +7,7 @@ import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.CartItem
 import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.OrderStatus
+import com.cafeminsu.domain.model.OwnerStore
 import com.cafeminsu.domain.model.SelectedOption
 import com.cafeminsu.domain.proximity.ProximitySignal
 import com.cafeminsu.domain.proximity.ProximitySignalRepository
@@ -363,6 +364,9 @@ private class FakeOwnerOrdersRepository(
         )
         return AppResult.Success(updatedOrder)
     }
+
+    override suspend fun getStores(): AppResult<List<OwnerStore>> =
+        AppResult.Success(emptyList())
 }
 
 private fun sampleOrders(): List<Order> =

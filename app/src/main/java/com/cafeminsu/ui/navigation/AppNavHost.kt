@@ -6,12 +6,15 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.material3.Icon
 import androidx.compose.material3.Scaffold
@@ -33,12 +36,15 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import androidx.navigation.navArgument
+import androidx.navigation.navDeepLink
 import com.cafeminsu.R
 import com.cafeminsu.domain.auth.OwnerAuthProvider
 import com.cafeminsu.domain.repository.SessionRepository
 import com.cafeminsu.ui.feature.cart.CartRoute
 import com.cafeminsu.ui.feature.coupon.CouponRoute
 import com.cafeminsu.ui.feature.gift.GiftRoute
+import com.cafeminsu.ui.feature.gift.claim.GiftClaimDeepLink
+import com.cafeminsu.ui.feature.gift.claim.GiftClaimRoute
 import com.cafeminsu.ui.feature.gifticon.GifticonDetailRoute
 import com.cafeminsu.ui.feature.history.HistoryRoute
 import com.cafeminsu.ui.feature.home.HomeRoute
@@ -47,6 +53,7 @@ import com.cafeminsu.ui.feature.menu.MenuDetailRoute
 import com.cafeminsu.ui.feature.menu.MenuRoute
 import com.cafeminsu.ui.feature.my.MyRoute
 import com.cafeminsu.ui.feature.notification.NotiRoute
+import com.cafeminsu.ui.feature.notification.settings.NotificationSettingsRoute
 import com.cafeminsu.ui.feature.order.OrderFailureDialog
 import com.cafeminsu.ui.feature.order.OrderResultRoute
 import com.cafeminsu.ui.feature.owner.home.OwnerHomeRoute
@@ -82,15 +89,7 @@ fun AppNavHost(
             if (shouldShowOwnerBottomBar(currentRoute)) {
                 OwnerBottomBar(
                     currentRoute = currentRoute,
-                    onTabSelected = { route ->
-                        navController.navigate(route) {
-                            popUpTo(Routes.OWNER_HOME) {
-                                saveState = true
-                            }
-                            launchSingleTop = true
-                            restoreState = true
-                        }
-                    },
+                    onTabSelected = { route -> navController.navigateToOwnerTab(route) },
                 )
             } else if (shouldShowBottomBar(currentRoute)) {
                 CafeBottomBar(
@@ -175,7 +174,7 @@ fun AppNavHost(
             }
             composable(Routes.OWNER_HOME) {
                 OwnerHomeRoute(
-                    onViewAllOrders = { navController.navigate(Routes.OWNER_ORDERS) },
+                    onViewAllOrders = { navController.navigateToOwnerTab(Routes.OWNER_ORDERS) },
                 )
             }
             composable(Routes.OWNER_ORDERS) {
@@ -200,11 +199,11 @@ fun AppNavHost(
                     onRecommendedOrderClick = { menuItemId ->
                         navController.navigate(Routes.menuDetail(menuItemId))
                     },
-                    onCouponClick = { navController.navigate(Routes.COUPON) },
                     onNotificationClick = { navController.navigate(Routes.NOTI) },
                     onRecentOrdersClick = { navController.navigate(Routes.HISTORY) },
-                    onReorderClick = { menuItemId ->
-                        navController.navigate(Routes.menuDetail(menuItemId))
+                    // 홈 재주문은 단발 주문을 만들어 곧장 결제 화면으로 이동한다(VM 이벤트 → orderId).
+                    onNavigateToPayment = { orderId ->
+                        navController.navigate(Routes.pay(orderId))
                     },
                     onBrowseMenuClick = { navController.navigate(Routes.STORE) },
                 )
@@ -245,7 +244,21 @@ fun AppNavHost(
                 ),
             ) {
                 MenuDetailRoute(
-                    onAddedToCart = { navController.navigate(Routes.CART) },
+                    onAddedToCart = {
+                        // 홈에서 추천 메뉴를 바로 담은 경우엔 홈으로 튕기지 않고 주문 메뉴 화면으로 이어준다.
+                        // 그 외(메뉴/장바구니 수정/주문내역)에서는 기존대로 직전 화면으로 되돌아간다.
+                        val destination = menuDetailAddedDestination(
+                            navController.previousBackStackEntry?.destination?.route,
+                        )
+                        if (destination != null) {
+                            navController.navigate(destination) {
+                                popUpTo(Routes.HOME)
+                                launchSingleTop = true
+                            }
+                        } else {
+                            navController.popBackStack()
+                        }
+                    },
                     onBackClick = { navController.popBackStack() },
                 )
             }
@@ -324,7 +337,13 @@ fun AppNavHost(
                     onHistoryClick = { navController.navigate(Routes.HISTORY) },
                     onGiftClick = { navController.navigate(Routes.GIFT) },
                     onCouponClick = { navController.navigate(Routes.COUPON) },
+                    onNotificationSettingsClick = { navController.navigate(Routes.NOTI_SETTINGS) },
                     onLoginClick = { navController.navigate(Routes.LOGIN) },
+                )
+            }
+            composable(Routes.NOTI_SETTINGS) {
+                NotificationSettingsRoute(
+                    onBackClick = { navController.popBackStack() },
                 )
             }
             composable(Routes.COUPON) {
@@ -337,6 +356,37 @@ fun AppNavHost(
                 GiftRoute(
                     onBackClick = { navController.popBackStack() },
                     onLoginClick = { navController.navigate(Routes.LOGIN) },
+                    onClaimEntryClick = { navController.navigate(Routes.giftClaim()) },
+                )
+            }
+            composable(
+                route = Routes.GIFT_CLAIM,
+                arguments = listOf(
+                    navArgument(Routes.GIFT_CLAIM_CODE) {
+                        type = NavType.StringType
+                        nullable = true
+                        defaultValue = null
+                    },
+                ),
+                // 딥링크는 화이트리스트(cafeminsu://gift)만 수락한다(SECURITY §6). code 검증은 ViewModel.
+                deepLinks = listOf(navDeepLink { uriPattern = GiftClaimDeepLink.URI_PATTERN }),
+            ) {
+                GiftClaimRoute(
+                    onBackClick = {
+                        if (!navController.popBackStack()) {
+                            navController.navigate(Routes.HOME) {
+                                popUpTo(Routes.HOME) { inclusive = true }
+                                launchSingleTop = true
+                            }
+                        }
+                    },
+                    onClaimed = {
+                        // 등록 완료 후 쿠폰함으로 이동(딥링크 자동 등록 포함).
+                        navController.navigate(Routes.COUPON) {
+                            popUpTo(Routes.GIFT_CLAIM) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
                 )
             }
             composable(
@@ -422,12 +472,21 @@ private val ownerBottomTabs = listOf(
     BottomTab(Routes.OWNER_SALES, "매출"),
 )
 
+// 메뉴(MENU)는 매장 선택 이후 진입하는 몰입형 주문 화면이라 하단 탭을 숨긴다.
 private val orderTabRoutes = setOf(
     Routes.STORE,
-    Routes.MENU,
 )
 
-private fun shouldShowBottomBar(currentRoute: String?): Boolean =
+// 메뉴 상세에서 장바구니에 담은 뒤 이동할 목적지를 직전 화면 기준으로 결정한다.
+// 홈 추천·주문내역 재주문에서 진입한 경우엔 주문 메뉴 화면(MENU)으로 이어주고(이어서 더 담을 수 있게),
+// 그 외(메뉴/장바구니 수정 등)엔 null(=직전 화면으로 popBackStack).
+internal fun menuDetailAddedDestination(previousRoute: String?): String? =
+    when (previousRoute) {
+        Routes.HOME, Routes.HISTORY, Routes.HISTORY_DETAIL -> Routes.MENU
+        else -> null
+    }
+
+internal fun shouldShowBottomBar(currentRoute: String?): Boolean =
     selectedTabRoute(currentRoute) != null
 
 private fun shouldShowOwnerBottomBar(currentRoute: String?): Boolean =
@@ -450,6 +509,18 @@ private fun selectedOwnerTabRoute(currentRoute: String?): String? =
         else -> null
     }
 
+// 점주 최상위 탭 이동은 모두 동일한 옵션을 써야 saveState/restoreState 백스택이 일관된다.
+// (점주 홈 "전체 보기"처럼 평범한 navigate 를 섞으면 이후 탭 클릭이 무시되는 버그가 생긴다.)
+private fun NavHostController.navigateToOwnerTab(route: String) {
+    navigate(route) {
+        popUpTo(Routes.OWNER_HOME) {
+            saveState = true
+        }
+        launchSingleTop = true
+        restoreState = true
+    }
+}
+
 @Composable
 private fun CafeBottomBar(
     currentRoute: String?,
@@ -463,8 +534,11 @@ private fun CafeBottomBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(spacing.space18)
+            // 배경을 먼저 칠해 인셋 영역(화면 맨 아래)까지 canvas 로 채운 뒤,
+            // windowInsetsPadding 으로 탭 콘텐츠를 시스템 내비게이션 바 위로 올린다.
             .background(colors.canvas)
+            .windowInsetsPadding(WindowInsets.navigationBars)
+            .height(spacing.space18)
             .drawWithContent {
                 drawContent()
                 drawLine(
@@ -525,8 +599,11 @@ private fun OwnerBottomBar(
     Box(
         modifier = modifier
             .fillMaxWidth()
-            .height(spacing.space18)
+            // 배경을 먼저 칠해 인셋 영역(화면 맨 아래)까지 canvas 로 채운 뒤,
+            // windowInsetsPadding 으로 탭 콘텐츠를 시스템 내비게이션 바 위로 올린다.
             .background(colors.canvas)
+            .windowInsetsPadding(WindowInsets.navigationBars)
+            .height(spacing.space18)
             .drawWithContent {
                 drawContent()
                 drawLine(

@@ -3,7 +3,6 @@ package com.cafeminsu.ui.feature.gift
 import androidx.compose.ui.test.assertIsDisplayed
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
-import com.cafeminsu.domain.model.GiftChannel
 import com.cafeminsu.ui.theme.CafeTheme
 import org.junit.Rule
 import org.junit.Test
@@ -19,16 +18,12 @@ class GiftScreenTest {
                 GiftScreen(
                     state = GiftUiState.Content(
                         selectedAmountOption = GiftAmountOption.TenThousand,
-                        selectedChannel = GiftChannel.KakaoTalk,
-                        recipient = "",
                         message = "오늘 하루 수고 많았어",
                     ),
                     onBackClick = {},
                     onLoginClick = {},
                     onRetry = {},
                     onAmountSelected = {},
-                    onChannelSelected = {},
-                    onRecipientChanged = {},
                     onMessageChanged = {},
                     onSendClick = {},
                 )
@@ -37,7 +32,31 @@ class GiftScreenTest {
 
         composeRule.onNodeWithText("선물하기").assertIsDisplayed()
         composeRule.onNodeWithText("₩ 10,000").assertIsDisplayed()
-        composeRule.onNodeWithText("카카오톡").assertIsDisplayed()
         composeRule.onNodeWithText("구매하고 선물 보내기 · 10,000원").assertIsDisplayed()
+    }
+
+    @Test
+    fun showsKakaoOnlyShareNoticeWithoutSmsChannel() {
+        composeRule.setContent {
+            CafeTheme {
+                GiftScreen(
+                    state = GiftUiState.Content(
+                        selectedAmountOption = GiftAmountOption.TenThousand,
+                        message = "",
+                    ),
+                    onBackClick = {},
+                    onLoginClick = {},
+                    onRetry = {},
+                    onAmountSelected = {},
+                    onMessageChanged = {},
+                    onSendClick = {},
+                )
+            }
+        }
+
+        // 카카오톡 단일 채널: '받는 사람' 안내만 표시되고 문자(SMS) 선택지는 없다.
+        composeRule.onNodeWithText("받는 사람").assertIsDisplayed()
+        composeRule.onNodeWithText("구매 후 카카오톡으로 공유해요").assertIsDisplayed()
+        composeRule.onNodeWithText("문자 (SMS)").assertDoesNotExist()
     }
 }

@@ -1,6 +1,5 @@
 package com.cafeminsu.ui.feature.gift
 
-import com.cafeminsu.domain.model.GiftChannel
 import java.text.NumberFormat
 import java.util.Locale
 
@@ -9,8 +8,6 @@ sealed interface GiftUiState {
 
     data class Content(
         val selectedAmountOption: GiftAmountOption,
-        val selectedChannel: GiftChannel,
-        val recipient: String,
         val message: String,
         val customAmountText: String = "",
         val sending: Boolean = false,
@@ -21,11 +18,8 @@ sealed interface GiftUiState {
         val selectedAmountLabel: String = formatNumber(selectedAmount)
         val previewAmountLabel: String = "₩ $selectedAmountLabel"
         val primaryButtonText: String = "구매하고 선물 보내기 · ${formatNumber(selectedAmount)}원"
-        val recipientPlaceholder: String = when (selectedChannel) {
-            GiftChannel.KakaoTalk -> "카카오 친구 선택"
-            GiftChannel.Sms -> "연락처 입력"
-        }
-        val canSend: Boolean = !sending && selectedAmount > EmptyAmount && recipient.isNotBlank()
+        // 카카오톡 단일 채널: 수신자 미지정 구매 후 인텐트로 공유하므로 금액만 있으면 전송 가능.
+        val canSend: Boolean = !sending && selectedAmount > EmptyAmount
     }
 
     data class Error(
@@ -57,6 +51,16 @@ sealed interface GiftEvent {
     ) : GiftEvent
 
     data class SendFailed(
+        override val message: String,
+    ) : GiftEvent
+
+    /**
+     * 구매 성공 후 클레임 링크를 카카오톡으로 공유하라는 신호.
+     * UI 레이어가 [shareText] 를 `ACTION_SEND` 인텐트로 카카오톡에 공유한다(미설치 시 시스템 공유 시트).
+     * 공유 단계 실패는 선물 실패가 아니다(구매는 이미 성공). 링크/코드는 로깅하지 않는다(SECURITY §4).
+     */
+    data class ShareGiftLink(
+        val shareText: String,
         override val message: String,
     ) : GiftEvent
 }

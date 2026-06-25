@@ -88,8 +88,23 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideOwnerOrderApi(retrofit: Retrofit): OwnerOrderApi =
+        retrofit.create(OwnerOrderApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideOwnerMenuApi(retrofit: Retrofit): OwnerMenuApi =
+        retrofit.create(OwnerMenuApi::class.java)
+
+    @Provides
+    @Singleton
     fun providePaymentApi(retrofit: Retrofit): PaymentApi =
         retrofit.create(PaymentApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideKakaoPayApi(retrofit: Retrofit): KakaoPayApi =
+        retrofit.create(KakaoPayApi::class.java)
 
     @Provides
     @Singleton
@@ -105,6 +120,11 @@ object NetworkModule {
     @Singleton
     fun provideNotificationApi(retrofit: Retrofit): NotificationApi =
         retrofit.create(NotificationApi::class.java)
+
+    @Provides
+    @Singleton
+    fun provideRecommendationApi(retrofit: Retrofit): RecommendationApi =
+        retrofit.create(RecommendationApi::class.java)
 
     @Provides
     @Singleton

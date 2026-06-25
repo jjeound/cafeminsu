@@ -4,6 +4,7 @@ import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.data.mock.MockData
 import com.cafeminsu.domain.model.Store
+import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.StoreRepository
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -14,9 +15,13 @@ import kotlinx.coroutines.flow.map
 @Singleton
 class MockStoreRepository(
     stores: List<Store>,
+    private val cartRepository: CartRepository,
 ) : StoreRepository {
     @Inject
-    constructor() : this(stores = MockData.nearbyStores)
+    constructor(cartRepository: CartRepository) : this(
+        stores = MockData.nearbyStores,
+        cartRepository = cartRepository,
+    )
 
     private val storeState = MutableStateFlow(stores.sortedBy { it.distanceMeters })
     private val selectedStoreState = MutableStateFlow<Store?>(null)
@@ -42,6 +47,11 @@ class MockStoreRepository(
     override suspend fun selectStore(storeId: String): AppResult<Unit> =
         when (val result = getStore(storeId)) {
             is AppResult.Success -> {
+                // 매장별 메뉴가 다르므로 다른 매장으로 바꾸면 기존 장바구니를 비운다.
+                val previous = selectedStoreState.value
+                if (previous != null && previous.id != result.data.id) {
+                    cartRepository.clear()
+                }
                 selectedStoreState.value = result.data
                 AppResult.Success(Unit)
             }

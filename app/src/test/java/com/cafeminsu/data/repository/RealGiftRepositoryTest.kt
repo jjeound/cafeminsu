@@ -8,8 +8,8 @@ import com.cafeminsu.data.remote.createMoshi
 import com.cafeminsu.data.remote.createOkHttpClient
 import com.cafeminsu.data.remote.createRetrofit
 import com.cafeminsu.domain.model.AuthState
-import com.cafeminsu.domain.model.GiftChannel
 import com.cafeminsu.domain.model.GiftSendRequest
+import com.cafeminsu.domain.model.GifticonStatus
 import com.cafeminsu.domain.model.UserProfile
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.runTest
@@ -38,17 +38,12 @@ class RealGiftRepositoryTest {
     }
 
     @Test
-    fun sendGiftPurchasesThenSharesAndMapsGiftIdAndSentAt() = runTest(testDispatcher) {
+    fun sendGiftPurchasesOnceAndMapsGiftIdAndSentAt() = runTest(testDispatcher) {
         server.enqueue(purchaseResponse(gifticonId = 55))
-        server.enqueue(shareResponse())
         val repository = realGiftRepository(nowMillis = { 1_782_012_345_000L })
 
         val result = repository.sendGift(
-            giftRequest(
-                channel = GiftChannel.KakaoTalk,
-                recipientRef = "42",
-                message = "오늘 하루 수고 많았어",
-            ),
+            giftRequest(message = "오늘 하루 수고 많았어"),
         )
 
         assertTrue(result is AppResult.Success)
@@ -56,44 +51,35 @@ class RealGiftRepositoryTest {
         assertEquals("55", gift.giftId)
         assertEquals(1_782_012_345_000L, gift.sentAtMillis)
 
+        // 별도 share API 호출 없이 구매 1회만 수행한다.
+        assertEquals(1, server.requestCount)
         val purchase = server.takeRequest()
         assertEquals("/api/gifticons", purchase.requestUrl?.encodedPath)
         assertEquals(null, purchase.requestUrl?.queryParameter("userId"))
         val purchaseBody = purchase.body.readUtf8()
         assertTrue(purchaseBody.contains("\"amount\":10000"))
-        assertTrue(purchaseBody.contains("\"receiverId\":42"))
         assertTrue(purchaseBody.contains("\"message\":\"오늘 하루 수고 많았어\""))
-        assertFalse(purchaseBody.contains("shareLink"))
+        // 카카오톡 단일 채널: 수신자 미지정 구매. 수신자 식별자는 서버로 보내지 않는다.
+        assertFalse(purchaseBody.contains("receiverId"))
+        assertFalse(purchaseBody.contains("receiverPhone"))
         assertFalse(purchaseBody.contains("qr-sensitive-value"))
-
-        val share = server.takeRequest()
-        assertEquals("/api/gifticons/55/share", share.requestUrl?.encodedPath)
-        assertEquals(null, share.requestUrl?.queryParameter("userId"))
-        assertEquals("", share.body.readUtf8())
     }
 
     @Test
-    fun sendGiftMapsSmsRecipientToReceiverPhone() = runTest(testDispatcher) {
-        server.enqueue(purchaseResponse(gifticonId = 56))
-        server.enqueue(shareResponse())
+    fun sendGiftMapsShareLinkAndClaimCode() = runTest(testDispatcher) {
+        server.enqueue(purchaseResponse(gifticonId = 60))
         val repository = realGiftRepository()
 
-        val result = repository.sendGift(
-            giftRequest(
-                channel = GiftChannel.Sms,
-                recipientRef = "010-1234-5678",
-                message = null,
-            ),
-        )
+        val result = repository.sendGift(giftRequest())
 
         assertTrue(result is AppResult.Success)
-        val body = server.takeRequest().body.readUtf8()
-        assertTrue(body.contains("\"receiverPhone\":\"010-1234-5678\""))
-        assertFalse(body.contains("receiverId"))
+        val gift = (result as AppResult.Success).data
+        assertEquals("https://cafeminsu.example/gift?code=GFT-XXXX-XXXX", gift.shareLink)
+        assertEquals("GFT-XXXX-XXXX", gift.claimCode)
     }
 
     @Test
-    fun purchaseFailureReturnsFailureAndDoesNotShare() = runTest(testDispatcher) {
+    fun purchaseFailureReturnsFailure() = runTest(testDispatcher) {
         server.enqueue(MockResponse().setResponseCode(404))
         val repository = realGiftRepository()
 
@@ -102,20 +88,6 @@ class RealGiftRepositoryTest {
         assertEquals(AppResult.Failure(DomainError.NotFound), result)
         assertEquals(1, server.requestCount)
         assertEquals("/api/gifticons", server.takeRequest().requestUrl?.encodedPath)
-    }
-
-    @Test
-    fun shareFailureReturnsFailureAfterPurchase() = runTest(testDispatcher) {
-        server.enqueue(purchaseResponse(gifticonId = 57))
-        server.enqueue(MockResponse().setResponseCode(401))
-        val repository = realGiftRepository()
-
-        val result = repository.sendGift(giftRequest())
-
-        assertEquals(AppResult.Failure(DomainError.Unauthorized), result)
-        assertEquals("/api/gifticons", server.takeRequest().requestUrl?.encodedPath)
-        assertEquals("/api/gifticons/57/share", server.takeRequest().requestUrl?.encodedPath)
-        assertEquals(2, server.requestCount)
     }
 
     @Test
@@ -138,6 +110,70 @@ class RealGiftRepositoryTest {
         assertEquals(0, server.requestCount)
     }
 
+    @Test
+    fun claimGiftMapsResponseToGifticon() = runTest(testDispatcher) {
+        server.enqueue(claimResponse())
+        val repository = realGiftRepository()
+
+        val result = repository.claimGift("GFT-1234-5678")
+
+        assertTrue(result is AppResult.Success)
+        val gifticon = (result as AppResult.Success).data
+        assertEquals("123", gifticon.id)
+        assertEquals("금액형 기프티콘 10,000원", gifticon.title)
+        assertEquals("barcode-sensitive-value", gifticon.barcodeValue)
+        assertEquals("qr-sensitive-value", gifticon.qrValue)
+        assertEquals(1_750_000_000_000L, gifticon.expiresAtMillis)
+        assertEquals(GifticonStatus.Available, gifticon.status)
+
+        val request = server.takeRequest()
+        assertEquals("/api/gifticons/claim", request.requestUrl?.encodedPath)
+        assertEquals(null, request.requestUrl?.queryParameter("userId"))
+        assertTrue(request.body.readUtf8().contains("\"claimCode\":\"GFT-1234-5678\""))
+    }
+
+    @Test
+    fun claimGiftBlankCodeBlocksBeforeNetworkCall() = runTest(testDispatcher) {
+        val repository = realGiftRepository()
+
+        val result = repository.claimGift("   ")
+
+        assertEquals(AppResult.Failure(DomainError.Validation("claimCode")), result)
+        assertEquals(0, server.requestCount)
+    }
+
+    @Test
+    fun claimGiftGuestSessionBlocksBeforeNetworkCall() = runTest(testDispatcher) {
+        val repository = realGiftRepository(authState = AuthState.Guest)
+
+        val result = repository.claimGift("GFT-1234-5678")
+
+        assertEquals(AppResult.Failure(DomainError.Unauthorized), result)
+        assertEquals(0, server.requestCount)
+    }
+
+    @Test
+    fun claimGiftAlreadyClaimedMapsToPaymentError() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setResponseCode(409))
+        val repository = realGiftRepository()
+
+        val result = repository.claimGift("GFT-1234-5678")
+
+        assertEquals(AppResult.Failure(DomainError.Payment("already-claimed")), result)
+        assertEquals(1, server.requestCount)
+        assertEquals("/api/gifticons/claim", server.takeRequest().requestUrl?.encodedPath)
+    }
+
+    @Test
+    fun claimGiftNotFoundMapsToNotFound() = runTest(testDispatcher) {
+        server.enqueue(MockResponse().setResponseCode(404))
+        val repository = realGiftRepository()
+
+        val result = repository.claimGift("GFT-1234-5678")
+
+        assertEquals(AppResult.Failure(DomainError.NotFound), result)
+    }
+
     private fun realGiftRepository(
         authState: AuthState = authenticatedState(),
         nowMillis: () -> Long = { 1_782_000_000_000L },
@@ -158,14 +194,10 @@ class RealGiftRepositoryTest {
 
     private fun giftRequest(
         amount: Int = 10_000,
-        channel: GiftChannel = GiftChannel.KakaoTalk,
-        recipientRef: String = "42",
         message: String? = "고마워",
     ): GiftSendRequest =
         GiftSendRequest(
             amount = amount,
-            channel = channel,
-            recipientRef = recipientRef,
             message = message,
         )
 
@@ -177,19 +209,25 @@ class RealGiftRepositoryTest {
                 {
                   "gifticonId": $gifticonId,
                   "qrCode": "qr-sensitive-value",
-                  "merchantUid": "merchant-sensitive-value"
+                  "merchantUid": "merchant-sensitive-value",
+                  "claimCode": "GFT-XXXX-XXXX",
+                  "shareLink": "https://cafeminsu.example/gift?code=GFT-XXXX-XXXX"
                 }
                 """.trimIndent(),
             )
 
-    private fun shareResponse(): MockResponse =
+    private fun claimResponse(): MockResponse =
         MockResponse()
             .setResponseCode(200)
             .setBody(
                 """
                 {
-                  "shareLink": "https://cafeminsu.example/gift/secret",
-                  "deepLink": "cafeminsu://gift/secret"
+                  "gifticonId": 123,
+                  "title": "금액형 기프티콘 10,000원",
+                  "barcodeValue": "barcode-sensitive-value",
+                  "qrValue": "qr-sensitive-value",
+                  "expiresAtMillis": 1750000000000,
+                  "status": "AVAILABLE"
                 }
                 """.trimIndent(),
             )

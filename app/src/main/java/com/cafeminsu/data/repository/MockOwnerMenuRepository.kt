@@ -59,7 +59,7 @@ class MockOwnerMenuRepository(
             basePrice = draft.basePrice,
             imageUrl = draft.imageUrl,
             isSoldOut = draft.isSoldOut,
-            options = emptyList(),
+            options = draft.options,
             isVisible = true,
         )
         menuState.value = menuState.value + created

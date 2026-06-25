@@ -5,6 +5,7 @@ import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.CartItem
 import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.OrderStatus
+import com.cafeminsu.domain.model.OwnerStore
 import com.cafeminsu.domain.model.SelectedOption
 import com.cafeminsu.domain.repository.OwnerOrderRepository
 import javax.inject.Inject
@@ -41,6 +42,14 @@ class MockOwnerOrderRepository @Inject constructor() : OwnerOrderRepository {
         }
         return AppResult.Success(updatedOrder)
     }
+
+    override suspend fun getStores(): AppResult<List<OwnerStore>> =
+        AppResult.Success(
+            listOf(
+                OwnerStore(id = "1", name = "강남점"),
+                OwnerStore(id = "2", name = "판교점"),
+            ),
+        )
 
     private fun OrderStatus.canAdvanceTo(next: OrderStatus): Boolean =
         when (this) {

@@ -16,9 +16,15 @@ val localProperties = Properties().apply {
 }
 val kakaoNativeAppKey = localProperties.getProperty("KAKAO_NATIVE_APP_KEY").orEmpty()
 val baseUrl = localProperties.getProperty("BASE_URL").orEmpty().trim()
+val kakaoPayEnabled = localProperties.getProperty("KAKAOPAY_ENABLED").orEmpty().trim()
+    .ifBlank { "false" }
 
 require(baseUrl.isBlank() || baseUrl.startsWith("https://")) {
     "BASE_URL must start with https:// when set."
+}
+
+require(kakaoPayEnabled == "true" || kakaoPayEnabled == "false") {
+    "KAKAOPAY_ENABLED must be \"true\" or \"false\" when set."
 }
 
 fun String.toBuildConfigLiteral(): String =
@@ -37,6 +43,7 @@ android {
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
         buildConfigField("String", "KAKAO_NATIVE_APP_KEY", kakaoNativeAppKey.toBuildConfigLiteral())
         buildConfigField("String", "BASE_URL", baseUrl.toBuildConfigLiteral())
+        buildConfigField("boolean", "KAKAOPAY_ENABLED", kakaoPayEnabled)
         manifestPlaceholders["kakaoRedirectScheme"] = "kakao$kakaoNativeAppKey"
     }
 
@@ -71,6 +78,15 @@ configurations.all {
     }
 }
 
+// Opt-in 라이브 스모크 테스트(`com.cafeminsu.live.*`)용 시스템 프로퍼티를 forked 테스트 JVM 으로 전달한다.
+// Gradle 은 기본적으로 CLI `-D` 를 테스트 JVM 에 넘기지 않으므로, 게이트 프로퍼티만 surgical 하게 전달한다.
+// (미설정 시 라이브 테스트는 전부 skip — 기본 빌드 동작 불변.)
+tasks.withType<Test>().configureEach {
+    listOf("liveServer", "liveServer.baseUrl", "liveServer.token").forEach { key ->
+        System.getProperty(key)?.let { systemProperty(key, it) }
+    }
+}
+
 dependencies {
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.core.ktx)
@@ -85,6 +101,9 @@ dependencies {
     implementation(libs.androidx.hilt.navigation.compose)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kakao.user)
+    implementation(libs.kakao.share)
+    implementation(libs.kakao.friend)
+    implementation(libs.kakao.talk)
     implementation(libs.kakao.map)
     implementation(platform(libs.firebase.bom))
     implementation(libs.firebase.messaging)

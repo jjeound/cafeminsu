@@ -4,6 +4,8 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
+import com.cafeminsu.domain.location.LocationProvider
+import com.cafeminsu.domain.location.haversineMeters
 import com.cafeminsu.domain.model.Store
 import com.cafeminsu.domain.model.StoreAmenity
 import com.cafeminsu.domain.model.StoreStatus
@@ -29,11 +31,15 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class StoreViewModel @Inject constructor(
     private val storeRepository: StoreRepository,
+    private val locationProvider: LocationProvider,
 ) : ViewModel() {
     private val query = MutableStateFlow("")
     private val refreshRequests = MutableStateFlow(0)
     private val selectedStore = MutableStateFlow<StoreDetailUiModel?>(null)
     private val mutableEvents = MutableSharedFlow<StoreEvent>()
+
+    // 내 위치(위도, 경도). 권한/측위 불가 시 null(거리 계산 생략, 서버 순서 유지).
+    private val userLatLng = MutableStateFlow<Pair<Double, Double>?>(null)
 
     val events: SharedFlow<StoreEvent> = mutableEvents.asSharedFlow()
 
@@ -41,17 +47,27 @@ class StoreViewModel @Inject constructor(
     // (TextField 값을 uiState.query에 묶으면 네트워크 응답 전까지 값이 지연돼 입력이 끊긴다.)
     val searchQuery: StateFlow<String> = query.asStateFlow()
 
+    init {
+        viewModelScope.launch {
+            userLatLng.value = locationProvider.currentLatLng()
+        }
+    }
+
     val uiState: StateFlow<StoreUiState> = combine(query, refreshRequests) { currentQuery, _ ->
         currentQuery
     }
         .flatMapLatest { currentQuery ->
-            storeRepository.observeNearbyStores(currentQuery)
-                .combine(selectedStore) { result, selectedStore ->
-                    result.toStoreUiState(
-                        query = currentQuery,
-                        selectedStore = selectedStore,
-                    )
-                }
+            combine(
+                storeRepository.observeNearbyStores(currentQuery),
+                selectedStore,
+                userLatLng,
+            ) { result, selectedStore, userLatLng ->
+                result.toStoreUiState(
+                    query = currentQuery,
+                    selectedStore = selectedStore,
+                    userLatLng = userLatLng,
+                )
+            }
         }
         .catch {
             emit(
@@ -75,7 +91,8 @@ class StoreViewModel @Inject constructor(
     fun onStoreClick(storeId: String) {
         viewModelScope.launch {
             when (val result = storeRepository.getStore(storeId)) {
-                is AppResult.Success -> selectedStore.value = result.data.toDetailUiModel()
+                is AppResult.Success ->
+                    selectedStore.value = result.data.toDetailUiModel(userLatLng.value)
                 is AppResult.Failure -> Unit
             }
         }
@@ -101,10 +118,18 @@ class StoreViewModel @Inject constructor(
     private fun AppResult<List<Store>>.toStoreUiState(
         query: String,
         selectedStore: StoreDetailUiModel?,
+        userLatLng: Pair<Double, Double>?,
     ): StoreUiState =
         when (this) {
             is AppResult.Success -> {
-                val stores = data.map { it.toUiModel() }
+                val stores = data
+                    // 내 위치 기준 거리(m)를 함께 계산한다. 계산 불가(좌표 미상/위치 없음)면 null.
+                    .map { store -> store to store.distanceMetersFrom(userLatLng) }
+                    // 가까운 순. 거리 미상(null)은 뒤로 보내고 서버 순서를 유지한다.
+                    .sortedWith(
+                        compareBy(nullsLast()) { (_, distance) -> distance },
+                    )
+                    .map { (store, distance) -> store.toUiModel(distance) }
                 if (stores.isEmpty()) {
                     StoreUiState.Empty(
                         query = query,
@@ -115,6 +140,9 @@ class StoreViewModel @Inject constructor(
                         query = query,
                         stores = stores,
                         selectedStore = selectedStore,
+                        userLocation = userLatLng?.let { (lat, lng) ->
+                            UserLocationUiModel(latitude = lat, longitude = lng)
+                        },
                     )
                 }
             }
@@ -122,26 +150,45 @@ class StoreViewModel @Inject constructor(
             is AppResult.Failure -> error.toStoreError()
         }
 
-    private fun Store.toUiModel(): StoreUiModel =
+    /** 내 위치 기준 직선 거리(m). 매장 좌표가 미상이거나 내 위치를 모르면 null. */
+    private fun Store.distanceMetersFrom(userLatLng: Pair<Double, Double>?): Int? {
+        if (userLatLng == null || !hasValidCoordinate()) return null
+        val (userLat, userLng) = userLatLng
+        return haversineMeters(
+            lat1 = userLat,
+            lng1 = userLng,
+            lat2 = latitude,
+            lng2 = longitude,
+        )
+    }
+
+    /** (0,0) 같은 미제공 좌표를 거른다. */
+    private fun Store.hasValidCoordinate(): Boolean =
+        latitude != 0.0 || longitude != 0.0
+
+    private fun Store.toUiModel(distanceMeters: Int?): StoreUiModel =
         StoreUiModel(
             id = id,
             name = name,
             address = address,
-            distanceLabel = distanceMeters.toDistanceLabel(),
+            distanceLabel = distanceMeters?.toDistanceLabel().orEmpty(),
             status = status.toUiModel(),
             statusLabel = status.toListStatusLabel(closingTimeLabel),
             latitude = latitude,
             longitude = longitude,
         )
 
-    private fun Store.toDetailUiModel(): StoreDetailUiModel =
-        StoreDetailUiModel(
+    private fun Store.toDetailUiModel(userLatLng: Pair<Double, Double>?): StoreDetailUiModel {
+        val distanceLabel = distanceMetersFrom(userLatLng)
+            ?.let { "현재 위치에서 ${it.toDistanceLabel()}" }
+            .orEmpty()
+        return StoreDetailUiModel(
             id = id,
             name = name,
             statusLabel = status.toDetailStatusLabel(closingTimeLabel),
             address = address,
             phone = phone,
-            distanceLabel = "현재 위치에서 ${distanceMeters.toDistanceLabel()}",
+            distanceLabel = distanceLabel,
             parkingLabel = if (amenities.contains(StoreAmenity.Parking)) {
                 "건물 내 30분 무료"
             } else {
@@ -151,6 +198,7 @@ class StoreViewModel @Inject constructor(
                 .filterNot { it == StoreAmenity.Parking }
                 .map { it.toLabel() },
         )
+    }
 
     private fun Int.toDistanceLabel(): String =
         if (this < MetersInKilometer) {

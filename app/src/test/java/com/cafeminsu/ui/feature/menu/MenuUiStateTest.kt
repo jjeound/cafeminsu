@@ -26,6 +26,33 @@ class MenuUiStateTest {
     }
 
     @Test
+    fun menuItemCarriesImageUrl() {
+        val item = MenuItemUiModel(
+            id = "latte",
+            name = "크림 라떼",
+            description = "부드러운 우유와 진한 에스프레소",
+            price = 5_300,
+            isSoldOut = false,
+            imageUrl = "https://example.com/latte.png",
+        )
+
+        assertEquals("https://example.com/latte.png", item.imageUrl)
+    }
+
+    @Test
+    fun menuItemImageUrlDefaultsToNull() {
+        val item = MenuItemUiModel(
+            id = "latte",
+            name = "크림 라떼",
+            description = "부드러운 우유와 진한 에스프레소",
+            price = 5_300,
+            isSoldOut = false,
+        )
+
+        assertEquals(null, item.imageUrl)
+    }
+
+    @Test
     fun emptyCanRetainVisibleCategories() {
         val state = MenuUiState.Empty(
             categories = listOf(MenuCategoryUiModel(id = "dessert", name = "디저트")),

@@ -8,9 +8,11 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.defaultMinSize
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
@@ -27,12 +29,14 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
+import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.semantics.contentDescription
 import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
+import coil.compose.AsyncImage
 import com.cafeminsu.R
 import com.cafeminsu.ui.components.CafeChip
 import com.cafeminsu.ui.components.EmptyView
@@ -51,9 +55,11 @@ fun MenuRoute(
     viewModel: MenuViewModel = hiltViewModel(),
 ) {
     val state by viewModel.uiState.collectAsState()
+    val cartItemCount by viewModel.cartItemCount.collectAsState()
 
     MenuScreen(
         state = state,
+        cartItemCount = cartItemCount,
         onCategorySelect = viewModel::onCategorySelect,
         onMenuClick = onMenuClick,
         onVoiceClick = onVoiceClick,
@@ -66,6 +72,7 @@ fun MenuRoute(
 @Composable
 fun MenuScreen(
     state: MenuUiState,
+    cartItemCount: Int,
     onCategorySelect: (String) -> Unit,
     onMenuClick: (String) -> Unit,
     onVoiceClick: () -> Unit,
@@ -121,6 +128,7 @@ fun MenuScreen(
 
             CartFloatingButton(
                 onClick = onCartClick,
+                cartItemCount = cartItemCount,
                 modifier = Modifier
                     .align(Alignment.BottomEnd)
                     .padding(
@@ -307,7 +315,7 @@ private fun MenuListItem(
         horizontalArrangement = Arrangement.spacedBy(spacing.space4),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        MenuThumbnail()
+        MenuThumbnail(imageUrl = menu.imageUrl)
 
         Column(
             modifier = Modifier.weight(MenuInfoWeight),
@@ -350,6 +358,7 @@ private fun MenuListItem(
 
 @Composable
 private fun MenuThumbnail(
+    imageUrl: String?,
     modifier: Modifier = Modifier,
 ) {
     Surface(
@@ -357,7 +366,17 @@ private fun MenuThumbnail(
         shape = CafeTheme.shapes.radiusSm,
         color = CafeTheme.colors.surfaceCard,
         contentColor = CafeTheme.colors.surfaceCard,
-    ) {}
+    ) {
+        AsyncImage(
+            model = imageUrl?.takeIf { it.isNotBlank() },
+            contentDescription = null,
+            modifier = Modifier.fillMaxSize(),
+            contentScale = ContentScale.Crop,
+            placeholder = painterResource(R.drawable.img_menu_default),
+            error = painterResource(R.drawable.img_menu_default),
+            fallback = painterResource(R.drawable.img_menu_default),
+        )
+    }
 }
 
 @Composable
@@ -382,22 +401,64 @@ private fun SoldOutBadge() {
 @Composable
 private fun CartFloatingButton(
     onClick: () -> Unit,
+    cartItemCount: Int,
     modifier: Modifier = Modifier,
 ) {
+    Box(modifier = modifier) {
+        Surface(
+            onClick = onClick,
+            modifier = Modifier
+                .size(CafeTheme.spacing.space10)
+                .semantics { contentDescription = "장바구니" },
+            shape = CafeTheme.shapes.radiusPill,
+            color = CafeTheme.colors.primary,
+            contentColor = CafeTheme.colors.onPrimary,
+        ) {
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                CartIcon(modifier = Modifier.size(CafeTheme.spacing.space5))
+            }
+        }
+
+        if (cartItemCount > 0) {
+            CartCountBadge(
+                count = cartItemCount,
+                modifier = Modifier
+                    .align(Alignment.TopEnd)
+                    .offset(x = CafeTheme.spacing.space1, y = -CafeTheme.spacing.space1),
+            )
+        }
+    }
+}
+
+@Composable
+private fun CartCountBadge(
+    count: Int,
+    modifier: Modifier = Modifier,
+) {
+    val label = if (count > MaxBadgeCount) "$MaxBadgeCount+" else count.toString()
     Surface(
-        onClick = onClick,
         modifier = modifier
-            .size(CafeTheme.spacing.space10)
-            .semantics { contentDescription = "장바구니" },
+            .defaultMinSize(
+                minWidth = CafeTheme.spacing.space4,
+                minHeight = CafeTheme.spacing.space4,
+            )
+            .semantics { contentDescription = "장바구니 ${count}개" },
         shape = CafeTheme.shapes.radiusPill,
-        color = CafeTheme.colors.primary,
-        contentColor = CafeTheme.colors.onPrimary,
+        color = CafeTheme.colors.surfaceDark,
+        contentColor = CafeTheme.colors.onDark,
     ) {
         Box(
-            modifier = Modifier.fillMaxSize(),
+            modifier = Modifier.padding(horizontal = CafeTheme.spacing.space1),
             contentAlignment = Alignment.Center,
         ) {
-            CartIcon(modifier = Modifier.size(CafeTheme.spacing.space5))
+            Text(
+                text = label,
+                style = CafeTheme.typography.meta,
+                color = CafeTheme.colors.onDark,
+            )
         }
     }
 }
@@ -445,3 +506,4 @@ private const val EnabledMenuAlpha = 1f
 private const val DisabledMenuAlpha = 0.42f
 private const val MenuNameMaxLines = 1
 private const val MenuDescriptionMaxLines = 1
+private const val MaxBadgeCount = 99

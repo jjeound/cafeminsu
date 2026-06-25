@@ -66,6 +66,27 @@ class UserPreferencesDataStore @Inject constructor(
         }
     }
 
+    fun observeOrderStatusNotification(): Flow<Boolean> =
+        read { it[OrderStatusNotificationKey] ?: DefaultOrderStatusNotification }
+
+    suspend fun setOrderStatusNotification(enabled: Boolean) {
+        dataStore.edit { it[OrderStatusNotificationKey] = enabled }
+    }
+
+    fun observePromotionNotification(): Flow<Boolean> =
+        read { it[PromotionNotificationKey] ?: DefaultPromotionNotification }
+
+    suspend fun setPromotionNotification(enabled: Boolean) {
+        dataStore.edit { it[PromotionNotificationKey] = enabled }
+    }
+
+    fun observeMarketingNotification(): Flow<Boolean> =
+        read { it[MarketingNotificationKey] ?: DefaultMarketingNotification }
+
+    suspend fun setMarketingNotification(enabled: Boolean) {
+        dataStore.edit { it[MarketingNotificationKey] = enabled }
+    }
+
     private fun <T> read(selector: (Preferences) -> T): Flow<T> =
         dataStore.data
             .catch { throwable ->
@@ -82,8 +103,14 @@ class UserPreferencesDataStore @Inject constructor(
         val OwnerStoreOpenKey = booleanPreferencesKey("owner_store_open")
         val OnboardingShownKey = booleanPreferencesKey("onboarding_shown")
         val LastCustomerTabKey = stringPreferencesKey("last_customer_tab")
+        val OrderStatusNotificationKey = booleanPreferencesKey("notify_order_status")
+        val PromotionNotificationKey = booleanPreferencesKey("notify_promotion")
+        val MarketingNotificationKey = booleanPreferencesKey("notify_marketing")
 
         const val DefaultOwnerStoreOpen = false
         const val DefaultOnboardingShown = false
+        const val DefaultOrderStatusNotification = true
+        const val DefaultPromotionNotification = true
+        const val DefaultMarketingNotification = false
     }
 }

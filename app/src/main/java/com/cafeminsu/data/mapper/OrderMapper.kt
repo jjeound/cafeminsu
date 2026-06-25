@@ -14,8 +14,6 @@ import com.cafeminsu.domain.model.CartItem
 import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.OrderStatus
 import com.cafeminsu.domain.model.SelectedOption
-import java.time.Instant
-import java.time.format.DateTimeParseException
 
 fun Cart.toOrderCreateReq(storeId: Long): AppResult<OrderCreateReq> {
     val requestItems = items.map { item ->
@@ -155,16 +153,7 @@ private fun String?.toOrderStatus(): OrderStatus? =
         else -> null
     }
 
-private fun String?.toEpochMillis(): Long =
-    this
-        ?.let { value ->
-            try {
-                Instant.parse(value).toEpochMilli()
-            } catch (_: DateTimeParseException) {
-                null
-            }
-        }
-        ?: DefaultCreatedAtMillis
+internal fun String?.toEpochMillis(): Long = parseServerEpochMillis(this)
 
 private fun String?.normalizedOptionGroup(): String =
     this?.trim()?.takeIf { it.isNotEmpty() } ?: DefaultOptionGroupName
@@ -173,5 +162,4 @@ private const val ServerOrderTypeMobile = "MOBILE"
 private const val ServerOrderMethodManual = "MANUAL"
 private const val DefaultAmount = 0
 private const val DefaultQuantity = 1
-private const val DefaultCreatedAtMillis = 0L
 private const val DefaultOptionGroupName = "옵션"

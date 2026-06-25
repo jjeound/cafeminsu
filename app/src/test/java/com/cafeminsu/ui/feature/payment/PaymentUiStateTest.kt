@@ -9,7 +9,8 @@ class PaymentUiStateTest {
     fun paymentMethodsExposeLabelsWithoutPaymentTokens() {
         val methods = defaultPaymentMethods()
 
-        assertEquals(listOf("신용카드", "간편결제", "쿠폰"), methods.map { it.label })
+        // 결제는 카카오페이로 통합 — 사용자가 보는 결제수단이 실제 PG 와 일치한다.
+        assertEquals(listOf("카카오페이"), methods.map { it.label })
         assertFalse(methods.any { method -> method.id.contains("tok_") })
     }
 

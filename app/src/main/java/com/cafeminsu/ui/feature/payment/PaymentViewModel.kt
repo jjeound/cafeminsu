@@ -5,10 +5,14 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
+import com.cafeminsu.domain.model.CartItem
+import com.cafeminsu.domain.model.Gifticon
+import com.cafeminsu.domain.model.GifticonStatus
 import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.PaymentRequest
 import com.cafeminsu.domain.model.PaymentResult
 import com.cafeminsu.domain.model.PaymentStatus
+import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.OrderRepository
 import com.cafeminsu.domain.repository.PaymentRepository
 import com.cafeminsu.domain.repository.RewardRepository
@@ -33,6 +37,7 @@ class PaymentViewModel @Inject constructor(
     private val paymentRepository: PaymentRepository,
     private val orderRepository: OrderRepository,
     private val rewardRepository: RewardRepository,
+    private val cartRepository: CartRepository,
 ) : ViewModel() {
     private val orderId = savedStateHandle.get<String>(Routes.PAYMENT_ORDER_ID).orEmpty()
     private val _uiState = MutableStateFlow<PaymentUiState>(PaymentUiState.Loading)
@@ -40,12 +45,31 @@ class PaymentViewModel @Inject constructor(
     private var observeJob: Job? = null
     private var paymentInProgress = false
     private var idempotencyKey: String? = null
+    private var latestOrder: Order? = null
+    private var availableGifticons: List<Gifticon> = emptyList()
+    private var selectedCouponId: String? = null
 
     val uiState: StateFlow<PaymentUiState> = _uiState.asStateFlow()
     val events: SharedFlow<PaymentEvent> = _events.asSharedFlow()
 
     init {
         observeOrder()
+        observeGifticons()
+    }
+
+    fun onToggleCoupon(couponId: String) {
+        if (paymentInProgress) {
+            return
+        }
+
+        val content = _uiState.value as? PaymentUiState.Content ?: return
+        if (content.coupons.none { coupon -> coupon.id == couponId }) {
+            return
+        }
+
+        // 이미 선택된 쿠폰을 다시 누르면 적용 해제한다.
+        selectedCouponId = if (selectedCouponId == couponId) null else couponId
+        _uiState.value = content.copy(selectedCouponId = selectedCouponId)
     }
 
     fun onSelectMethod(methodId: String) {
@@ -102,7 +126,7 @@ class PaymentViewModel @Inject constructor(
             }
             val request = PaymentRequest(
                 orderId = content.orderId,
-                amount = content.totalAmount,
+                amount = content.payableAmount,
                 paymentMethodToken = when (outcome) {
                     MockPaymentOutcome.Success -> method.token
                     MockPaymentOutcome.Failure -> MockFailureToken
@@ -145,8 +169,29 @@ class PaymentViewModel @Inject constructor(
                 .catch { emit(AppResult.Failure(DomainError.Unknown)) }
                 .collect { result ->
                     _uiState.value = when (result) {
-                        is AppResult.Success -> result.data.toPaymentContent()
+                        is AppResult.Success -> {
+                            latestOrder = result.data
+                            result.data.toPaymentContent()
+                        }
+
                         is AppResult.Failure -> result.error.toPaymentError()
+                    }
+                }
+        }
+    }
+
+    private fun observeGifticons() {
+        viewModelScope.launch {
+            rewardRepository.observeGifticons()
+                .catch { /* 기프티콘은 선택 사항 — 실패해도 결제는 진행 가능 */ }
+                .collect { result ->
+                    availableGifticons = when (result) {
+                        is AppResult.Success -> result.data
+                        is AppResult.Failure -> emptyList()
+                    }
+                    val order = latestOrder ?: return@collect
+                    if (_uiState.value is PaymentUiState.Content) {
+                        _uiState.value = order.toPaymentContent()
                     }
                 }
         }
@@ -236,7 +281,26 @@ class PaymentViewModel @Inject constructor(
     private suspend fun approvePayment(approvedOrderId: String) {
         finishPayment(PaymentProgress.Approved)
         grantStampForApprovedOrder(approvedOrderId)
+        redeemSelectedCoupon()
+        clearCartAfterApproval()
         _events.emit(PaymentEvent.PaymentApproved(approvedOrderId))
+    }
+
+    private suspend fun clearCartAfterApproval() {
+        // 결제 승인이 확정된 이후에만 장바구니를 비운다(낙관적 처리 금지).
+        // clear()는 AppResult를 반환하므로 실패는 무시한다 — 성공 흐름을 막지 않는다.
+        cartRepository.clear()
+    }
+
+    private suspend fun redeemSelectedCoupon() {
+        val gifticonId = selectedCouponId ?: return
+        try {
+            rewardRepository.markGifticonUsed(gifticonId)
+        } catch (error: CancellationException) {
+            throw error
+        } catch (_: Throwable) {
+            // 비치명적: 결제 승인이 우선이며 기프티콘 사용 처리는 추후 재시도로 정합화할 수 있다.
+        }
     }
 
     private suspend fun failPayment(
@@ -270,6 +334,13 @@ class PaymentViewModel @Inject constructor(
             ?.takeIf { selectedId -> methods.any { method -> method.id == selectedId } }
             ?: methods.first().id
 
+        val couponModels = availableGifticons
+            .filter { gifticon -> gifticon.status == GifticonStatus.Available }
+            .map { gifticon -> gifticon.toPaymentCouponUiModel(items) }
+        // 더 이상 사용할 수 없는 쿠폰이 선택돼 있으면 선택을 해제한다.
+        val validCouponId = selectedCouponId?.takeIf { id -> couponModels.any { it.id == id } }
+        selectedCouponId = validCouponId
+
         return PaymentUiState.Content(
             orderId = id,
             orderNumber = orderNumber,
@@ -278,6 +349,19 @@ class PaymentViewModel @Inject constructor(
             methods = methods,
             selectedMethodId = selectedMethodId,
             paymentState = current?.paymentState ?: PaymentProgress.Idle,
+            coupons = couponModels,
+            selectedCouponId = validCouponId,
+        )
+    }
+
+    private fun Gifticon.toPaymentCouponUiModel(items: List<CartItem>): PaymentCouponUiModel {
+        // 금액권(amount>0)은 잔액만큼만 할인하고,
+        // 금액 정보가 없는 교환권(무료 음료 등)만 가장 비싼 한 잔 가격으로 폴백한다.
+        val discount = if (amount > 0) amount else items.maxOfOrNull { item -> item.unitPrice } ?: 0
+        return PaymentCouponUiModel(
+            id = id,
+            label = title,
+            discountAmount = discount,
         )
     }
 
@@ -368,18 +452,11 @@ private enum class MockPaymentOutcome {
     Failure,
 }
 
+// 결제수단은 카카오페이로 통합(defaultPaymentMethods 와 일관). 진입 시 기본 선택도 카카오페이다.
 private val paymentMethods = listOf(
     PaymentMethod(
-        id = "credit-card",
-        token = "tok_credit_card_mock",
-    ),
-    PaymentMethod(
-        id = "simple-pay",
-        token = "tok_simple_pay_mock",
-    ),
-    PaymentMethod(
-        id = "coupon",
-        token = "tok_coupon_mock",
+        id = "kakaopay",
+        token = "tok_kakaopay_mock",
     ),
 )
 

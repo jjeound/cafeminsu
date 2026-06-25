@@ -33,7 +33,6 @@ class MyScreenTest {
 
         composeRule.onNodeWithText("MY").assertIsDisplayed()
         composeRule.onNodeWithText("진지원 님").assertIsDisplayed()
-        composeRule.onNodeWithText("GOLD").assertIsDisplayed()
         composeRule.onNodeWithText("12").assertExists()
         composeRule.onNodeWithText("7/10").assertExists()
         composeRule.onNodeWithText("3").assertExists()
@@ -106,7 +105,7 @@ class MyScreenTest {
             profile = MyProfileUiModel(
                 displayName = "진지원",
                 initial = "진",
-                tierLabel = "GOLD",
+                tierLabel = "",
             ),
             stats = MyStatsUiModel(
                 orderCount = 12,

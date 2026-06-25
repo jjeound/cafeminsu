@@ -24,6 +24,7 @@ import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -64,6 +65,7 @@ fun PaymentRoute(
         state = state,
         onBackClick = onBackClick,
         onSelectMethod = viewModel::onSelectMethod,
+        onToggleCoupon = viewModel::onToggleCoupon,
         onPaymentSuccess = viewModel::onPaySuccess,
         onPaymentFailure = viewModel::onPayFailure,
         onRetryFailure = viewModel::onRetryFailure,
@@ -78,6 +80,7 @@ fun PaymentScreen(
     state: PaymentUiState,
     onBackClick: () -> Unit,
     onSelectMethod: (String) -> Unit,
+    onToggleCoupon: (String) -> Unit,
     onPaymentSuccess: () -> Unit,
     onPaymentFailure: () -> Unit,
     onRetryFailure: () -> Unit,
@@ -127,6 +130,7 @@ fun PaymentScreen(
                     is PaymentUiState.Content -> PaymentContent(
                         state = state,
                         onSelectMethod = onSelectMethod,
+                        onToggleCoupon = onToggleCoupon,
                     )
 
                     is PaymentUiState.Error -> ErrorView(
@@ -153,6 +157,7 @@ fun PaymentScreen(
 private fun PaymentContent(
     state: PaymentUiState.Content,
     onSelectMethod: (String) -> Unit,
+    onToggleCoupon: (String) -> Unit,
 ) {
     LazyColumn(
         modifier = Modifier.fillMaxSize(),
@@ -171,6 +176,18 @@ private fun PaymentContent(
                     selectedMethodId = state.selectedMethodId,
                     enabled = state.paymentState !is PaymentProgress.Processing,
                     onSelectMethod = onSelectMethod,
+                )
+            }
+        }
+
+        item {
+            Column(verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space3)) {
+                SectionLabel(text = "쿠폰 할인")
+                CouponSelector(
+                    coupons = state.coupons,
+                    selectedCouponId = state.selectedCouponId,
+                    enabled = state.paymentState !is PaymentProgress.Processing,
+                    onToggleCoupon = onToggleCoupon,
                 )
             }
         }
@@ -288,6 +305,84 @@ private fun PaymentMethodSegment(
 }
 
 @Composable
+private fun CouponSelector(
+    coupons: List<PaymentCouponUiModel>,
+    selectedCouponId: String?,
+    enabled: Boolean,
+    onToggleCoupon: (String) -> Unit,
+) {
+    if (coupons.isEmpty()) {
+        Text(
+            text = "사용 가능한 쿠폰이 없어요",
+            style = CafeTheme.typography.body,
+            color = CafeTheme.colors.muted,
+        )
+        return
+    }
+
+    Column(verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space2)) {
+        coupons.forEach { coupon ->
+            CouponRow(
+                coupon = coupon,
+                selected = coupon.id == selectedCouponId,
+                enabled = enabled,
+                onClick = { onToggleCoupon(coupon.id) },
+            )
+        }
+    }
+}
+
+@Composable
+private fun CouponRow(
+    coupon: PaymentCouponUiModel,
+    selected: Boolean,
+    enabled: Boolean,
+    onClick: () -> Unit,
+) {
+    val colors = CafeTheme.colors
+    val spacing = CafeTheme.spacing
+
+    Surface(
+        onClick = onClick,
+        modifier = Modifier.fillMaxWidth(),
+        enabled = enabled,
+        shape = CafeTheme.shapes.radiusMd,
+        color = if (selected) colors.surfaceDark else colors.canvas,
+        contentColor = if (selected) colors.onDark else colors.ink,
+        border = if (selected) {
+            null
+        } else {
+            BorderStroke(spacing.space1 / BorderWidthDivider, colors.hairline)
+        },
+    ) {
+        Row(
+            modifier = Modifier.padding(
+                horizontal = spacing.space4,
+                vertical = spacing.space3,
+            ),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Text(
+                text = coupon.label,
+                modifier = Modifier.weight(ItemTextWeight),
+                style = CafeTheme.typography.body,
+                color = if (selected) colors.onDark else colors.ink,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            Spacer(modifier = Modifier.width(spacing.space3))
+            Text(
+                text = "-${formatWon(coupon.discountAmount)}",
+                style = CafeTheme.typography.bodyL,
+                color = if (selected) colors.onDark else colors.primary,
+                maxLines = 1,
+            )
+        }
+    }
+}
+
+@Composable
 private fun OrderSummaryCard(state: PaymentUiState.Content) {
     val colors = CafeTheme.colors
     val spacing = CafeTheme.spacing
@@ -303,6 +398,19 @@ private fun OrderSummaryCard(state: PaymentUiState.Content) {
 
             HorizontalDivider(color = colors.hairline)
 
+            if (state.discountAmount > 0) {
+                SummaryAmountRow(
+                    label = "상품 금액",
+                    value = formatWon(state.totalAmount),
+                    valueColor = colors.body,
+                )
+                SummaryAmountRow(
+                    label = "쿠폰 할인",
+                    value = "-${formatWon(state.discountAmount)}",
+                    valueColor = colors.primary,
+                )
+            }
+
             Row(
                 modifier = Modifier.fillMaxWidth(),
                 horizontalArrangement = Arrangement.SpaceBetween,
@@ -314,12 +422,36 @@ private fun OrderSummaryCard(state: PaymentUiState.Content) {
                     color = colors.ink,
                 )
                 Text(
-                    text = formatWon(state.totalAmount),
+                    text = formatWon(state.payableAmount),
                     style = CafeTheme.typography.h3,
                     color = colors.ink,
                 )
             }
         }
+    }
+}
+
+@Composable
+private fun SummaryAmountRow(
+    label: String,
+    value: String,
+    valueColor: Color,
+) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = label,
+            style = CafeTheme.typography.body,
+            color = CafeTheme.colors.muted,
+        )
+        Text(
+            text = value,
+            style = CafeTheme.typography.body,
+            color = valueColor,
+        )
     }
 }
 

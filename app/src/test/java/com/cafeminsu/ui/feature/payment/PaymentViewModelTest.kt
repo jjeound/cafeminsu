@@ -8,6 +8,7 @@ import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.Cart
 import com.cafeminsu.domain.model.CartItem
 import com.cafeminsu.domain.model.Gifticon
+import com.cafeminsu.domain.model.GifticonStatus
 import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.OrderStatus
 import com.cafeminsu.domain.model.PaymentRequest
@@ -15,10 +16,14 @@ import com.cafeminsu.domain.model.PaymentResult
 import com.cafeminsu.domain.model.PaymentStatus
 import com.cafeminsu.domain.model.StampCard
 import com.cafeminsu.domain.model.StampEvent
+import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.OrderRepository
 import com.cafeminsu.domain.repository.PaymentRepository
 import com.cafeminsu.domain.repository.RewardRepository
 import com.cafeminsu.ui.navigation.Routes
+import io.mockk.coEvery
+import io.mockk.coVerify
+import io.mockk.mockk
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
@@ -198,6 +203,130 @@ class PaymentViewModelTest {
     }
 
     @Test
+    fun approvedPaymentClearsCartExactlyOnce() = runTest {
+        val cartRepository = mockk<CartRepository>(relaxed = true)
+        coEvery { cartRepository.clear() } returns AppResult.Success(Unit)
+        val paymentRepository = FakePaymentRepository(
+            payResults = mutableListOf(
+                AppResult.Success(paymentResult(status = PaymentStatus.Approved)),
+            ),
+        )
+        val viewModel = viewModel(
+            paymentRepository = paymentRepository,
+            cartRepository = cartRepository,
+        )
+
+        viewModel.uiState.test {
+            awaitContent()
+
+            viewModel.events.test {
+                viewModel.onPay()
+
+                assertEquals(PaymentEvent.PaymentApproved("order-1"), awaitItem())
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        coVerify(exactly = 1) { cartRepository.clear() }
+    }
+
+    @Test
+    fun cartClearFailureDoesNotBlockApprovedPaymentEvent() = runTest {
+        val cartRepository = mockk<CartRepository>(relaxed = true)
+        coEvery { cartRepository.clear() } returns AppResult.Failure(DomainError.Unknown)
+        val paymentRepository = FakePaymentRepository(
+            payResults = mutableListOf(
+                AppResult.Success(paymentResult(status = PaymentStatus.Approved)),
+            ),
+        )
+        val viewModel = viewModel(
+            paymentRepository = paymentRepository,
+            cartRepository = cartRepository,
+        )
+
+        viewModel.uiState.test {
+            awaitContent()
+
+            viewModel.events.test {
+                viewModel.onPay()
+
+                assertEquals(PaymentEvent.PaymentApproved("order-1"), awaitItem())
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        coVerify(exactly = 1) { cartRepository.clear() }
+    }
+
+    @Test
+    fun failedPaymentDoesNotClearCart() = runTest {
+        val cartRepository = mockk<CartRepository>(relaxed = true)
+        val paymentRepository = FakePaymentRepository(
+            payResults = mutableListOf(
+                AppResult.Success(paymentResult(status = PaymentStatus.Failed)),
+            ),
+        )
+        val viewModel = viewModel(
+            paymentRepository = paymentRepository,
+            cartRepository = cartRepository,
+        )
+
+        viewModel.uiState.test {
+            awaitContent()
+
+            viewModel.events.test {
+                viewModel.onPayFailure()
+
+                awaitContentWithProgress<PaymentProgress.Failed>()
+                assertEquals(PaymentEvent.PaymentFailed("order-1"), awaitItem())
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        coVerify(exactly = 0) { cartRepository.clear() }
+    }
+
+    @Test
+    fun cancelledPaymentDoesNotClearCart() = runTest {
+        val cartRepository = mockk<CartRepository>(relaxed = true)
+        val paymentRepository = FakePaymentRepository(
+            payResults = mutableListOf(
+                AppResult.Success(paymentResult(status = PaymentStatus.Cancelled)),
+            ),
+        )
+        val viewModel = viewModel(
+            paymentRepository = paymentRepository,
+            cartRepository = cartRepository,
+        )
+
+        viewModel.uiState.test {
+            awaitContent()
+
+            viewModel.events.test {
+                viewModel.onPay()
+
+                awaitContentWithProgress<PaymentProgress.Failed>()
+                assertEquals(PaymentEvent.PaymentFailed("order-1"), awaitItem())
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        coVerify(exactly = 0) { cartRepository.clear() }
+    }
+
+    @Test
     fun unknownPaymentConfirmsStatusAndDoesNotOptimisticallySucceedWhenUnresolved() = runTest {
         val paymentRepository = FakePaymentRepository(
             payResults = mutableListOf(
@@ -325,6 +454,159 @@ class PaymentViewModelTest {
         }
     }
 
+    @Test
+    fun applyingGifticonReducesPaidAmountAndMarksUsed() = runTest {
+        val rewardRepository = FakePaymentRewardRepository(
+            gifticons = listOf(
+                Gifticon(
+                    id = "gifticon-1",
+                    title = "무료 음료 1잔",
+                    barcodeValue = "",
+                    qrValue = "",
+                    expiresAtMillis = 1_800_000_000_000L,
+                    status = GifticonStatus.Available,
+                ),
+            ),
+        )
+        val paymentRepository = FakePaymentRepository(
+            payResults = mutableListOf(
+                AppResult.Success(paymentResult(status = PaymentStatus.Approved)),
+            ),
+        )
+        val viewModel = viewModel(
+            paymentRepository = paymentRepository,
+            rewardRepository = rewardRepository,
+        )
+
+        viewModel.uiState.test {
+            val content = awaitContentWithCoupons()
+            assertEquals(12_000, content.payableAmount)
+
+            // 기프티콘(무료 음료)은 가장 비싼 한 잔(라떼 6,000원)만큼 할인한다.
+            viewModel.onToggleCoupon("gifticon-1")
+            val discounted = awaitContent()
+            assertEquals(6_000, discounted.discountAmount)
+            assertEquals(6_000, discounted.payableAmount)
+
+            viewModel.events.test {
+                viewModel.onPay()
+
+                assertEquals(PaymentEvent.PaymentApproved("order-1"), awaitItem())
+                assertEquals(6_000, paymentRepository.payRequests.single().amount)
+                assertEquals(listOf("gifticon-1"), rewardRepository.usedGifticonIds)
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun applyingAmountGifticonDiscountsByBalanceNotMostExpensiveDrink() = runTest {
+        val rewardRepository = FakePaymentRewardRepository(
+            gifticons = listOf(
+                Gifticon(
+                    id = "gifticon-amount",
+                    title = "₩2,000",
+                    barcodeValue = "",
+                    qrValue = "",
+                    expiresAtMillis = 1_800_000_000_000L,
+                    status = GifticonStatus.Available,
+                    amount = 2_000,
+                ),
+            ),
+        )
+        val paymentRepository = FakePaymentRepository(
+            payResults = mutableListOf(
+                AppResult.Success(paymentResult(status = PaymentStatus.Approved)),
+            ),
+        )
+        val viewModel = viewModel(
+            paymentRepository = paymentRepository,
+            rewardRepository = rewardRepository,
+        )
+
+        viewModel.uiState.test {
+            val content = awaitContentWithCoupons()
+            assertEquals(12_000, content.payableAmount)
+
+            // 금액권(2,000원)은 잔액만큼만 할인한다 — 가장 비싼 한 잔(6,000원)이 아님.
+            viewModel.onToggleCoupon("gifticon-amount")
+            val discounted = awaitContent()
+            assertEquals(2_000, discounted.discountAmount)
+            assertEquals(10_000, discounted.payableAmount)
+
+            viewModel.events.test {
+                viewModel.onPay()
+
+                assertEquals(PaymentEvent.PaymentApproved("order-1"), awaitItem())
+                assertEquals(10_000, paymentRepository.payRequests.single().amount)
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun kakaoPayMethodApprovalRoutesThroughKakaoPayToken() = runTest {
+        val paymentRepository = FakePaymentRepository(
+            payResults = mutableListOf(
+                AppResult.Success(paymentResult(status = PaymentStatus.Approved)),
+            ),
+        )
+        val viewModel = viewModel(paymentRepository = paymentRepository)
+
+        viewModel.uiState.test {
+            val content = awaitContent()
+            // 결제는 카카오페이로 통합 — 기본 선택이 카카오페이다.
+            assertEquals("kakaopay", content.selectedMethodId)
+            assertTrue(content.methods.any { method -> method.id == "kakaopay" })
+
+            viewModel.events.test {
+                viewModel.onPay()
+
+                assertEquals(PaymentEvent.PaymentApproved("order-1"), awaitItem())
+                assertEquals(
+                    "tok_kakaopay_mock",
+                    paymentRepository.payRequests.single().paymentMethodToken,
+                )
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
+    @Test
+    fun kakaoPayMethodFailureEmitsFailureEvent() = runTest {
+        val paymentRepository = FakePaymentRepository(
+            payResults = mutableListOf(
+                AppResult.Success(paymentResult(status = PaymentStatus.Failed)),
+            ),
+        )
+        val viewModel = viewModel(paymentRepository = paymentRepository)
+
+        viewModel.uiState.test {
+            val content = awaitContent()
+            assertEquals("kakaopay", content.selectedMethodId)
+
+            viewModel.events.test {
+                viewModel.onPayFailure()
+
+                awaitContentWithProgress<PaymentProgress.Failed>()
+                assertEquals(PaymentEvent.PaymentFailed("order-1"), awaitItem())
+
+                cancelAndIgnoreRemainingEvents()
+            }
+
+            cancelAndIgnoreRemainingEvents()
+        }
+    }
+
     private fun viewModel(
         orderId: String = "order-1",
         orderRepository: FakePaymentOrderRepository = FakePaymentOrderRepository(
@@ -332,12 +614,14 @@ class PaymentViewModelTest {
         ),
         paymentRepository: FakePaymentRepository = FakePaymentRepository(),
         rewardRepository: FakePaymentRewardRepository = FakePaymentRewardRepository(),
+        cartRepository: CartRepository = mockk(relaxed = true),
     ): PaymentViewModel =
         PaymentViewModel(
             savedStateHandle = SavedStateHandle(mapOf(Routes.PAYMENT_ORDER_ID to orderId)),
             paymentRepository = paymentRepository,
             orderRepository = orderRepository,
             rewardRepository = rewardRepository,
+            cartRepository = cartRepository,
         )
 
     private suspend fun ReceiveTurbine<PaymentUiState>.awaitContent(): PaymentUiState.Content {
@@ -345,6 +629,15 @@ class PaymentViewModelTest {
             val state = awaitItem()
             if (state is PaymentUiState.Content) {
                 return state
+            }
+        }
+    }
+
+    private suspend fun ReceiveTurbine<PaymentUiState>.awaitContentWithCoupons(): PaymentUiState.Content {
+        while (true) {
+            val content = awaitContent()
+            if (content.coupons.isNotEmpty()) {
+                return content
             }
         }
     }
@@ -413,8 +706,12 @@ private data class StatusRequest(
 private class FakePaymentRewardRepository(
     private val grantResult: AppResult<StampCard> = AppResult.Success(sampleStampCard()),
     private val grantGate: CompletableDeferred<Unit>? = null,
+    gifticons: List<Gifticon> = emptyList(),
 ) : RewardRepository {
     val grantOrderIds = mutableListOf<String>()
+    val usedGifticonIds = mutableListOf<String>()
+    private val gifticonsFlow =
+        MutableStateFlow<AppResult<List<Gifticon>>>(AppResult.Success(gifticons))
 
     override fun observeStampCard(): Flow<AppResult<StampCard>> =
         MutableStateFlow(AppResult.Success(sampleStampCard()))
@@ -425,14 +722,19 @@ private class FakePaymentRewardRepository(
         return grantResult
     }
 
-    override fun observeGifticons(): Flow<AppResult<List<Gifticon>>> =
-        MutableStateFlow(AppResult.Success(emptyList()))
+    override fun observeGifticons(): Flow<AppResult<List<Gifticon>>> = gifticonsFlow
 
     override suspend fun getGifticon(id: String): AppResult<Gifticon> =
-        AppResult.Failure(DomainError.NotFound)
+        (gifticonsFlow.value as? AppResult.Success)?.data?.firstOrNull { it.id == id }
+            ?.let { AppResult.Success(it) }
+            ?: AppResult.Failure(DomainError.NotFound)
 
-    override suspend fun markGifticonUsed(id: String): AppResult<Gifticon> =
-        AppResult.Failure(DomainError.NotFound)
+    override suspend fun markGifticonUsed(id: String): AppResult<Gifticon> {
+        usedGifticonIds += id
+        val gifticon = (gifticonsFlow.value as? AppResult.Success)?.data?.firstOrNull { it.id == id }
+            ?: return AppResult.Failure(DomainError.NotFound)
+        return AppResult.Success(gifticon.copy(status = GifticonStatus.Used))
+    }
 }
 
 private fun paymentResult(

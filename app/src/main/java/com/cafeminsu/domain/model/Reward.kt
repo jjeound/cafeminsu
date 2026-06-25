@@ -21,6 +21,8 @@ data class Gifticon(
     val qrValue: String,
     val expiresAtMillis: Long,
     val status: GifticonStatus,
+    // 금액형 기프티콘의 잔액(원). 0이면 금액 정보가 없는 교환권(무료 음료 등).
+    val amount: Int = 0,
 )
 
 enum class GifticonStatus {
@@ -51,17 +53,12 @@ enum class CouponStatus {
 
 data class GiftSendRequest(
     val amount: Int,
-    val channel: GiftChannel,
-    val recipientRef: String,
     val message: String?,
 )
-
-enum class GiftChannel {
-    KakaoTalk,
-    Sms,
-}
 
 data class GiftSendResult(
     val giftId: String,
     val sentAtMillis: Long,
+    val shareLink: String? = null,
+    val claimCode: String? = null,
 )

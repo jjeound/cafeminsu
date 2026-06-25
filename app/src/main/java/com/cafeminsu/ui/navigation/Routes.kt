@@ -23,8 +23,12 @@ object Routes {
     const val ORDER_OK = "$ORDER_OK_BASE/{$ORDER_OK_ORDER_ID}"
     const val ORDER_FAIL = "order_fail"
     const val MY = "my"
+    const val NOTI_SETTINGS = "noti_settings"
     const val COUPON = "coupon"
     const val GIFT = "gift"
+    const val GIFT_CLAIM_CODE = "code"
+    private const val GIFT_CLAIM_BASE = "gift_claim"
+    const val GIFT_CLAIM = "$GIFT_CLAIM_BASE?$GIFT_CLAIM_CODE={$GIFT_CLAIM_CODE}"
     const val HISTORY = "history"
     const val HISTORY_ORDER_ID = "orderId"
     const val HISTORY_DETAIL = "$HISTORY/{$HISTORY_ORDER_ID}"
@@ -57,4 +61,10 @@ object Routes {
     fun history(orderId: String): String = "$HISTORY/$orderId"
     fun orderStatus(orderId: String): String = history(orderId)
     fun gifticonDetail(gifticonId: String): String = "$GIFTICON_DETAIL_BASE/$gifticonId"
+    fun giftClaim(code: String? = null): String =
+        if (code.isNullOrBlank()) {
+            GIFT_CLAIM_BASE
+        } else {
+            "$GIFT_CLAIM_BASE?$GIFT_CLAIM_CODE=$code"
+        }
 }

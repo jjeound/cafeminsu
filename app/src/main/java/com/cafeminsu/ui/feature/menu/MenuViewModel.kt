@@ -7,6 +7,7 @@ import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.MenuCategory
 import com.cafeminsu.domain.model.MenuItem
 import com.cafeminsu.domain.model.Store
+import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.MenuRepository
 import com.cafeminsu.domain.repository.StoreRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -29,8 +30,23 @@ import kotlinx.coroutines.launch
 class MenuViewModel @Inject constructor(
     private val menuRepository: MenuRepository,
     private val storeRepository: StoreRepository,
+    cartRepository: CartRepository,
 ) : ViewModel() {
     private val selectedCategoryId = MutableStateFlow(RecommendationCategoryId)
+
+    val cartItemCount: StateFlow<Int> = cartRepository.observeCart()
+        .map { result ->
+            when (result) {
+                is AppResult.Success -> result.data.items.sumOf { it.quantity }
+                is AppResult.Failure -> 0
+            }
+        }
+        .catch { emit(0) }
+        .stateIn(
+            scope = viewModelScope,
+            started = SharingStarted.WhileSubscribed(StateStopTimeoutMillis),
+            initialValue = 0,
+        )
 
     val uiState: StateFlow<MenuUiState> = combine(
         menuRepository.observeCategories(),
@@ -180,6 +196,7 @@ class MenuViewModel @Inject constructor(
             description = description,
             price = basePrice,
             isSoldOut = isSoldOut,
+            imageUrl = imageUrl,
             isEnabled = !isSoldOut,
         )
 

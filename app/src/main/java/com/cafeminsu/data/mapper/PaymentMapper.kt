@@ -7,8 +7,6 @@ import com.cafeminsu.data.remote.PaymentPrepareRes
 import com.cafeminsu.data.remote.PaymentVerifyRes
 import com.cafeminsu.domain.model.PaymentResult
 import com.cafeminsu.domain.model.PaymentStatus
-import java.time.Instant
-import java.time.format.DateTimeParseException
 
 data class PreparedPayment(
     val orderId: String,
@@ -76,10 +74,4 @@ private fun String?.toPaymentStatus(): PaymentStatus? =
     }
 
 private fun String?.toEpochMillisOrNull(): Long? =
-    this?.let { value ->
-        try {
-            Instant.parse(value).toEpochMilli()
-        } catch (_: DateTimeParseException) {
-            null
-        }
-    }
+    this?.let { value -> parseServerEpochMillis(value).takeIf { millis -> millis != 0L } }

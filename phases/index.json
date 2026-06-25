@@ -153,6 +153,52 @@
       "status": "completed",
       "summary": "서버 공통 응답 봉투(BaseResponse<T>) 폐지 대응 — API 가 DTO 직접 반환, 실패는 HTTP 상태로만 신호하도록 remote/repository/test 정렬 + 봉투 코드 삭제",
       "completed_at": "2026-06-22T21:09:54+0900"
+    },
+    {
+      "dir": "22-owner-live-integration",
+      "name": "owner-live-integration",
+      "status": "completed",
+      "summary": "점주 주문/메뉴·매출·추천 실서버 연동(Mock→Real, BASE_URL 키게이트) + opt-in 라이브 스모크 테스트(MockWebServer 단위테스트는 유지)",
+      "blocked_at": "2026-06-23T16:56:21+0900",
+      "completed_at": "2026-06-23T17:15:36+0900"
+    },
+    {
+      "dir": "23-bugfix-ui",
+      "name": "bugfix-ui",
+      "status": "completed",
+      "summary": "UI 버그 수정 묶음 — (1) 바텀네비 시스템 3버튼 인셋 겹침, (2) 선물하기 '받는 방식' 카드 텍스트 클립, (3) 마이 알림설정 화면 신설(준비중 제거), (4) 메뉴 화면 장바구니 수량 뱃지",
+      "completed_at": "2026-06-24T00:26:47+0900"
+    },
+    {
+      "dir": "24-kakao-gift-share",
+      "name": "kakao-gift-share",
+      "status": "completed",
+      "completed_at": "2026-06-24T09:41:48+0900"
+    },
+    {
+      "dir": "25-kakaopay-payment",
+      "name": "kakaopay-payment",
+      "status": "completed",
+      "completed_at": "2026-06-24T09:51:59+0900"
+    },
+    {
+      "dir": "26-kakao-gift-friend-message",
+      "name": "kakao-gift-friend-message",
+      "status": "completed",
+      "completed_at": "2026-06-24T11:30:42+0900"
+    },
+    {
+      "dir": "27-gift-claim-register",
+      "name": "gift-claim-register",
+      "status": "completed",
+      "completed_at": "2026-06-24T11:45:38+0900"
+    },
+    {
+      "dir": "28-bugfix-batch",
+      "name": "bugfix-batch",
+      "status": "completed",
+      "summary": "버그/기능 묶음 — 쿠폰 금액 할인, 읽은 알림 숨김, 홈 재주문→결제 직행, 메뉴 기본 이미지, 카카오페이 결제 통합, 점주 다중매장 선택 헤더, 점주 메뉴 이미지 업로드",
+      "completed_at": "2026-06-25T00:17:27+0900"
     }
   ]
 }

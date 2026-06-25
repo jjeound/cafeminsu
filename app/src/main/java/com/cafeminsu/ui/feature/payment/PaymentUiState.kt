@@ -14,9 +14,20 @@ sealed interface PaymentUiState {
         val methods: List<PaymentMethodUiModel>,
         val selectedMethodId: String,
         val paymentState: PaymentProgress,
+        val coupons: List<PaymentCouponUiModel> = emptyList(),
+        val selectedCouponId: String? = null,
     ) : PaymentUiState {
         val selectedMethod: PaymentMethodUiModel? =
             methods.firstOrNull { method -> method.id == selectedMethodId }
+
+        val selectedCoupon: PaymentCouponUiModel? =
+            coupons.firstOrNull { coupon -> coupon.id == selectedCouponId }
+
+        // 할인은 결제 금액을 넘지 못한다(음수 결제 방지).
+        val discountAmount: Int =
+            selectedCoupon?.let { coupon -> coupon.discountAmount.coerceAtMost(totalAmount) } ?: 0
+
+        val payableAmount: Int = (totalAmount - discountAmount).coerceAtLeast(0)
 
         val isPayEnabled: Boolean =
             selectedMethod != null &&
@@ -36,6 +47,12 @@ data class PaymentMethodUiModel(
     val label: String,
 )
 
+data class PaymentCouponUiModel(
+    val id: String,
+    val label: String,
+    val discountAmount: Int,
+)
+
 sealed interface PaymentProgress {
     data object Idle : PaymentProgress
     data object Processing : PaymentProgress
@@ -51,19 +68,13 @@ sealed interface PaymentEvent {
     data class PaymentFailed(val orderId: String) : PaymentEvent
 }
 
+// 실연동 PG 는 카카오페이 단일 경로다(di/RepositoryModule.providePgClient → KakaoPayPgClient).
+// 사용자가 보는 결제수단을 실제 PG 와 일치시키기 위해 카카오페이로 통합한다(기본·주 결제수단).
 fun defaultPaymentMethods(): List<PaymentMethodUiModel> =
     listOf(
         PaymentMethodUiModel(
-            id = "credit-card",
-            label = "신용카드",
-        ),
-        PaymentMethodUiModel(
-            id = "simple-pay",
-            label = "간편결제",
-        ),
-        PaymentMethodUiModel(
-            id = "coupon",
-            label = "쿠폰",
+            id = "kakaopay",
+            label = "카카오페이",
         ),
     )
 

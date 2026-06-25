@@ -12,6 +12,7 @@ import com.cafeminsu.data.remote.Unauthenticated
 import com.cafeminsu.data.remote.runCatchingToAppResult
 import com.cafeminsu.di.IoDispatcher
 import com.cafeminsu.domain.model.Store
+import com.cafeminsu.domain.repository.CartRepository
 import com.cafeminsu.domain.repository.StoreRepository
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -30,6 +31,7 @@ class RealStoreRepository @Inject constructor(
     private val storeApi: StoreApi,
     private val selectedStoreHolder: SelectedStoreHolder,
     private val localDataSource: StoreLocalDataSource,
+    private val cartRepository: CartRepository,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : StoreRepository {
     override fun observeNearbyStores(query: String?): Flow<AppResult<List<Store>>> =
@@ -79,6 +81,11 @@ class RealStoreRepository @Inject constructor(
     override suspend fun selectStore(storeId: String): AppResult<Unit> =
         when (val result = getStore(storeId)) {
             is AppResult.Success -> {
+                // 매장별 메뉴가 다르므로 다른 매장으로 바꾸면 기존 장바구니를 비운다.
+                val previous = selectedStoreHolder.current()
+                if (previous != null && previous.id != result.data.id) {
+                    cartRepository.clear()
+                }
                 selectedStoreHolder.select(result.data)
                 AppResult.Success(Unit)
             }

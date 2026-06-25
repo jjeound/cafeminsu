@@ -299,10 +299,13 @@ class StepExecutor:
                "--output-format", "stream-json", "--verbose"]
         if CLAUDE_MODEL:
             cmd += ["--model", CLAUDE_MODEL]
-        cmd.append(prompt)
 
+        # 프롬프트는 stdin 으로 전달한다(argv 가 아니라). 가드레일(CLAUDE.md + docs/*.md)이 더해진
+        # 프롬프트는 수만 자에 달해, Windows 의 명령행 길이 한계(~32KB, CreateProcess WinError 206)를
+        # 넘긴다. stdin 파이프는 길이 제한이 없고 모든 플랫폼에서 동작한다.
         result = subprocess.run(
             cmd, cwd=self._root, capture_output=True, text=True, timeout=CLAUDE_TIMEOUT,
+            input=prompt, encoding="utf-8",
         )
 
         if result.returncode != 0:

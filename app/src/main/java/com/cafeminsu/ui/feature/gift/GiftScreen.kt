@@ -1,5 +1,7 @@
 package com.cafeminsu.ui.feature.gift
 
+import android.content.Context
+import android.content.Intent
 import android.widget.Toast
 import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
@@ -28,7 +30,6 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.input.KeyboardType
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cafeminsu.R
-import com.cafeminsu.domain.model.GiftChannel
 import com.cafeminsu.ui.components.CafeButton
 import com.cafeminsu.ui.components.CafeButtonVariant
 import com.cafeminsu.ui.components.CafeTextField
@@ -42,6 +43,7 @@ import com.cafeminsu.ui.theme.CafeTheme
 fun GiftRoute(
     onBackClick: () -> Unit,
     onLoginClick: () -> Unit,
+    onClaimEntryClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: GiftViewModel = hiltViewModel(),
 ) {
@@ -50,7 +52,12 @@ fun GiftRoute(
 
     LaunchedEffect(viewModel) {
         viewModel.events.collect { event ->
-            Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+            when (event) {
+                // 구매는 이미 성공. 클레임 링크를 인텐트로 카카오톡에 공유한다(미설치 시 시스템 공유 시트).
+                is GiftEvent.ShareGiftLink -> shareGiftLinkToKakao(context, event.shareText)
+
+                else -> Toast.makeText(context, event.message, Toast.LENGTH_SHORT).show()
+            }
         }
     }
 
@@ -58,11 +65,10 @@ fun GiftRoute(
         state = state,
         onBackClick = onBackClick,
         onLoginClick = onLoginClick,
+        onClaimEntryClick = onClaimEntryClick,
         onRetry = viewModel::retry,
         onAmountSelected = viewModel::onAmountSelected,
         onCustomAmountChanged = viewModel::onCustomAmountChanged,
-        onChannelSelected = viewModel::onChannelSelected,
-        onRecipientChanged = viewModel::onRecipientChanged,
         onMessageChanged = viewModel::onMessageChanged,
         onSendClick = viewModel::sendGift,
         modifier = modifier,
@@ -76,12 +82,11 @@ fun GiftScreen(
     onLoginClick: () -> Unit,
     onRetry: () -> Unit,
     onAmountSelected: (GiftAmountOption) -> Unit,
-    onChannelSelected: (GiftChannel) -> Unit,
-    onRecipientChanged: (String) -> Unit,
     onMessageChanged: (String) -> Unit,
     onSendClick: () -> Unit,
     modifier: Modifier = Modifier,
     onCustomAmountChanged: (String) -> Unit = {},
+    onClaimEntryClick: () -> Unit = {},
 ) {
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -99,6 +104,14 @@ fun GiftScreen(
                     )
                 },
                 onNavigationClick = onBackClick,
+                actionIcon = {
+                    Icon(
+                        painter = painterResource(R.drawable.ic_ticket),
+                        contentDescription = "선물 등록",
+                        tint = CafeTheme.colors.ink,
+                    )
+                },
+                onActionClick = onClaimEntryClick,
             )
 
             when (state) {
@@ -110,8 +123,6 @@ fun GiftScreen(
                     state = state,
                     onAmountSelected = onAmountSelected,
                     onCustomAmountChanged = onCustomAmountChanged,
-                    onChannelSelected = onChannelSelected,
-                    onRecipientChanged = onRecipientChanged,
                     onMessageChanged = onMessageChanged,
                     onSendClick = onSendClick,
                 )
@@ -152,8 +163,6 @@ private fun GiftForm(
     state: GiftUiState.Content,
     onAmountSelected: (GiftAmountOption) -> Unit,
     onCustomAmountChanged: (String) -> Unit,
-    onChannelSelected: (GiftChannel) -> Unit,
-    onRecipientChanged: (String) -> Unit,
     onMessageChanged: (String) -> Unit,
     onSendClick: () -> Unit,
 ) {
@@ -178,13 +187,8 @@ private fun GiftForm(
                 onAmountSelected = onAmountSelected,
                 onCustomAmountChanged = onCustomAmountChanged,
             )
-            GiftChannelSection(
-                selectedChannel = state.selectedChannel,
-                onChannelSelected = onChannelSelected,
-            )
             GiftInputSection(
                 state = state,
-                onRecipientChanged = onRecipientChanged,
                 onMessageChanged = onMessageChanged,
             )
         }
@@ -275,47 +279,14 @@ private fun GiftAmountSection(
 }
 
 @Composable
-private fun GiftChannelSection(
-    selectedChannel: GiftChannel,
-    onChannelSelected: (GiftChannel) -> Unit,
-) {
-    Column(verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space3)) {
-        SectionLabel(text = "받는 방식")
-        Row(
-            modifier = Modifier.fillMaxWidth(),
-            horizontalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space2),
-        ) {
-            GiftChannelCard(
-                title = "카카오톡",
-                subtitle = "친구 선택",
-                selected = selectedChannel == GiftChannel.KakaoTalk,
-                onClick = { onChannelSelected(GiftChannel.KakaoTalk) },
-                modifier = Modifier.weight(ChannelCardWeight),
-            )
-            GiftChannelCard(
-                title = "문자 (SMS)",
-                subtitle = "연락처 입력",
-                selected = selectedChannel == GiftChannel.Sms,
-                onClick = { onChannelSelected(GiftChannel.Sms) },
-                modifier = Modifier.weight(ChannelCardWeight),
-            )
-        }
-    }
-}
-
-@Composable
 private fun GiftInputSection(
     state: GiftUiState.Content,
-    onRecipientChanged: (String) -> Unit,
     onMessageChanged: (String) -> Unit,
 ) {
     Column(verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space3)) {
+        // 카카오톡 단일 채널: 구매 후 인텐트 공유로 전달하므로 별도 수신자 입력이 없다(대화방은 카톡 앱에서 선택).
         SectionLabel(text = "받는 사람")
-        CafeTextField(
-            value = state.recipient,
-            onValueChange = onRecipientChanged,
-            placeholder = state.recipientPlaceholder,
-        )
+        KakaoShareNotice()
         SectionLabel(text = "선물 메시지 (선택)")
         CafeTextField(
             value = state.message,
@@ -328,46 +299,25 @@ private fun GiftInputSection(
 }
 
 @Composable
-private fun GiftChannelCard(
-    title: String,
-    subtitle: String,
-    selected: Boolean,
-    onClick: () -> Unit,
-    modifier: Modifier = Modifier,
-) {
+private fun KakaoShareNotice() {
     val colors = CafeTheme.colors
     val spacing = CafeTheme.spacing
-    val containerColor = if (selected) {
-        colors.surfaceCard
-    } else {
-        colors.canvas
-    }
-    val border = if (selected) {
-        null
-    } else {
-        BorderStroke(spacing.space1 / BorderWidthDivider, colors.hairline)
-    }
 
     Surface(
-        onClick = onClick,
-        modifier = modifier.height(spacing.space14 + spacing.space2),
+        modifier = Modifier
+            .fillMaxWidth()
+            .heightIn(min = spacing.space10 + spacing.space3),
         shape = CafeTheme.shapes.radiusMd,
-        color = containerColor,
+        color = colors.surfaceCard,
         contentColor = colors.body,
-        border = border,
     ) {
-        Column(
-            modifier = Modifier.padding(spacing.space4),
-            verticalArrangement = Arrangement.Center,
+        Row(
+            modifier = Modifier.padding(horizontal = spacing.space4),
+            verticalAlignment = Alignment.CenterVertically,
         ) {
             Text(
-                text = title,
-                style = CafeTheme.typography.bodyL,
-                color = colors.ink,
-            )
-            Text(
-                text = subtitle,
-                style = CafeTheme.typography.caption,
+                text = "구매 후 카카오톡으로 공유해요",
+                style = CafeTheme.typography.body,
                 color = colors.muted,
             )
         }
@@ -426,7 +376,30 @@ private fun SectionLabel(text: String) {
     )
 }
 
+// 구매 성공 후 클레임 링크(공유 텍스트)를 ACTION_SEND 인텐트로 카카오톡에 공유한다.
+// 카카오톡을 우선 대상으로 시도하고, 미설치/실패 시 시스템 공유 시트로 폴백한다.
+// 공유 단계 실패는 선물 실패가 아니다(구매는 이미 성공). 링크/코드는 로깅하지 않는다(SECURITY §4).
+private fun shareGiftLinkToKakao(context: Context, shareText: String) {
+    val sendIntent = Intent(Intent.ACTION_SEND).apply {
+        type = "text/plain"
+        putExtra(Intent.EXTRA_TEXT, shareText)
+    }
+
+    val toKakao = Intent(sendIntent)
+        .setPackage(KakaoTalkPackage)
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    val launchedKakao = runCatching { context.startActivity(toKakao) }.isSuccess
+    if (launchedKakao) return
+
+    val chooser = Intent.createChooser(sendIntent, "선물 공유")
+        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+    val launchedChooser = runCatching { context.startActivity(chooser) }.isSuccess
+    if (!launchedChooser) {
+        Toast.makeText(context, "선물 링크를 공유하지 못했어요", Toast.LENGTH_SHORT).show()
+    }
+}
+
+private const val KakaoTalkPackage = "com.kakao.talk"
 private const val FormWeight = 1f
 private const val AmountOptionWeight = 1f
-private const val ChannelCardWeight = 1f
 private const val BorderWidthDivider = 4

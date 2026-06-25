@@ -29,6 +29,7 @@ class OwnerMenuAddScreenTest {
                     onPriceChange = {},
                     onDescriptionChange = {},
                     onSaleToggle = {},
+                    optionActions = noOpOptionActions(),
                     onSubmit = { submitted = true },
                     onBack = {},
                 )
@@ -58,6 +59,7 @@ class OwnerMenuAddScreenTest {
                     onPriceChange = {},
                     onDescriptionChange = {},
                     onSaleToggle = {},
+                    optionActions = noOpOptionActions(),
                     onSubmit = { submitted = true },
                     onBack = {},
                 )
@@ -82,6 +84,7 @@ class OwnerMenuAddScreenTest {
                     onPriceChange = {},
                     onDescriptionChange = {},
                     onSaleToggle = {},
+                    optionActions = noOpOptionActions(),
                     onSubmit = {},
                     onBack = { backClicked = true },
                 )
@@ -91,4 +94,74 @@ class OwnerMenuAddScreenTest {
         composeRule.onNodeWithContentDescription("뒤로").performClick()
         assertTrue(backClicked)
     }
+
+    @Test
+    fun addOptionGroupButtonInvokesCallback() {
+        var addGroupClicked = false
+
+        composeRule.setContent {
+            CafeTheme {
+                OwnerMenuAddScreen(
+                    uiState = OwnerMenuAddUiState(),
+                    onImagePicked = {},
+                    onCategorySelected = {},
+                    onNameChange = {},
+                    onPriceChange = {},
+                    onDescriptionChange = {},
+                    onSaleToggle = {},
+                    optionActions = noOpOptionActions().copy(onAddGroup = { addGroupClicked = true }),
+                    onSubmit = {},
+                    onBack = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("+ 옵션 그룹 추가").performClick()
+        assertTrue(addGroupClicked)
+    }
+
+    @Test
+    fun rendersExistingOptionGroup() {
+        composeRule.setContent {
+            CafeTheme {
+                OwnerMenuAddScreen(
+                    uiState = OwnerMenuAddUiState(
+                        name = "아메리카노",
+                        priceInput = "4500",
+                        optionGroups = listOf(
+                            OwnerMenuOptionGroupInput(
+                                id = "g1",
+                                name = "사이즈",
+                                options = listOf(OwnerMenuOptionInput(id = "o1", name = "Tall")),
+                            ),
+                        ),
+                    ),
+                    onImagePicked = {},
+                    onCategorySelected = {},
+                    onNameChange = {},
+                    onPriceChange = {},
+                    onDescriptionChange = {},
+                    onSaleToggle = {},
+                    optionActions = noOpOptionActions(),
+                    onSubmit = {},
+                    onBack = {},
+                )
+            }
+        }
+
+        composeRule.onNodeWithText("옵션").assertIsDisplayed()
+        composeRule.onNodeWithText("+ 옵션 추가").assertIsDisplayed()
+        composeRule.onNodeWithContentDescription("옵션 그룹 삭제").assertIsDisplayed()
+    }
 }
+
+private fun noOpOptionActions(): OwnerMenuOptionActions =
+    OwnerMenuOptionActions(
+        onAddGroup = {},
+        onRemoveGroup = {},
+        onGroupNameChange = { _, _ -> },
+        onAddOption = {},
+        onRemoveOption = { _, _ -> },
+        onOptionNameChange = { _, _, _ -> },
+        onOptionPriceChange = { _, _, _ -> },
+    )
