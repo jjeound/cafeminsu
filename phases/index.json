@@ -203,7 +203,8 @@
     {
       "dir": "29-nfc-coupon-claim",
       "name": "nfc-coupon-claim",
-      "status": "pending"
+      "status": "completed",
+      "completed_at": "2026-06-25T15:12:05+0900"
     }
   ]
 }
