@@ -24,6 +24,7 @@ import androidx.compose.ui.Modifier
 import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.ui.NavDisplay
+import com.cafeminsu.BuildConfig
 import com.ssafy.cafeminsu.MainActivityAuthState
 import com.ssafy.cafeminsu.MainActivityViewModel
 import com.ssafy.cafeminsu.core.designsystem.theme.CafeMinsuTheme
@@ -121,6 +122,7 @@ fun CafeMinsuApp(
                 entry<CafeMinsuRoute.Store> {
                     StoreRoute(
                         onNavigateToMenu = { backStack += CafeMinsuRoute.Menu },
+                        kakaoNativeAppKey = BuildConfig.KAKAO_NATIVE_APP_KEY,
                     )
                 }
                 entry<CafeMinsuRoute.Menu> {

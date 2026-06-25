@@ -1,6 +1,5 @@
 package com.ssafy.cafeminsu.feature.store
 
-import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
@@ -25,9 +24,6 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.geometry.Offset
-import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
@@ -43,6 +39,7 @@ import kotlinx.coroutines.flow.update
 @Composable
 fun StoreRoute(
     onNavigateToMenu: () -> Unit = {},
+    kakaoNativeAppKey: String = "",
     modifier: Modifier = Modifier,
     viewModel: StoreViewModel = viewModel(),
 ) {
@@ -54,6 +51,7 @@ fun StoreRoute(
         onStoreClick = viewModel::onStoreClick,
         onDismissDetail = viewModel::onDismissDetail,
         onStartOrder = { onNavigateToMenu() },
+        kakaoNativeAppKey = kakaoNativeAppKey,
         modifier = modifier,
     )
 }
@@ -65,6 +63,7 @@ fun StoreScreen(
     onStoreClick: (String) -> Unit,
     onDismissDetail: () -> Unit,
     onStartOrder: (String) -> Unit,
+    kakaoNativeAppKey: String = "",
     modifier: Modifier = Modifier,
 ) {
     val colors = CafeMinsuTheme.colors
@@ -107,10 +106,11 @@ fun StoreScreen(
         }
 
         item {
-            StoreMapPreview(
-                stores = content.stores,
+            StoreMapView(
+                markers = content.stores.map { it.toMapMarker() },
                 selectedStoreId = content.selectedStore?.id,
-                onStoreClick = onStoreClick,
+                kakaoNativeAppKey = kakaoNativeAppKey,
+                onMarkerClick = onStoreClick,
             )
         }
 
@@ -156,82 +156,6 @@ fun StoreScreen(
 }
 
 @Composable
-private fun StoreMapPreview(
-    stores: List<StoreUiModel>,
-    selectedStoreId: String?,
-    onStoreClick: (String) -> Unit,
-) {
-    val colors = CafeMinsuTheme.colors
-
-    Surface(
-        color = colors.surfaceCard,
-        shape = CafeMinsuTheme.shapes.radiusXl,
-        modifier = Modifier.fillMaxWidth(),
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(220.dp),
-        ) {
-            Canvas(modifier = Modifier.fillMaxSize()) {
-                drawRect(color = colors.canvas)
-                for (index in 0..6) {
-                    val x = size.width * (index / 6f)
-                    drawLine(
-                        color = colors.hairline,
-                        start = Offset(x, 0f),
-                        end = Offset(x, size.height),
-                        strokeWidth = 1f,
-                    )
-                }
-                for (index in 0..4) {
-                    val y = size.height * (index / 4f)
-                    drawLine(
-                        color = colors.hairline,
-                        start = Offset(0f, y),
-                        end = Offset(size.width, y),
-                        strokeWidth = 1f,
-                    )
-                }
-
-                stores.forEachIndexed { index, store ->
-                    val x = size.width * (0.18f + index * 0.24f)
-                    val y = size.height * (0.22f + (index % 2) * 0.28f)
-                    drawCircle(
-                        color = if (store.id == selectedStoreId) colors.primary else colors.ink,
-                        radius = if (store.id == selectedStoreId) 16f else 12f,
-                        center = Offset(x, y),
-                    )
-                    drawCircle(
-                        color = colors.onPrimary,
-                        radius = 4f,
-                        center = Offset(x, y),
-                    )
-                }
-            }
-
-            Column(
-                modifier = Modifier
-                    .align(Alignment.TopStart)
-                    .padding(16.dp),
-                verticalArrangement = Arrangement.spacedBy(8.dp),
-            ) {
-                Text(
-                    text = "지도 미리보기",
-                    style = CafeMinsuTheme.typography.caption,
-                    color = colors.muted,
-                )
-                Text(
-                    text = "매장 마커를 눌러보세요.",
-                    style = CafeMinsuTheme.typography.body,
-                    color = colors.ink,
-                )
-            }
-        }
-    }
-}
-
-@Composable
 private fun StoreCard(
     store: StoreUiModel,
     selected: Boolean,
@@ -263,7 +187,10 @@ private fun StoreCard(
                 LocationPinIcon(color = if (selected) colors.onPrimary else colors.primaryHover)
             }
 
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
+            Column(
+                modifier = Modifier.weight(1f),
+                verticalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 Text(
                     text = store.name,
                     style = CafeMinsuTheme.typography.h3,
@@ -301,11 +228,25 @@ private fun StoreDetailBar(
         color = colors.surfaceDark,
         shape = CafeMinsuTheme.shapes.radiusXl,
     ) {
-        Column(modifier = Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            Row(horizontalArrangement = Arrangement.SpaceBetween, verticalAlignment = Alignment.CenterVertically) {
+        Column(
+            modifier = Modifier.padding(16.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp)
+        ) {
+            Row(
+                horizontalArrangement = Arrangement.SpaceBetween,
+                verticalAlignment = Alignment.CenterVertically
+            ) {
                 Column(modifier = Modifier.weight(1f)) {
-                    Text(text = store.name, style = CafeMinsuTheme.typography.h3, color = colors.onDark)
-                    Text(text = store.address, style = CafeMinsuTheme.typography.caption, color = colors.mutedSoft)
+                    Text(
+                        text = store.name,
+                        style = CafeMinsuTheme.typography.h3,
+                        color = colors.onDark
+                    )
+                    Text(
+                        text = store.address,
+                        style = CafeMinsuTheme.typography.caption,
+                        color = colors.mutedSoft
+                    )
                 }
                 Box(
                     modifier = Modifier
@@ -320,7 +261,7 @@ private fun StoreDetailBar(
             }
 
             CafeMinsuButton(
-                text = "주문 시작하기",
+                text = "이 매장에서 주문하기",
                 onClick = onStartOrder,
                 modifier = Modifier.fillMaxWidth(),
                 variant = CafeMinsuButtonVariant.Secondary,
@@ -330,24 +271,28 @@ private fun StoreDetailBar(
 }
 
 @Composable
-private fun LocationPinIcon(color: Color) {
-    Canvas(modifier = Modifier.size(20.dp)) {
+private fun LocationPinIcon(color: androidx.compose.ui.graphics.Color) {
+    androidx.compose.foundation.Canvas(modifier = Modifier.size(20.dp)) {
         drawCircle(color = color, radius = size.minDimension * 0.32f, center = center)
-        drawCircle(color = Color.White, radius = size.minDimension * 0.12f, center = center)
+        drawCircle(
+            color = androidx.compose.ui.graphics.Color.White,
+            radius = size.minDimension * 0.12f,
+            center = center
+        )
         drawCircle(
             color = color,
             radius = size.minDimension * 0.42f,
             center = center,
-            style = Stroke(width = size.minDimension * 0.08f),
+            style = androidx.compose.ui.graphics.drawscope.Stroke(width = size.minDimension * 0.08f),
         )
     }
 }
 
 class StoreViewModel : ViewModel() {
     private val stores = listOf(
-        StoreUiModel("store-1", "카페민수 강남점", "서울 강남구 테헤란로 1", "320m", "영업중"),
-        StoreUiModel("store-2", "카페민수 역삼점", "서울 강남구 논현로 2", "540m", "영업중"),
-        StoreUiModel("store-3", "카페민수 선릉점", "서울 강남구 선릉로 3", "1.1km", "준비중"),
+        StoreUiModel("store-1", "카페민수 강남점", "서울 강남구 테헤란로 1", "320m", "영업중", 37.498, 127.028),
+        StoreUiModel("store-2", "카페민수 역삼점", "서울 강남구 논현로 2", "540m", "영업중", 37.500, 127.036),
+        StoreUiModel("store-3", "카페민수 선릉점", "서울 강남구 선릉로 3", "1.1km", "준비중", 37.504, 127.049),
     )
 
     private val mutableUiState = MutableStateFlow(
@@ -365,10 +310,16 @@ class StoreViewModel : ViewModel() {
             state.copy(
                 query = query,
                 stores = stores.filter {
-                    query.isBlank() || it.name.contains(query, ignoreCase = true) || it.address.contains(query, ignoreCase = true)
+                    query.isBlank() || it.name.contains(
+                        query,
+                        ignoreCase = true
+                    ) || it.address.contains(query, ignoreCase = true)
                 },
                 selectedStore = state.selectedStore?.takeIf { selected ->
-                    query.isBlank() || selected.name.contains(query, ignoreCase = true) || selected.address.contains(query, ignoreCase = true)
+                    query.isBlank() || selected.name.contains(
+                        query,
+                        ignoreCase = true
+                    ) || selected.address.contains(query, ignoreCase = true)
                 },
             )
         }
@@ -382,10 +333,6 @@ class StoreViewModel : ViewModel() {
 
     fun onDismissDetail() {
         mutableUiState.update { state -> state.copy(selectedStore = null) }
-    }
-
-    fun onStartOrder(storeId: String) {
-        onStoreClick(storeId)
     }
 }
 
@@ -403,4 +350,14 @@ data class StoreUiModel(
     val address: String,
     val distanceLabel: String,
     val statusLabel: String,
+    val latitude: Double,
+    val longitude: Double,
 )
+
+private fun StoreUiModel.toMapMarker(): StoreMapMarker =
+    StoreMapMarker(
+        id = id,
+        name = name,
+        latitude = latitude,
+        longitude = longitude,
+    )

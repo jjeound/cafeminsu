@@ -6,3 +6,7 @@ plugins {
 android {
     namespace = "com.ssafy.cafeminsu.feature.store"
 }
+
+dependencies {
+    implementation(libs.kakao.map)
+}
