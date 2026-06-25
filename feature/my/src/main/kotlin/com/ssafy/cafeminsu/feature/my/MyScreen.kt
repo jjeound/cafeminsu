@@ -16,6 +16,9 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
+import androidx.compose.material3.Icon
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,7 +27,8 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextAlign
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewmodel.compose.viewModel
@@ -38,7 +42,12 @@ fun MyRoute(
     onHistoryClick: () -> Unit = {},
     onGiftClick: () -> Unit = {},
     onCouponClick: () -> Unit = {},
-    onLoginClick: () -> Unit = {},
+    onNotificationSettingsClick: () -> Unit = {},
+    onTermsClick: () -> Unit = {},
+    onFaqClick: () -> Unit = {},
+    onSupportClick: () -> Unit = {},
+    onVersionClick: () -> Unit = {},
+    onLogoutClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: MyViewModel = viewModel(),
 ) {
@@ -49,7 +58,12 @@ fun MyRoute(
         onHistoryClick = onHistoryClick,
         onGiftClick = onGiftClick,
         onCouponClick = onCouponClick,
-        onLoginClick = onLoginClick,
+        onNotificationSettingsClick = onNotificationSettingsClick,
+        onTermsClick = onTermsClick,
+        onFaqClick = onFaqClick,
+        onSupportClick = onSupportClick,
+        onVersionClick = onVersionClick,
+        onLogoutClick = onLogoutClick,
         modifier = modifier,
     )
 }
@@ -60,7 +74,12 @@ fun MyScreen(
     onHistoryClick: () -> Unit,
     onGiftClick: () -> Unit,
     onCouponClick: () -> Unit,
-    onLoginClick: () -> Unit,
+    onNotificationSettingsClick: () -> Unit,
+    onTermsClick: () -> Unit,
+    onFaqClick: () -> Unit,
+    onSupportClick: () -> Unit,
+    onVersionClick: () -> Unit,
+    onLogoutClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
     val colors = CafeMinsuTheme.colors
@@ -75,16 +94,20 @@ fun MyScreen(
         verticalArrangement = Arrangement.spacedBy(spacing.space5),
     ) {
         ProfileCard(state = state)
-        StatsRow(stats = state.stats)
         QuickMenuSection(
             items = state.quickMenus,
             onHistoryClick = onHistoryClick,
             onGiftClick = onGiftClick,
             onCouponClick = onCouponClick,
+            onNotificationSettingsClick = onNotificationSettingsClick,
         )
-        SettingsList(
+        SettingsSection(
             items = state.settings,
-            onLoginClick = onLoginClick,
+            onTermsClick = onTermsClick,
+            onFaqClick = onFaqClick,
+            onSupportClick = onSupportClick,
+            onVersionClick = onVersionClick,
+            onLogoutClick = onLogoutClick,
         )
         Spacer(modifier = Modifier.height(spacing.space8))
     }
@@ -93,59 +116,124 @@ fun MyScreen(
 @Composable
 private fun ProfileCard(state: MyUiState) {
     val colors = CafeMinsuTheme.colors
-    val spacing = CafeMinsuTheme.spacing
 
     Surface(
         modifier = Modifier.fillMaxWidth(),
         color = colors.surfaceDark,
         shape = CafeMinsuTheme.shapes.radiusXl,
     ) {
-        Row(
+        Column(
             modifier = Modifier.padding(20.dp),
-            horizontalArrangement = Arrangement.spacedBy(16.dp),
-            verticalAlignment = Alignment.CenterVertically,
+            verticalArrangement = Arrangement.spacedBy(16.dp),
         ) {
-            BoxAvatar()
-            Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(4.dp)) {
-                Text(text = state.displayName, style = CafeMinsuTheme.typography.h2, color = colors.onDark)
-                Text(text = state.email, style = CafeMinsuTheme.typography.caption, color = colors.mutedSoft)
-                Text(text = state.gradeLabel, style = CafeMinsuTheme.typography.body, color = colors.onDark)
+            Row(
+                horizontalArrangement = Arrangement.spacedBy(16.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                BoxAvatar(initial = state.displayName.firstOrNull()?.toString().orEmpty())
+                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Row(
+                        horizontalArrangement = Arrangement.spacedBy(8.dp),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = state.displayName,
+                            style = CafeMinsuTheme.typography.h2,
+                            color = colors.onDark,
+                        )
+                        TierChip(text = state.gradeLabel)
+                    }
+                }
             }
+
+            StatsRow(state = state)
         }
     }
 }
 
 @Composable
-private fun StatsRow(stats: MyStatsUiModel) {
-    val colors = CafeMinsuTheme.colors
-
-    Row(modifier = Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-        StatCell(label = "보유 스탬프", value = stats.stampCount.toString(), modifier = Modifier.weight(1f))
-        StatCell(label = "쿠폰", value = stats.couponCount.toString(), modifier = Modifier.weight(1f))
-        StatCell(label = "주문", value = stats.orderCount.toString(), modifier = Modifier.weight(1f))
+private fun StatsRow(state: MyUiState) {
+    Row(
+        modifier = Modifier.fillMaxWidth(),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        StatCell(
+            value = state.orderCount,
+            label = "주문",
+            modifier = Modifier.weight(1f),
+        )
+        StatDivider()
+        StatCell(
+            value = state.stampCount,
+            label = "스탬프",
+            modifier = Modifier.weight(1f),
+        )
+        StatDivider()
+        StatCell(
+            value = state.couponCount,
+            label = "쿠폰",
+            modifier = Modifier.weight(1f),
+        )
     }
 }
 
 @Composable
 private fun StatCell(
-    label: String,
     value: String,
+    label: String,
     modifier: Modifier = Modifier,
 ) {
     val colors = CafeMinsuTheme.colors
 
-    Surface(
+    Column(
         modifier = modifier,
-        color = colors.surfaceCard,
-        shape = CafeMinsuTheme.shapes.radiusLg,
+        horizontalAlignment = Alignment.CenterHorizontally,
+        verticalArrangement = Arrangement.spacedBy(4.dp),
     ) {
-        Column(
-            modifier = Modifier.padding(vertical = 16.dp),
-            horizontalAlignment = Alignment.CenterHorizontally,
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+        Text(
+            text = value,
+            style = CafeMinsuTheme.typography.h3,
+            color = colors.onDark,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+        Text(
+            text = label,
+            style = CafeMinsuTheme.typography.caption,
+            color = colors.muted,
+            maxLines = 1,
+        )
+    }
+}
+
+@Composable
+private fun StatDivider() {
+    Spacer(
+        modifier = Modifier
+            .width(1.dp)
+            .height(32.dp)
+            .background(CafeMinsuTheme.colors.ink.copy(alpha = 0.18f)),
+    )
+}
+
+@Composable
+private fun TierChip(text: String) {
+    val colors = CafeMinsuTheme.colors
+
+    Surface(
+        shape = CafeMinsuTheme.shapes.radiusPill,
+        color = colors.accentSoft,
+        contentColor = colors.primary,
+    ) {
+        Box(
+            modifier = Modifier.padding(horizontal = 10.dp, vertical = 5.dp),
+            contentAlignment = Alignment.Center,
         ) {
-            Text(text = value, style = CafeMinsuTheme.typography.h2, color = colors.ink)
-            Text(text = label, style = CafeMinsuTheme.typography.caption, color = colors.muted)
+            Text(
+                text = text,
+                style = CafeMinsuTheme.typography.caption,
+                color = colors.primary,
+            )
         }
     }
 }
@@ -156,27 +244,28 @@ private fun QuickMenuSection(
     onHistoryClick: () -> Unit,
     onGiftClick: () -> Unit,
     onCouponClick: () -> Unit,
+    onNotificationSettingsClick: () -> Unit,
 ) {
     val colors = CafeMinsuTheme.colors
     val spacing = CafeMinsuTheme.spacing
 
     Column(verticalArrangement = Arrangement.spacedBy(spacing.space3)) {
-        Text(text = "바로가기", style = CafeMinsuTheme.typography.h2, color = colors.ink)
-        Row(horizontalArrangement = Arrangement.spacedBy(spacing.space3), modifier = Modifier.fillMaxWidth()) {
-            items.chunked(2).forEachIndexed { columnIndex, columnItems ->
-                Column(modifier = Modifier.weight(1f), verticalArrangement = Arrangement.spacedBy(spacing.space3)) {
-                    columnItems.forEachIndexed { itemIndex, item ->
-                        QuickMenuTile(
-                            item = item,
-                            onClick = when (columnIndex * 2 + itemIndex) {
-                                0 -> onHistoryClick
-                                1 -> onGiftClick
-                                2 -> onCouponClick
-                                else -> item.onClick
-                            },
-                        )
-                    }
-                }
+        Text(text = "빠른메뉴", style = CafeMinsuTheme.typography.h2, color = colors.ink)
+        Row(
+            modifier = Modifier.fillMaxWidth(),
+            horizontalArrangement = Arrangement.spacedBy(spacing.space2),
+        ) {
+            items.forEach { item ->
+                QuickMenuTile(
+                    modifier = Modifier.weight(1f),
+                    item = item,
+                    onClick = when (item.id) {
+                        QuickMenuId.History -> onHistoryClick
+                        QuickMenuId.Gift -> onGiftClick
+                        QuickMenuId.Coupon -> onCouponClick
+                        else -> onNotificationSettingsClick
+                    },
+                )
             }
         }
     }
@@ -184,70 +273,76 @@ private fun QuickMenuSection(
 
 @Composable
 private fun QuickMenuTile(
+    modifier: Modifier = Modifier,
     item: QuickMenuUiModel,
     onClick: () -> Unit,
 ) {
     val colors = CafeMinsuTheme.colors
 
     Surface(
-        modifier = Modifier
-            .fillMaxWidth()
-            .clickable(onClick = onClick),
+        modifier = modifier.clickable(onClick = onClick),
         color = colors.surfaceCard,
         shape = CafeMinsuTheme.shapes.radiusLg,
     ) {
-        Row(
-            modifier = Modifier.padding(16.dp),
-            horizontalArrangement = Arrangement.spacedBy(12.dp),
-            verticalAlignment = Alignment.CenterVertically,
+        Column(
+            modifier = Modifier.padding(vertical = 18.dp, horizontal = 12.dp),
+            horizontalAlignment = Alignment.CenterHorizontally,
+            verticalArrangement = Arrangement.spacedBy(10.dp),
         ) {
             Box(
                 modifier = Modifier
-                    .size(40.dp)
+                    .size(44.dp)
                     .clip(CircleShape)
                     .background(colors.accentSoft),
                 contentAlignment = Alignment.Center,
             ) {
-                Text(text = item.iconLabel, style = CafeMinsuTheme.typography.bodyL, color = colors.primaryHover)
+                Text(
+                    text = item.iconLabel,
+                    style = CafeMinsuTheme.typography.bodyL,
+                    color = colors.primaryHover,
+                )
             }
-            Column(modifier = Modifier.weight(1f)) {
-                Text(text = item.title, style = CafeMinsuTheme.typography.bodyL, color = colors.ink)
-                Text(text = item.subtitle, style = CafeMinsuTheme.typography.caption, color = colors.muted)
-            }
+            Text(
+                text = item.title,
+                style = CafeMinsuTheme.typography.bodyL,
+                color = colors.ink,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+                textAlign = TextAlign.Center,
+            )
         }
     }
 }
 
 @Composable
-private fun SettingsList(
+private fun SettingsSection(
     items: List<SettingUiModel>,
-    onLoginClick: () -> Unit,
+    onTermsClick: () -> Unit,
+    onFaqClick: () -> Unit,
+    onSupportClick: () -> Unit,
+    onVersionClick: () -> Unit,
+    onLogoutClick: () -> Unit,
 ) {
     val colors = CafeMinsuTheme.colors
-    val spacing = CafeMinsuTheme.spacing
 
-    Column(verticalArrangement = Arrangement.spacedBy(spacing.space3)) {
-        Text(text = "설정", style = CafeMinsuTheme.typography.h2, color = colors.ink)
-        items.forEachIndexed { index, item ->
-            Surface(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .clickable(
-                        onClick = if (index == items.lastIndex) onLoginClick else item.onClick,
-                    ),
-                color = colors.surfaceCard,
-                shape = CafeMinsuTheme.shapes.radiusLg,
-            ) {
-                Row(
-                    modifier = Modifier.padding(16.dp),
-                    horizontalArrangement = Arrangement.SpaceBetween,
-                    verticalAlignment = Alignment.CenterVertically,
-                ) {
-                    Column(modifier = Modifier.weight(1f)) {
-                        Text(text = item.title, style = CafeMinsuTheme.typography.bodyL, color = colors.ink)
-                        Text(text = item.subtitle, style = CafeMinsuTheme.typography.caption, color = colors.muted)
-                    }
-                    Text(text = "›", style = CafeMinsuTheme.typography.h2, color = colors.mutedSoft)
+    Surface(
+        color = colors.surfaceCard,
+        shape = CafeMinsuTheme.shapes.radiusLg,
+        modifier = Modifier.fillMaxWidth(),
+    ) {
+        Column(modifier = Modifier.fillMaxWidth()) {
+            items.forEachIndexed { index, item ->
+                val onClick = when (item.id) {
+                    SettingId.Terms -> onTermsClick
+                    SettingId.Faq -> onFaqClick
+                    SettingId.Support -> onSupportClick
+                    SettingId.Version -> onVersionClick
+                    SettingId.Logout -> onLogoutClick
+                    else -> onLogoutClick
+                }
+                SettingRow(item = item, onClick = onClick)
+                if (index != items.lastIndex) {
+                    androidx.compose.material3.HorizontalDivider(color = colors.hairline)
                 }
             }
         }
@@ -255,8 +350,51 @@ private fun SettingsList(
 }
 
 @Composable
-private fun BoxAvatar() {
+private fun SettingRow(
+    item: SettingUiModel,
+    onClick: () -> Unit,
+) {
     val colors = CafeMinsuTheme.colors
+
+    Row(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clickable(onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 14.dp),
+        horizontalArrangement = Arrangement.SpaceBetween,
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = item.title,
+            style = CafeMinsuTheme.typography.bodyL,
+            color = if (item.isDestructive) colors.primary else colors.ink,
+        )
+
+        Row(verticalAlignment = Alignment.CenterVertically) {
+            item.trailingText?.let { trailingText ->
+                Text(
+                    text = trailingText,
+                    style = CafeMinsuTheme.typography.caption,
+                    color = colors.mutedSoft,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    textAlign = TextAlign.End,
+                )
+                Spacer(modifier = Modifier.size(8.dp))
+            }
+            Icon(
+                imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                contentDescription = null,
+                tint = colors.mutedSoft,
+            )
+        }
+    }
+}
+
+@Composable
+private fun BoxAvatar(initial: String) {
+    val colors = CafeMinsuTheme.colors
+
     Box(
         modifier = Modifier
             .size(64.dp)
@@ -264,56 +402,75 @@ private fun BoxAvatar() {
             .background(colors.primary),
         contentAlignment = Alignment.Center,
     ) {
-        Text(text = "민", style = CafeMinsuTheme.typography.h2, color = colors.onPrimary)
+        Text(
+            text = initial.ifBlank { "M" },
+            style = CafeMinsuTheme.typography.h2,
+            color = colors.onPrimary,
+        )
     }
 }
 
 class MyViewModel : ViewModel() {
-    val uiState: StateFlow<MyUiState> = MutableStateFlow(
+    private val mutableUiState = MutableStateFlow(
         MyUiState(
-            displayName = "민수님",
-            email = "minsu@cafeminsu.com",
-            gradeLabel = "웰컴 등급",
-            stats = MyStatsUiModel(stampCount = 8, couponCount = 3, orderCount = 12),
+            displayName = "카페민수",
+            gradeLabel = "BRONZE",
+            orderCount = "12",
+            stampCount = "8/10",
+            couponCount = "3",
             quickMenus = listOf(
-                QuickMenuUiModel("주문내역", "최근 주문을 확인해요", "⌁", onClick = {}),
-                QuickMenuUiModel("기프트", "선물함을 확인해요", "✦", onClick = {}),
-                QuickMenuUiModel("알림", "푸시 설정을 조정해요", "◌", onClick = {}),
-                QuickMenuUiModel("도움말", "문의 및 약관", "?", onClick = {}),
+                QuickMenuUiModel(QuickMenuId.History, "주문내역", "↻"),
+                QuickMenuUiModel(QuickMenuId.Gift, "선물하기", "🎁"),
+                QuickMenuUiModel(QuickMenuId.Coupon, "쿠폰", "◎"),
+                QuickMenuUiModel(QuickMenuId.Notification, "알림설정", "◌"),
             ),
             settings = listOf(
-                SettingUiModel("계정 관리", "로그인 정보와 프로필", onClick = {}),
-                SettingUiModel("알림 설정", "수신 여부를 관리", onClick = {}),
-                SettingUiModel("앱 정보", "버전 및 정책", onClick = {}),
+                SettingUiModel(SettingId.Terms, "이용약관"),
+                SettingUiModel(SettingId.Faq, "자주묻는질문"),
+                SettingUiModel(SettingId.Support, "고객센터"),
+                SettingUiModel(SettingId.Version, "버전정보", trailingText = "1.0.0"),
+                SettingUiModel(SettingId.Logout, "로그아웃", isDestructive = true),
             ),
         ),
-    ).asStateFlow()
+    )
+
+    val uiState: StateFlow<MyUiState> = mutableUiState.asStateFlow()
 }
 
 data class MyUiState(
     val displayName: String,
-    val email: String,
     val gradeLabel: String,
-    val stats: MyStatsUiModel,
+    val orderCount: String,
+    val stampCount: String,
+    val couponCount: String,
     val quickMenus: List<QuickMenuUiModel>,
     val settings: List<SettingUiModel>,
 )
 
-data class MyStatsUiModel(
-    val stampCount: Int,
-    val couponCount: Int,
-    val orderCount: Int,
-)
-
 data class QuickMenuUiModel(
+    val id: String,
     val title: String,
-    val subtitle: String,
     val iconLabel: String,
-    val onClick: () -> Unit,
 )
 
 data class SettingUiModel(
+    val id: String,
     val title: String,
-    val subtitle: String,
-    val onClick: () -> Unit,
+    val trailingText: String? = null,
+    val isDestructive: Boolean = false,
 )
+
+private object QuickMenuId {
+    const val History = "history"
+    const val Gift = "gift"
+    const val Coupon = "coupon"
+    const val Notification = "notification"
+}
+
+private object SettingId {
+    const val Terms = "terms"
+    const val Faq = "faq"
+    const val Support = "support"
+    const val Version = "version"
+    const val Logout = "logout"
+}

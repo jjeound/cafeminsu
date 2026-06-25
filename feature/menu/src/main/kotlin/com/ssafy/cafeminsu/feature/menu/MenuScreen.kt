@@ -18,6 +18,10 @@ import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.filled.ArrowBack
+import androidx.compose.material3.Icon
+import androidx.compose.material3.IconButton
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -43,6 +47,7 @@ import kotlinx.coroutines.flow.update
 fun MenuRoute(
     onVoiceClick: () -> Unit = {},
     onCartClick: () -> Unit = {},
+    onBackClick: () -> Unit = {},
     modifier: Modifier = Modifier,
     viewModel: MenuViewModel = viewModel(),
 ) {
@@ -52,6 +57,7 @@ fun MenuRoute(
         state = uiState,
         onCategoryClick = viewModel::onCategoryClick,
         onMenuClick = viewModel::onMenuClick,
+        onBackClick = onBackClick,
         onCartClick = onCartClick,
         modifier = modifier,
     )
@@ -62,6 +68,7 @@ fun MenuScreen(
     state: MenuUiState,
     onCategoryClick: (String) -> Unit,
     onMenuClick: (String) -> Unit,
+    onBackClick: () -> Unit,
     onCartClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
@@ -76,7 +83,11 @@ fun MenuScreen(
             .verticalScroll(rememberScrollState()),
         verticalArrangement = Arrangement.spacedBy(spacing.space4),
     ) {
-        MenuHeader(cartCount = state.cartCount, onCartClick = onCartClick)
+        MenuHeader(
+            cartCount = state.cartCount,
+            onBackClick = onBackClick,
+            onCartClick = onCartClick,
+        )
         MenuCategoryTabs(
             categories = state.categories,
             selectedCategoryId = state.selectedCategoryId,
@@ -92,6 +103,7 @@ fun MenuScreen(
 @Composable
 private fun MenuHeader(
     cartCount: Int,
+    onBackClick: () -> Unit,
     onCartClick: () -> Unit,
 ) {
     val colors = CafeMinsuTheme.colors
@@ -100,11 +112,20 @@ private fun MenuHeader(
     Row(
         modifier = Modifier.fillMaxWidth(),
         horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment = Alignment.Top,
+        verticalAlignment = Alignment.CenterVertically,
     ) {
-        Column(verticalArrangement = Arrangement.spacedBy(spacing.space2), modifier = Modifier.weight(1f)) {
+        IconButton(onClick = onBackClick) {
+            Icon(
+                imageVector = Icons.Filled.ArrowBack,
+                contentDescription = "뒤로가기",
+                tint = colors.ink,
+            )
+        }
+
+        Column(
+            modifier = Modifier.weight(1f),
+        ) {
             Text(text = "메뉴", style = CafeMinsuTheme.typography.h1, color = colors.ink)
-            Text(text = "원하는 음료를 빠르게 골라보세요.", style = CafeMinsuTheme.typography.body, color = colors.muted)
         }
 
         Box(
@@ -225,7 +246,7 @@ private fun MenuThumbnail(soldOut: Boolean) {
         contentAlignment = Alignment.Center,
     ) {
         Text(
-            text = if (soldOut) "×" else "☕",
+            text = if (soldOut) "✕" else "☕",
             style = CafeMinsuTheme.typography.h2,
             color = if (soldOut) colors.mutedSoft else colors.primaryHover,
         )
@@ -254,10 +275,10 @@ class MenuViewModel : ViewModel() {
     )
 
     private val allMenus = listOf(
-        MenuUiModel("menu-1", "아메리카노", "가장 기본적인 커피 맛", "4,000원", "coffee"),
-        MenuUiModel("menu-2", "카페라떼", "부드러운 우유 거품이 올라간 라떼", "4,800원", "coffee"),
-        MenuUiModel("menu-3", "유자차", "상큼한 향이 좋은 따뜻한 티", "5,100원", "tea"),
-        MenuUiModel("menu-4", "초코 크루아상", "겉은 바삭하고 속은 촉촉한 디저트", "3,900원", "dessert", soldOut = true),
+        MenuUiModel("menu-1", "아메리카노", "가장 기본적인 커피 메뉴.", "4,000원", "coffee"),
+        MenuUiModel("menu-2", "카페라떼", "부드러운 우유가 들어간 라떼.", "4,800원", "coffee"),
+        MenuUiModel("menu-3", "자몽차", "상큼하고 은은한 과일차.", "5,100원", "tea"),
+        MenuUiModel("menu-4", "초코 머핀", "달콤한 초코칩 머핀.", "3,900원", "dessert", soldOut = true),
     )
 
     private val mutableUiState = MutableStateFlow(
@@ -282,8 +303,6 @@ class MenuViewModel : ViewModel() {
             state.copy(cartCount = state.cartCount + 1)
         }
     }
-
-    fun onCartClick() = Unit
 }
 
 data class MenuUiState(
