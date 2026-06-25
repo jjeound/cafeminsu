@@ -23,7 +23,6 @@ class StoreResponseMapperTest {
         assertEquals("https://example.com/store.jpg", store.image)
     }
 
-    @Test
     fun `maps owned store response to domain model`() {
         val response = OwnerStoreResponse(
             id = 2L,

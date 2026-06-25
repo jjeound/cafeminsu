@@ -12,11 +12,19 @@ interface StoreRepository {
         size: Int = 20,
     ): Flow<List<StoreSummary>>
 
-    fun getStore(storeId: Long): Flow<StoreDetail>
+    fun getStore(storeId: Long): Flow<StoreDetail?>
 
     fun getNearbyStores(
         latitude: Double,
         longitude: Double,
         radius: Double = 1_000.0,
     ): Flow<List<NearbyStoreSummary>>
+
+    suspend fun syncStores(
+        query: String = "",
+        page: Int = 0,
+        size: Int = 20,
+    )
+
+    suspend fun syncStore(storeId: Long)
 }
