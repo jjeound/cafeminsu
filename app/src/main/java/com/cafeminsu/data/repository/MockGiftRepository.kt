@@ -25,9 +25,12 @@ class MockGiftRepository(
             return AppResult.Failure(validationError)
         }
 
+        val sequence = nextGiftSequence++
         val result = GiftSendResult(
-            giftId = "gift-${nextGiftSequence++}",
+            giftId = "gift-$sequence",
             sentAtMillis = nowMillis(),
+            // 개발/Mock 빌드에서 인텐트 공유가 동작하도록 샘플 클레임 코드를 제공한다.
+            claimCode = "GFT-MOCK-%04d".format(sequence),
         )
         return AppResult.Success(result)
     }
@@ -52,7 +55,6 @@ class MockGiftRepository(
     private fun validate(request: GiftSendRequest): DomainError? =
         when {
             request.amount <= 0 -> DomainError.Validation("amount")
-            request.recipientRef.isBlank() -> DomainError.Validation("recipient")
             request.message != null && request.message.length > MaxMessageLength ->
                 DomainError.Validation("message")
 

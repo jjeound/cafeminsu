@@ -4,7 +4,6 @@ import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.data.remote.GifticonClaimRes
 import com.cafeminsu.data.remote.GifticonPurchaseRes
-import com.cafeminsu.data.remote.GifticonShareRes
 import com.cafeminsu.domain.model.Gifticon
 import com.cafeminsu.domain.model.GifticonStatus
 import com.cafeminsu.domain.model.GiftSendResult
@@ -39,18 +38,18 @@ private fun String?.toClaimGifticonStatus(): GifticonStatus? =
 
 private const val DefaultClaimExpiresAtMillis = 0L
 
-fun GifticonShareRes.toGiftSendResult(
-    purchase: GifticonPurchaseRes,
+// 구매 응답만으로 선물 결과를 구성한다(별도 share API 미사용).
+// shareLink(서버 제공 시)·claimCode 만 도메인으로 넘기고, 딥링크/공유 텍스트는 상위 레이어에서 만든다.
+fun GifticonPurchaseRes.toGiftSendResult(
     sentAtMillis: Long,
 ): AppResult<GiftSendResult> {
-    val gifticonId = purchase.gifticonId ?: return AppResult.Failure(DomainError.Unknown)
+    val id = gifticonId ?: return AppResult.Failure(DomainError.Unknown)
     return AppResult.Success(
         GiftSendResult(
-            giftId = gifticonId.toString(),
+            giftId = id.toString(),
             sentAtMillis = sentAtMillis,
             shareLink = shareLink,
-            deepLink = deepLink,
-            claimCode = claimCode ?: purchase.claimCode,
+            claimCode = claimCode,
         ),
     )
 }

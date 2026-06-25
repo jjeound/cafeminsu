@@ -39,17 +39,15 @@ class PaymentScreenTest {
         composeRule.onNodeWithText("결제").assertIsDisplayed()
         composeRule.onNodeWithText("ⓘ PG 미연동 — Mock 성공/실패 분기로 대체").assertIsDisplayed()
         composeRule.onNodeWithText("결제 수단").assertIsDisplayed()
-        composeRule.onNodeWithText("신용카드").assertIsDisplayed()
-        composeRule.onNodeWithText("간편결제").assertIsDisplayed()
-        composeRule.onNodeWithText("쿠폰").assertIsDisplayed()
+        // 결제는 카카오페이로 통합 — 사용자가 보는 결제수단이 실제 PG 와 일치한다.
+        composeRule.onNodeWithText("카카오페이").assertIsDisplayed()
         composeRule.onNodeWithText("주문 요약").assertIsDisplayed()
         composeRule.onNodeWithText("민수 라떼 (ICE/Reg) ✕ 2").assertIsDisplayed()
         composeRule.onNodeWithText("총 결제 금액").assertIsDisplayed()
         composeRule.onAllNodesWithText("12,000원").assertCountEquals(2)
         composeRule.onNodeWithText("결제 실패").assertIsDisplayed()
         composeRule.onNodeWithText("결제 성공").assertIsDisplayed()
-        composeRule.onAllNodesWithText("tok_credit_card_mock").assertCountEquals(0)
-        composeRule.onAllNodesWithText("tok_simple_pay_mock").assertCountEquals(0)
+        composeRule.onAllNodesWithText("tok_kakaopay_mock").assertCountEquals(0)
     }
 
     @Test

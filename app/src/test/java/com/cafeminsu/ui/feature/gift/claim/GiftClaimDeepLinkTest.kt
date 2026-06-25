@@ -56,6 +56,14 @@ class GiftClaimDeepLinkTest {
     }
 
     @Test
+    fun buildClaimUriRoundTripsWithExtractClaimCode() {
+        val uri = GiftClaimDeepLink.buildClaimUri("GFT-1234-5678")
+
+        assertEquals("cafeminsu://gift?code=GFT-1234-5678", uri)
+        assertEquals("GFT-1234-5678", GiftClaimDeepLink.extractClaimCode(uri))
+    }
+
+    @Test
     fun sanitizeInputDropsDisallowedCharactersAndCaps() {
         assertEquals("GFT1234", GiftClaimDeepLink.sanitizeInput("GFT 1234!@#"))
         assertEquals("GFT-1234", GiftClaimDeepLink.sanitizeInput("GFT-1234!@#"))

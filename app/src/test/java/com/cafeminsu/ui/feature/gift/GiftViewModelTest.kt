@@ -5,7 +5,6 @@ import app.cash.turbine.test
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.AuthState
-import com.cafeminsu.domain.model.GiftChannel
 import com.cafeminsu.domain.model.GiftSendRequest
 import com.cafeminsu.domain.model.GiftSendResult
 import com.cafeminsu.domain.model.UserProfile
@@ -34,14 +33,13 @@ class GiftViewModelTest {
     val mainDispatcherRule = GiftMainDispatcherRule()
 
     @Test
-    fun initialFormSelectsTenThousandWonAndKakaoTalk() = runTest {
+    fun initialFormSelectsTenThousandWon() = runTest {
         val viewModel = viewModel()
 
         viewModel.uiState.test {
             val content = awaitContent()
             assertEquals(10_000, content.selectedAmount)
             assertEquals("10,000", content.selectedAmountLabel)
-            assertEquals(GiftChannel.KakaoTalk, content.selectedChannel)
             assertEquals("구매하고 선물 보내기 · 10,000원", content.primaryButtonText)
 
             cancelAndIgnoreRemainingEvents()
@@ -49,7 +47,7 @@ class GiftViewModelTest {
     }
 
     @Test
-    fun amountAndChannelSelectionUpdatesFormState() = runTest {
+    fun amountSelectionUpdatesFormState() = runTest {
         val viewModel = viewModel()
 
         viewModel.uiState.test {
@@ -60,18 +58,12 @@ class GiftViewModelTest {
             assertEquals(20_000, amountUpdated.selectedAmount)
             assertEquals(GiftAmountOption.TwentyThousand, amountUpdated.selectedAmountOption)
 
-            viewModel.onChannelSelected(GiftChannel.Sms)
-            val channelUpdated = awaitContent()
-            assertEquals(GiftChannel.Sms, channelUpdated.selectedChannel)
-            assertEquals("연락처 입력", channelUpdated.recipientPlaceholder)
-
             cancelAndIgnoreRemainingEvents()
         }
     }
 
     @Test
-    fun successfulSendUsesSelectedFriendUuidAndDoesNotExposeItInEvent() = runTest {
-        val friendUuid = "friend-uuid-secret"
+    fun sendWithoutShareDataEmitsSendSucceeded() = runTest {
         val giftRepository = FakeGiftRepository(
             result = AppResult.Success(
                 GiftSendResult(
@@ -83,8 +75,6 @@ class GiftViewModelTest {
         val viewModel = viewModel(giftRepository = giftRepository)
 
         viewModel.uiState.test {
-            awaitContent()
-            viewModel.onFriendSelected(uuid = friendUuid, displayName = "친구")
             awaitContent()
 
             viewModel.events.test {
@@ -92,11 +82,7 @@ class GiftViewModelTest {
 
                 val sent = awaitItem()
                 assertTrue(sent is GiftEvent.SendSucceeded)
-                assertFalse(sent.message.contains(friendUuid))
-                // KakaoTalk: 친구 uuid 가 식별자로 repository 에 전달(서버 미전송은 data 레이어 책임).
-                assertEquals(friendUuid, giftRepository.requests.single().recipientRef)
                 assertEquals(10_000, giftRepository.requests.single().amount)
-                assertEquals(GiftChannel.KakaoTalk, giftRepository.requests.single().channel)
 
                 cancelAndIgnoreRemainingEvents()
             }
@@ -106,15 +92,13 @@ class GiftViewModelTest {
     }
 
     @Test
-    fun kakaoTalkSendWithSelectedFriendEmitsSendKakaoMessageWithFallbackTarget() = runTest {
-        val friendUuid = "friend-uuid-secret"
+    fun sendWithClaimCodeEmitsShareGiftLinkWithCodeAndNoCustomScheme() = runTest {
         val giftRepository = FakeGiftRepository(
             result = AppResult.Success(
                 GiftSendResult(
                     giftId = "gift-1",
                     sentAtMillis = 1_803_974_400_000L,
-                    shareLink = "https://cafeminsu.example/gift/abc",
-                    deepLink = "cafeminsu://gift/abc",
+                    claimCode = "GFT-1234-5678",
                 ),
             ),
         )
@@ -122,19 +106,16 @@ class GiftViewModelTest {
 
         viewModel.uiState.test {
             awaitContent()
-            viewModel.onFriendSelected(uuid = friendUuid, displayName = "친구")
-            awaitContent()
 
             viewModel.events.test {
                 viewModel.sendGift()
 
                 val event = awaitItem()
-                assertTrue(event is GiftEvent.SendKakaoMessage)
-                val message = event as GiftEvent.SendKakaoMessage
-                assertEquals(friendUuid, message.receiverUuid)
-                // 공유 폴백을 위해 클레임 링크를 함께 싣는다.
-                assertEquals("https://cafeminsu.example/gift/abc", message.target.shareLink)
-                assertEquals("cafeminsu://gift/abc", message.target.deepLink)
+                assertTrue(event is GiftEvent.ShareGiftLink)
+                val share = event as GiftEvent.ShareGiftLink
+                // 등록 코드만 안내하고, 카톡에서 열리지 않는 cafeminsu:// 커스텀 스킴은 넣지 않는다.
+                assertTrue(share.shareText.contains("등록 코드: GFT-1234-5678"))
+                assertFalse(share.shareText.contains("cafeminsu://"))
 
                 cancelAndIgnoreRemainingEvents()
             }
@@ -144,13 +125,14 @@ class GiftViewModelTest {
     }
 
     @Test
-    fun smsSendDoesNotLaunchKakaoShare() = runTest {
+    fun sendSharesClaimCodeOnlyEvenWhenServerShareLinkPresent() = runTest {
         val giftRepository = FakeGiftRepository(
             result = AppResult.Success(
                 GiftSendResult(
                     giftId = "gift-1",
                     sentAtMillis = 1_803_974_400_000L,
-                    shareLink = "https://cafeminsu.example/gift/abc",
+                    shareLink = "https://cafeminsu.example/gift?code=GFT-1234-5678",
+                    claimCode = "GFT-1234-5678",
                 ),
             ),
         )
@@ -158,16 +140,17 @@ class GiftViewModelTest {
 
         viewModel.uiState.test {
             awaitContent()
-            viewModel.onChannelSelected(GiftChannel.Sms)
-            awaitContent()
-            viewModel.onRecipientChanged("010-1234-5678")
-            awaitContent()
 
             viewModel.events.test {
                 viewModel.sendGift()
 
                 val event = awaitItem()
-                assertTrue(event is GiftEvent.SendSucceeded)
+                assertTrue(event is GiftEvent.ShareGiftLink)
+                val share = event as GiftEvent.ShareGiftLink
+                // 링크는 일절 넣지 않고 등록 코드만 공유한다.
+                assertTrue(share.shareText.contains("등록 코드: GFT-1234-5678"))
+                assertFalse(share.shareText.contains("http"))
+                assertFalse(share.shareText.contains("cafeminsu://"))
 
                 cancelAndIgnoreRemainingEvents()
             }
@@ -177,8 +160,7 @@ class GiftViewModelTest {
     }
 
     @Test
-    fun sendFailureProducesFailureEventWithoutFriendIdentifier() = runTest {
-        val friendUuid = "friend-sensitive-id"
+    fun sendFailureProducesFailureEvent() = runTest {
         val viewModel = viewModel(
             giftRepository = FakeGiftRepository(
                 result = AppResult.Failure(DomainError.Network),
@@ -187,15 +169,12 @@ class GiftViewModelTest {
 
         viewModel.uiState.test {
             awaitContent()
-            viewModel.onFriendSelected(uuid = friendUuid, displayName = "친구")
-            awaitContent()
 
             viewModel.events.test {
                 viewModel.sendGift()
 
                 val failed = awaitItem()
                 assertTrue(failed is GiftEvent.SendFailed)
-                assertFalse(failed.message.contains(friendUuid))
 
                 cancelAndIgnoreRemainingEvents()
             }
@@ -205,7 +184,7 @@ class GiftViewModelTest {
     }
 
     @Test
-    fun blankRecipientDoesNotSendGift() = runTest {
+    fun zeroAmountDoesNotSendGift() = runTest {
         val giftRepository = FakeGiftRepository(
             result = AppResult.Success(
                 GiftSendResult(
@@ -216,12 +195,21 @@ class GiftViewModelTest {
         )
         val viewModel = viewModel(giftRepository = giftRepository)
 
-        viewModel.events.test {
-            viewModel.sendGift()
+        viewModel.uiState.test {
+            awaitContent()
+            // 직접입력 선택 + 금액 미입력이면 전송 불가 → 전송 시도해도 실패 이벤트만 발생하고 호출 안 됨.
+            viewModel.onAmountSelected(GiftAmountOption.Custom)
+            awaitContent()
 
-            val failed = awaitItem()
-            assertTrue(failed is GiftEvent.SendFailed)
-            assertTrue(giftRepository.requests.isEmpty())
+            viewModel.events.test {
+                viewModel.sendGift()
+
+                val failed = awaitItem()
+                assertTrue(failed is GiftEvent.SendFailed)
+                assertTrue(giftRepository.requests.isEmpty())
+
+                cancelAndIgnoreRemainingEvents()
+            }
 
             cancelAndIgnoreRemainingEvents()
         }

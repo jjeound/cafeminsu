@@ -34,6 +34,7 @@ data class MenuItemUiModel(
     val description: String,
     val price: Int,
     val isSoldOut: Boolean,
+    val imageUrl: String? = null,
     val isEnabled: Boolean = !isSoldOut,
 )
 

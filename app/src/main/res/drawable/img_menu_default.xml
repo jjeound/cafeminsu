@@ -1,0 +1,54 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 메뉴 기본 이미지: imageUrl 이 null/blank 일 때 표시. Downloads/menu/coffee.svg 를 벡터 드로어블로 변환. -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="120dp"
+    android:height="120dp"
+    android:viewportWidth="400"
+    android:viewportHeight="400">
+
+    <!-- 배경 (warm sand) -->
+    <path
+        android:fillColor="#D7C4A8"
+        android:pathData="M0,0 L400,0 L400,400 L0,400 Z" />
+
+    <!-- 김(steam) 3줄 -->
+    <path
+        android:pathData="M170,96 q-18,-22 0,-44"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="8"
+        android:strokeAlpha="0.7"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M205,96 q-18,-22 0,-44"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="8"
+        android:strokeAlpha="0.7"
+        android:strokeLineCap="round" />
+    <path
+        android:pathData="M240,96 q-18,-22 0,-44"
+        android:strokeColor="#FFFFFF"
+        android:strokeWidth="8"
+        android:strokeAlpha="0.7"
+        android:strokeLineCap="round" />
+
+    <!-- 컵 그림자 -->
+    <path
+        android:fillColor="#B89B74"
+        android:pathData="M80,318 a120,22 0 1 0 240,0 a120,22 0 1 0 -240,0 Z" />
+
+    <!-- 컵 몸체 -->
+    <path
+        android:fillColor="#FBF7F0"
+        android:pathData="M118,150 h164 l-16,150 a16,16 0 0 1 -16,14 h-84 a16,16 0 0 1 -16,-14 z" />
+
+    <!-- 커피 표면 -->
+    <path
+        android:fillColor="#4B2E1E"
+        android:pathData="M118,160 a82,20 0 1 0 164,0 a82,20 0 1 0 -164,0 Z" />
+
+    <!-- 컵 손잡이 -->
+    <path
+        android:pathData="M286,175 a44,44 0 0 1 0,88"
+        android:strokeColor="#FBF7F0"
+        android:strokeWidth="20" />
+</vector>

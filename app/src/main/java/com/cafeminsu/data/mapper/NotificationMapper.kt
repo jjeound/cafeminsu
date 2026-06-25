@@ -5,8 +5,6 @@ import com.cafeminsu.core.DomainError
 import com.cafeminsu.data.remote.NotificationListItemRes
 import com.cafeminsu.domain.model.AppNotification
 import com.cafeminsu.domain.model.NotificationType
-import java.time.Instant
-import java.time.format.DateTimeParseException
 import java.util.Locale
 
 fun List<NotificationListItemRes>.toAppNotifications(): AppResult<List<AppNotification>> {
@@ -65,13 +63,4 @@ private fun String.toOrderNotificationType(): NotificationType =
         else -> NotificationType.OrderAccepted
     }
 
-private fun String?.toEpochMillisOrZero(): Long =
-    this?.let { value ->
-        try {
-            Instant.parse(value).toEpochMilli()
-        } catch (_: DateTimeParseException) {
-            DefaultEpochMillis
-        }
-    } ?: DefaultEpochMillis
-
-private const val DefaultEpochMillis = 0L
+private fun String?.toEpochMillisOrZero(): Long = parseServerEpochMillis(this)

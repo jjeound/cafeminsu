@@ -35,6 +35,12 @@ object GiftClaimDeepLink {
         return code.takeIf(::isValidClaimCode)
     }
 
+    /**
+     * 유효한 claim 코드로 등록(claim) 딥링크를 만든다([extractClaimCode] 와 라운드트립).
+     * 허용 문자(영문·숫자·하이픈)만 통과한 코드만 받으므로 별도 URL 인코딩이 필요 없다.
+     */
+    fun buildClaimUri(code: String): String = "$SCHEME://$HOST?$CODE_PARAM=$code"
+
     /** claim 코드 형식/길이 검증(허용 문자: 영문·숫자·하이픈). */
     fun isValidClaimCode(code: String): Boolean {
         val trimmed = code.trim()

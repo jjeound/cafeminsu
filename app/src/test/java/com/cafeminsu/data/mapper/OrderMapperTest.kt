@@ -81,6 +81,30 @@ class OrderMapperTest {
     }
 
     @Test
+    fun historyItemWithZonelessCreatedAtMapsToNonZeroMillis() {
+        val expected = java.time.LocalDateTime.parse("2026-06-20T10:15:30")
+            .atZone(java.time.ZoneId.of("Asia/Seoul"))
+            .toInstant()
+            .toEpochMilli()
+
+        val result = listOf(
+            OrderListItemRes(
+                orderId = 77,
+                orderNumber = "A-2543",
+                storeName = "카페민수 강남점",
+                totalAmount = 10_000,
+                status = "DONE",
+                createdAt = "2026-06-20T10:15:30",
+            ),
+        ).toOrders()
+
+        assertTrue(result is AppResult.Success)
+        val order = (result as AppResult.Success).data.single()
+        assertTrue(order.createdAtMillis > 0L)
+        assertEquals(expected, order.createdAtMillis)
+    }
+
+    @Test
     fun historyItemMapsWithoutItemDetails() {
         val result = listOf(
             OrderListItemRes(

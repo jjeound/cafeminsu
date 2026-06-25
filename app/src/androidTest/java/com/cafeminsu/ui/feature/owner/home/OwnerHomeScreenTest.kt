@@ -83,7 +83,7 @@ class OwnerHomeScreenTest {
     }
 
     @Test
-    fun storeSelectorDropdownEmitsSelectedStore() {
+    fun storeSelectorOpensDropdownAndSwitchesStore() {
         var selectedStoreId: String? = null
 
         composeRule.setContent {
@@ -101,10 +101,9 @@ class OwnerHomeScreenTest {
                         pendingOrders = emptyList(),
                         isStoreOpenUpdating = false,
                         stores = listOf(
-                            OwnerStore(id = "7", name = "강남점"),
-                            OwnerStore(id = "8", name = "판교점"),
+                            OwnerStoreUiModel(id = "store-gangnam", name = "강남점", isSelected = true),
+                            OwnerStoreUiModel(id = "store-hongdae", name = "홍대점", isSelected = false),
                         ),
-                        selectedStoreId = "7",
                     ),
                     onToggleStoreOpen = {},
                     onAdvanceStatus = {},
@@ -115,10 +114,10 @@ class OwnerHomeScreenTest {
             }
         }
 
-        // 헤더 매장명을 눌러 드롭다운을 열고 다른 매장을 선택하면 onSelectStore 가 호출된다.
         composeRule.onNodeWithText("강남점 ▾").performClick()
-        composeRule.onNodeWithText("판교점").performClick()
+        composeRule.onNodeWithText("홍대점").assertIsDisplayed()
+        composeRule.onNodeWithText("홍대점").performClick()
 
-        assertEquals("8", selectedStoreId)
+        assertEquals("store-hongdae", selectedStoreId)
     }
 }

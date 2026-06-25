@@ -56,6 +56,14 @@ class GiftClaimViewModelTest {
     }
 
     @Test
+    fun isDeepLinkClaimTrueOnlyForValidPrefilledCode() = runTest {
+        // 딥링크로 유효한 코드가 채워진 경우만 자동 등록 대상.
+        assertTrue(viewModel(initialCode = "GFT-1234-5678").isDeepLinkClaim)
+        assertFalse(viewModel(initialCode = "").isDeepLinkClaim)
+        assertFalse(viewModel(initialCode = "ab").isDeepLinkClaim)
+    }
+
+    @Test
     fun successfulClaimEmitsClaimedEventAndClearsSubmitting() = runTest {
         val repository = FakeGiftRepository(AppResult.Success(gifticon()))
         val viewModel = viewModel(giftRepository = repository, initialCode = "GFT-1234-5678")

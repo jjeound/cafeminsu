@@ -68,16 +68,10 @@ sealed interface PaymentEvent {
     data class PaymentFailed(val orderId: String) : PaymentEvent
 }
 
+// 실연동 PG 는 카카오페이 단일 경로다(di/RepositoryModule.providePgClient → KakaoPayPgClient).
+// 사용자가 보는 결제수단을 실제 PG 와 일치시키기 위해 카카오페이로 통합한다(기본·주 결제수단).
 fun defaultPaymentMethods(): List<PaymentMethodUiModel> =
     listOf(
-        PaymentMethodUiModel(
-            id = "credit-card",
-            label = "신용카드",
-        ),
-        PaymentMethodUiModel(
-            id = "simple-pay",
-            label = "간편결제",
-        ),
         PaymentMethodUiModel(
             id = "kakaopay",
             label = "카카오페이",

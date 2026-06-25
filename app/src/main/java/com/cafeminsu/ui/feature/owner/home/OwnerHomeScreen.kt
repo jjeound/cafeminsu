@@ -54,6 +54,7 @@ fun OwnerHomeRoute(
     OwnerHomeScreen(
         state = state,
         onToggleStoreOpen = viewModel::setStoreOpen,
+        onSelectStore = viewModel::selectStore,
         onAdvanceStatus = viewModel::advanceStatus,
         onViewAllOrders = onViewAllOrders,
         onRetry = viewModel::retry,
@@ -71,6 +72,7 @@ fun OwnerHomeScreen(
     onRetry: () -> Unit,
     onSelectStore: (String) -> Unit = {},
     modifier: Modifier = Modifier,
+    onSelectStore: (String) -> Unit = {},
 ) {
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -93,6 +95,7 @@ fun OwnerHomeScreen(
                 OwnerHomeUiState.Loading -> LoadingView()
                 is OwnerHomeUiState.Content -> OwnerHomeContent(
                     storeName = state.storeName,
+                    stores = state.stores,
                     isStoreOpen = state.isStoreOpen,
                     dateLabel = state.dateLabel,
                     stats = state.stats,
@@ -101,6 +104,7 @@ fun OwnerHomeScreen(
                     stores = state.stores,
                     selectedStoreId = state.selectedStoreId,
                     onToggleStoreOpen = onToggleStoreOpen,
+                    onSelectStore = onSelectStore,
                     onAdvanceStatus = onAdvanceStatus,
                     onViewAllOrders = onViewAllOrders,
                     onSelectStore = onSelectStore,
@@ -109,6 +113,7 @@ fun OwnerHomeScreen(
                 is OwnerHomeUiState.Empty -> OwnerHomeEmpty(
                     state = state,
                     onToggleStoreOpen = onToggleStoreOpen,
+                    onSelectStore = onSelectStore,
                     onViewAllOrders = onViewAllOrders,
                     onSelectStore = onSelectStore,
                 )
@@ -126,6 +131,7 @@ fun OwnerHomeScreen(
 @Composable
 private fun OwnerHomeContent(
     storeName: String,
+    stores: List<OwnerStoreUiModel>,
     isStoreOpen: Boolean,
     dateLabel: String,
     stats: OwnerHomeStatsUiModel,
@@ -134,12 +140,14 @@ private fun OwnerHomeContent(
     stores: List<OwnerStore>,
     selectedStoreId: String?,
     onToggleStoreOpen: (Boolean) -> Unit,
+    onSelectStore: (String) -> Unit,
     onAdvanceStatus: (String) -> Unit,
     onViewAllOrders: () -> Unit,
     onSelectStore: (String) -> Unit,
 ) {
     OwnerHomeHeader(
         storeName = storeName,
+        stores = stores,
         isStoreOpen = isStoreOpen,
         enabled = !isStoreOpenUpdating,
         stores = stores,
@@ -160,11 +168,13 @@ private fun OwnerHomeContent(
 private fun OwnerHomeEmpty(
     state: OwnerHomeUiState.Empty,
     onToggleStoreOpen: (Boolean) -> Unit,
+    onSelectStore: (String) -> Unit,
     onViewAllOrders: () -> Unit,
     onSelectStore: (String) -> Unit,
 ) {
     OwnerHomeHeader(
         storeName = state.storeName,
+        stores = state.stores,
         isStoreOpen = state.isStoreOpen,
         enabled = !state.isStoreOpenUpdating,
         stores = state.stores,
@@ -185,6 +195,7 @@ private fun OwnerHomeEmpty(
 @Composable
 private fun OwnerHomeHeader(
     storeName: String,
+    stores: List<OwnerStoreUiModel>,
     isStoreOpen: Boolean,
     enabled: Boolean,
     stores: List<OwnerStore>,
@@ -197,52 +208,11 @@ private fun OwnerHomeHeader(
         horizontalArrangement = Arrangement.SpaceBetween,
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        // 매장이 2개 이상일 때만 드롭다운으로 선택을 노출한다(1개 이하면 이름만).
-        if (stores.size >= MinStoresForSelector) {
-            OwnerStoreSelector(
-                storeName = storeName,
-                stores = stores,
-                selectedStoreId = selectedStoreId,
-                modifier = Modifier.weight(HeaderTextWeight),
-                onSelectStore = onSelectStore,
-            )
-        } else {
-            Text(
-                modifier = Modifier.weight(HeaderTextWeight),
-                text = storeName,
-                style = CafeTheme.typography.h1,
-                color = CafeTheme.colors.ink,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-
-        StoreOpenPill(
-            isStoreOpen = isStoreOpen,
-            enabled = enabled,
-            onClick = { onToggleStoreOpen(!isStoreOpen) },
-        )
-    }
-}
-
-@Composable
-private fun OwnerStoreSelector(
-    storeName: String,
-    stores: List<OwnerStore>,
-    selectedStoreId: String?,
-    modifier: Modifier = Modifier,
-    onSelectStore: (String) -> Unit,
-) {
-    var expanded by remember { mutableStateOf(false) }
-
-    Box(modifier = modifier) {
-        Text(
-            modifier = Modifier.clickable(role = Role.Button) { expanded = true },
-            text = "$storeName ▾",
-            style = CafeTheme.typography.h1,
-            color = CafeTheme.colors.ink,
-            maxLines = 1,
-            overflow = TextOverflow.Ellipsis,
+        OwnerStoreSelector(
+            storeName = storeName,
+            stores = stores,
+            onSelectStore = onSelectStore,
+            modifier = Modifier.weight(HeaderTextWeight),
         )
 
         DropdownMenu(
@@ -256,6 +226,59 @@ private fun OwnerStoreSelector(
                             text = store.name,
                             style = CafeTheme.typography.body,
                             color = if (store.id == selectedStoreId) {
+                                CafeTheme.colors.primary
+                            } else {
+                                CafeTheme.colors.ink
+                            },
+                        )
+                    },
+                    onClick = {
+                        expanded = false
+                        onSelectStore(store.id)
+                    },
+                )
+            }
+        }
+    }
+}
+
+@Composable
+private fun OwnerStoreSelector(
+    storeName: String,
+    stores: List<OwnerStoreUiModel>,
+    onSelectStore: (String) -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    // 매장이 2개 이상일 때만 드롭다운으로 전환 가능. 1개뿐이면 종전처럼 단순 표시한다.
+    val canSwitch = stores.size > 1
+    var expanded by remember { mutableStateOf(false) }
+
+    Box(modifier = modifier) {
+        Text(
+            modifier = if (canSwitch) {
+                Modifier.clickable(role = Role.DropdownList) { expanded = true }
+            } else {
+                Modifier
+            },
+            text = "$storeName ▾",
+            style = CafeTheme.typography.h1,
+            color = CafeTheme.colors.ink,
+            maxLines = 1,
+            overflow = TextOverflow.Ellipsis,
+        )
+
+        DropdownMenu(
+            expanded = expanded && canSwitch,
+            onDismissRequest = { expanded = false },
+            containerColor = CafeTheme.colors.surfaceCard,
+        ) {
+            stores.forEach { store ->
+                DropdownMenuItem(
+                    text = {
+                        Text(
+                            text = store.name,
+                            style = CafeTheme.typography.bodyL,
+                            color = if (store.isSelected) {
                                 CafeTheme.colors.primary
                             } else {
                                 CafeTheme.colors.ink

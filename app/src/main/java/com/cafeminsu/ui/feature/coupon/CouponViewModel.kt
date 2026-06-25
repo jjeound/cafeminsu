@@ -5,12 +5,13 @@ import androidx.lifecycle.viewModelScope
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.AuthState
-import com.cafeminsu.domain.model.Coupon
-import com.cafeminsu.domain.model.CouponStatus
+import com.cafeminsu.domain.model.Gifticon
+import com.cafeminsu.domain.model.GifticonStatus
 import com.cafeminsu.domain.model.StampCard
-import com.cafeminsu.domain.repository.CouponRepository
+import com.cafeminsu.domain.model.Store
 import com.cafeminsu.domain.repository.RewardRepository
 import com.cafeminsu.domain.repository.SessionRepository
+import com.cafeminsu.domain.repository.StoreRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import java.time.Instant
 import java.time.ZoneId
@@ -27,18 +28,18 @@ import kotlinx.coroutines.launch
 @HiltViewModel
 class CouponViewModel(
     private val rewardRepository: RewardRepository,
-    private val couponRepository: CouponRepository,
+    private val storeRepository: StoreRepository,
     private val sessionRepository: SessionRepository,
     private val nowMillis: () -> Long,
 ) : ViewModel() {
     @Inject
     constructor(
         rewardRepository: RewardRepository,
-        couponRepository: CouponRepository,
+        storeRepository: StoreRepository,
         sessionRepository: SessionRepository,
     ) : this(
         rewardRepository = rewardRepository,
-        couponRepository = couponRepository,
+        storeRepository = storeRepository,
         sessionRepository = sessionRepository,
         nowMillis = { System.currentTimeMillis() },
     )
@@ -46,12 +47,14 @@ class CouponViewModel(
     val uiState: StateFlow<CouponUiState> = combine(
         sessionRepository.observeAuthState(),
         rewardRepository.observeStampCard(),
-        couponRepository.observeCoupons(),
-    ) { authState, stampResult, couponResult ->
+        rewardRepository.observeGifticons(),
+        storeRepository.observeSelectedStore(),
+    ) { authState, stampResult, gifticonResult, selectedStore ->
         mapCouponState(
             authState = authState,
             stampResult = stampResult,
-            couponResult = couponResult,
+            gifticonResult = gifticonResult,
+            selectedStore = selectedStore,
         )
     }.catch {
         emit(
@@ -77,7 +80,8 @@ class CouponViewModel(
     private fun mapCouponState(
         authState: AuthState,
         stampResult: AppResult<StampCard>,
-        couponResult: AppResult<List<Coupon>>,
+        gifticonResult: AppResult<List<Gifticon>>,
+        selectedStore: Store?,
     ): CouponUiState =
         when (authState) {
             AuthState.Unknown -> CouponUiState.Loading
@@ -90,11 +94,11 @@ class CouponViewModel(
 
             is AuthState.Authenticated -> when {
                 stampResult is AppResult.Failure -> stampResult.error.toCouponError()
-                couponResult is AppResult.Failure -> couponResult.error.toCouponError()
-                stampResult is AppResult.Success && couponResult is AppResult.Success ->
+                gifticonResult is AppResult.Failure -> gifticonResult.error.toCouponError()
+                stampResult is AppResult.Success && gifticonResult is AppResult.Success ->
                     CouponUiState.Content(
-                        stamp = stampResult.data.toCouponStampUiModel(),
-                        coupons = couponResult.data.map { coupon -> coupon.toCouponItemUiModel() },
+                        stamp = stampResult.data.toCouponStampUiModel(selectedStore),
+                        coupons = gifticonResult.data.map { gifticon -> gifticon.toCouponItemUiModel() },
                     )
 
                 else -> CouponUiState.Error(
@@ -104,24 +108,25 @@ class CouponViewModel(
             }
         }
 
-    private fun StampCard.toCouponStampUiModel(): CouponStampUiModel =
+    private fun StampCard.toCouponStampUiModel(selectedStore: Store?): CouponStampUiModel =
         CouponStampUiModel(
-            storeName = DefaultStoreName,
+            storeName = selectedStore?.name?.ifBlank { null } ?: DefaultStoreName,
             currentCount = currentCount,
             goalCount = goalCount,
         )
 
-    private fun Coupon.toCouponItemUiModel(): CouponItemUiModel {
-        val expiresSoon = status == CouponStatus.Available &&
+    private fun Gifticon.toCouponItemUiModel(): CouponItemUiModel {
+        val available = status == GifticonStatus.Available
+        val expiresSoon = available &&
             expiresAtMillis - nowMillis() in 0..ExpiringSoonWindowMillis
         return CouponItemUiModel(
             id = id,
             title = title,
             expiresLabel = "유효기간 ${formatCouponDate(expiresAtMillis)}",
-            available = status == CouponStatus.Available,
+            available = available,
             expiringSoon = expiresSoon,
-            amount = amount,
-            dimmed = status != CouponStatus.Available,
+            amount = null,
+            dimmed = !available,
         )
     }
 
@@ -163,7 +168,7 @@ class CouponViewModel(
 
     private companion object {
         const val StateStopTimeoutMillis = 5_000L
-        const val DefaultStoreName = "강남점"
+        const val DefaultStoreName = "마이 카페"
         const val ExpiringSoonWindowMillis = 1000L * 60L * 60L * 24L * 7L
     }
 }

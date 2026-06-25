@@ -17,6 +17,7 @@ import kotlinx.coroutines.flow.SharingStarted
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.catch
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.onStart
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
 
@@ -26,6 +27,11 @@ class NotiViewModel @Inject constructor(
 ) : ViewModel() {
     private var currentTimeMillis: () -> Long = { System.currentTimeMillis() }
     private var zoneId: ZoneId = ZoneId.systemDefault()
+
+    // 이번 구독(진입) 동안 노출할 알림 id. 진입 시 안 읽은 알림을 누적해 두고,
+    // 보는 도중 markAllRead 로 read=true 가 돼도 세션 동안은 계속 보여 준다.
+    // 재구독(다음 진입) 시 비워져 이미 읽은 알림은 사라진다.
+    private val sessionVisibleIds = mutableSetOf<String>()
 
     internal constructor(
         notificationRepository: NotificationRepository,
@@ -38,6 +44,7 @@ class NotiViewModel @Inject constructor(
 
     val uiState: StateFlow<NotiUiState> = notificationRepository
         .observeNotifications()
+        .onStart { sessionVisibleIds.clear() }
         .map { result ->
             when (result) {
                 is AppResult.Success -> result.data.toUiState()
@@ -69,11 +76,13 @@ class NotiViewModel @Inject constructor(
     }
 
     private fun List<AppNotification>.toUiState(): NotiUiState {
-        if (isEmpty()) {
+        forEach { if (!it.read) sessionVisibleIds.add(it.id) }
+        val visible = filter { it.id in sessionVisibleIds }
+        if (visible.isEmpty()) {
             return NotiUiState.Empty(message = "받은 알림이 없어요")
         }
 
-        val sorted = sortedByDescending { it.createdAtMillis }
+        val sorted = visible.sortedByDescending { it.createdAtMillis }
         val grouped = sorted
             .groupBy { it.groupLabel() }
             .map { (label, notifications) ->

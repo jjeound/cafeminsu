@@ -13,9 +13,7 @@ sealed interface OwnerHomeUiState {
         val stats: OwnerHomeStatsUiModel,
         val pendingOrders: List<OwnerHomeOrderUiModel>,
         val isStoreOpenUpdating: Boolean,
-        // 매장 ≥2개일 때 헤더 드롭다운으로 노출한다(1개 이하면 이름만).
-        val stores: List<OwnerStore> = emptyList(),
-        val selectedStoreId: String? = null,
+        val stores: List<OwnerStoreUiModel> = emptyList(),
     ) : OwnerHomeUiState
 
     data class Empty(
@@ -25,8 +23,7 @@ sealed interface OwnerHomeUiState {
         val stats: OwnerHomeStatsUiModel,
         val message: String,
         val isStoreOpenUpdating: Boolean,
-        val stores: List<OwnerStore> = emptyList(),
-        val selectedStoreId: String? = null,
+        val stores: List<OwnerStoreUiModel> = emptyList(),
     ) : OwnerHomeUiState
 
     data class Error(
@@ -39,6 +36,12 @@ data class OwnerHomeStatsUiModel(
     val totalSales: Int,
     val orderCount: Int,
     val newWaitingCount: Int,
+)
+
+data class OwnerStoreUiModel(
+    val id: String,
+    val name: String,
+    val isSelected: Boolean,
 )
 
 data class OwnerHomeOrderUiModel(

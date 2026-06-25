@@ -35,4 +35,15 @@ class OwnerHomeUiStateTest {
         assertEquals(OrderStatus.Accepted, order.status)
         assertEquals("접수하기", order.actionLabel)
     }
+
+    @Test
+    fun storeUiModelMarksSelectedStore() {
+        val stores = listOf(
+            OwnerStoreUiModel(id = "store-gangnam", name = "강남점", isSelected = true),
+            OwnerStoreUiModel(id = "store-hongdae", name = "홍대점", isSelected = false),
+        )
+
+        assertEquals("강남점", stores.single { it.isSelected }.name)
+        assertEquals(2, stores.size)
+    }
 }

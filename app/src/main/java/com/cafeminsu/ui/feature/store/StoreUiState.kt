@@ -7,6 +7,8 @@ sealed interface StoreUiState {
         val query: String,
         val stores: List<StoreUiModel>,
         val selectedStore: StoreDetailUiModel?,
+        // 내 위치(지도에 "내 위치" 마커로 표시). 권한/측위 불가 시 null.
+        val userLocation: UserLocationUiModel? = null,
     ) : StoreUiState
 
     data class Empty(
@@ -40,6 +42,11 @@ data class StoreDetailUiModel(
     val distanceLabel: String,
     val parkingLabel: String,
     val amenities: List<String>,
+)
+
+data class UserLocationUiModel(
+    val latitude: Double,
+    val longitude: Double,
 )
 
 enum class StoreStatusUiModel {

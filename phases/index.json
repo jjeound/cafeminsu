@@ -194,9 +194,11 @@
       "completed_at": "2026-06-24T11:45:38+0900"
     },
     {
-      "dir": "28-owner-pay-fixes",
-      "name": "owner-pay-fixes",
-      "status": "pending"
+      "dir": "28-bugfix-batch",
+      "name": "bugfix-batch",
+      "status": "completed",
+      "summary": "버그/기능 묶음 — 쿠폰 금액 할인, 읽은 알림 숨김, 홈 재주문→결제 직행, 메뉴 기본 이미지, 카카오페이 결제 통합, 점주 다중매장 선택 헤더, 점주 메뉴 이미지 업로드",
+      "completed_at": "2026-06-25T00:17:27+0900"
     }
   ]
 }

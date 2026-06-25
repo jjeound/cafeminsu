@@ -14,7 +14,6 @@ import com.cafeminsu.data.remote.runCatchingToAppResult
 import com.cafeminsu.data.remote.toDomainError
 import com.cafeminsu.di.IoDispatcher
 import com.cafeminsu.domain.model.AuthState
-import com.cafeminsu.domain.model.GiftChannel
 import com.cafeminsu.domain.model.Gifticon
 import com.cafeminsu.domain.model.GiftSendRequest
 import com.cafeminsu.domain.model.GiftSendResult
@@ -58,21 +57,10 @@ class RealGiftRepository(
                 is AppResult.Success -> result.data
                 is AppResult.Failure -> return@withContext result
             }
-            val gifticonId = purchase.gifticonId
-                ?: return@withContext AppResult.Failure(DomainError.Unknown)
 
-            when (
-                val response = runCatchingToAppResult {
-                    gifticonApi.shareGifticon(gifticonId = gifticonId)
-                }
-            ) {
-                is AppResult.Success -> response.data.toGiftSendResult(
-                    purchase = purchase,
-                    sentAtMillis = nowMillis(),
-                )
-
-                is AppResult.Failure -> response
-            }
+            // 별도 공유 API 없이 구매 응답(claimCode/shareLink)만으로 결과를 구성한다.
+            // 카카오톡 전달은 UI 레이어에서 인텐트 공유로 처리한다(딥링크는 claimCode 로 생성).
+            purchase.toGiftSendResult(sentAtMillis = nowMillis())
         }
 
     override suspend fun claimGift(claimCode: String): AppResult<Gifticon> =
@@ -116,27 +104,17 @@ class RealGiftRepository(
             gifticonApi.purchaseGifticon(request = request.toPurchaseReq())
         }
 
+    // 카카오톡 선물: 수신자 미지정 구매(발신자만 JWT 로 식별). 받는 사람은 인텐트 공유로 전달하고
+    // 등록(claim) 시점에 확정한다(docs/KAKAO_GIFT_BACKEND.md §1).
     private fun GiftSendRequest.toPurchaseReq(): GifticonPurchaseReq =
-        when (channel) {
-            // 친구 선물: 수신자 미지정 구매. 친구 uuid 는 서버로 보내지 않고(발신자만 JWT 로 식별)
-            // 메시지 전송 전용으로 UI 레이어에서만 사용한다(docs/KAKAO_GIFT_BACKEND.md §1).
-            GiftChannel.KakaoTalk -> GifticonPurchaseReq(
-                amount = amount,
-                message = message.normalizedMessage(),
-            )
-
-            GiftChannel.Sms -> GifticonPurchaseReq(
-                amount = amount,
-                receiverPhone = recipientRef.trim(),
-                message = message.normalizedMessage(),
-            )
-        }
+        GifticonPurchaseReq(
+            amount = amount,
+            message = message.normalizedMessage(),
+        )
 
     private fun validate(request: GiftSendRequest): DomainError? =
         when {
             request.amount < MinimumGiftAmount -> DomainError.Validation("amount")
-            // KakaoTalk 은 선택된 친구(uuid) 존재만 전제(빈 선택 차단). 숫자 receiverId 를 더는 요구하지 않는다.
-            request.recipientRef.isBlank() -> DomainError.Validation("recipient")
             request.message != null && request.message.length > MaxMessageLength ->
                 DomainError.Validation("message")
 
