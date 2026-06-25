@@ -389,8 +389,10 @@ private fun MenuThumbnail(
 @DrawableRes
 internal fun defaultMenuImageRes(categoryId: String): Int =
     when (categoryId) {
-        "dessert" -> R.drawable.img_menu_default_dessert
-        "noncoffee" -> R.drawable.img_menu_default_noncoffee
+        "디저트" -> R.drawable.img_menu_default_dessert
+        "스무디" -> R.drawable.img_menu_default_noncoffee
+        "에이드" -> R.drawable.img_menu_default_ade
+        "티" -> R.drawable.img_menu_default_tea
         else -> R.drawable.img_menu_default
     }
 
