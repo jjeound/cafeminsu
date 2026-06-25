@@ -11,6 +11,9 @@ import com.ssafy.cafeminsu.MainActivityAuthState
 import com.ssafy.cafeminsu.MainActivityViewModel
 import com.ssafy.cafeminsu.feature.auth.SignInRoute
 import com.ssafy.cafeminsu.feature.home.HomeRoute
+import com.ssafy.cafeminsu.feature.menu.MenuRoute
+import com.ssafy.cafeminsu.feature.my.MyRoute
+import com.ssafy.cafeminsu.feature.store.StoreRoute
 import com.ssafy.cafeminsu.navigation.CafeMinsuRoute
 
 @Composable
@@ -40,7 +43,20 @@ fun CafeMinsuApp(
                 SignInRoute()
             }
             entry<CafeMinsuRoute.Home> {
-                HomeRoute()
+                HomeRoute(
+                    onStoreClick = { backStack.clear(); backStack += CafeMinsuRoute.Store },
+                    onMenuClick = { backStack.clear(); backStack += CafeMinsuRoute.Menu },
+                    onMyClick = { backStack.clear(); backStack += CafeMinsuRoute.My },
+                )
+            }
+            entry<CafeMinsuRoute.Store> {
+                StoreRoute()
+            }
+            entry<CafeMinsuRoute.Menu> {
+                MenuRoute()
+            }
+            entry<CafeMinsuRoute.My> {
+                MyRoute()
             }
         },
     )

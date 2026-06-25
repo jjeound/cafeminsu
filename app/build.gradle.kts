@@ -108,6 +108,9 @@ dependencies {
     implementation(projects.core.navigation)
     implementation(projects.feature.auth)
     implementation(projects.feature.home)
+    implementation(projects.feature.menu)
+    implementation(projects.feature.store)
+    implementation(projects.feature.my)
 
     implementation(platform(libs.androidx.compose.bom))
     implementation(libs.androidx.core.ktx)
