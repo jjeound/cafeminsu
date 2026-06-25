@@ -214,6 +214,7 @@ class RealOwnerMenuRepositoryTest {
             ownerMenuApi = retrofit.create(OwnerMenuApi::class.java),
             ownerOrderApi = retrofit.create(OwnerOrderApi::class.java),
             menuApi = retrofit.create(MenuApi::class.java),
+            selectedOwnerStoreHolder = SelectedOwnerStoreHolder(),
             ioDispatcher = testDispatcher,
         )
     }

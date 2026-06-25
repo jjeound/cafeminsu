@@ -637,6 +637,10 @@ private class FakeOwnerOrderRepository : OwnerOrderRepository {
         to: com.cafeminsu.domain.model.OrderStatus,
     ): com.cafeminsu.core.AppResult<com.cafeminsu.domain.model.Order> =
         com.cafeminsu.core.AppResult.Failure(com.cafeminsu.core.DomainError.NotFound)
+
+    override suspend fun getStores():
+        com.cafeminsu.core.AppResult<List<com.cafeminsu.domain.model.OwnerStore>> =
+        com.cafeminsu.core.AppResult.Success(emptyList())
 }
 
 private class FakeOwnerMenuRepository : OwnerMenuRepository {

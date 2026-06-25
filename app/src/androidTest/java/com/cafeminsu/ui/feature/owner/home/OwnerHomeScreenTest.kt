@@ -5,6 +5,7 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.cafeminsu.domain.model.OrderStatus
+import com.cafeminsu.domain.model.OwnerStore
 import com.cafeminsu.ui.theme.CafeTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -19,6 +20,7 @@ class OwnerHomeScreenTest {
         var viewAllClicked = false
         var toggledOpen: Boolean? = null
         var advancedOrderId: String? = null
+        var selectedStoreId: String? = null
 
         composeRule.setContent {
             CafeTheme {
@@ -46,15 +48,22 @@ class OwnerHomeScreenTest {
                             ),
                         ),
                         isStoreOpenUpdating = false,
+                        stores = listOf(
+                            OwnerStore(id = "7", name = "강남점"),
+                            OwnerStore(id = "8", name = "판교점"),
+                        ),
+                        selectedStoreId = "7",
                     ),
                     onToggleStoreOpen = { toggledOpen = it },
                     onAdvanceStatus = { advancedOrderId = it },
                     onViewAllOrders = { viewAllClicked = true },
                     onRetry = {},
+                    onSelectStore = { selectedStoreId = it },
                 )
             }
         }
 
+        // 매장이 2개 이상이라 헤더는 매장 선택 드롭다운(이름 + ▾)으로 표시된다.
         composeRule.onNodeWithText("강남점 ▾").assertIsDisplayed()
         composeRule.onNodeWithText("영업중").assertIsDisplayed()
         composeRule.onNodeWithText("오늘의 매장 현황").assertIsDisplayed()
@@ -71,5 +80,45 @@ class OwnerHomeScreenTest {
         assertEquals(true, viewAllClicked)
         assertEquals("owner-order-1042", advancedOrderId)
         assertEquals(false, toggledOpen)
+    }
+
+    @Test
+    fun storeSelectorDropdownEmitsSelectedStore() {
+        var selectedStoreId: String? = null
+
+        composeRule.setContent {
+            CafeTheme {
+                OwnerHomeScreen(
+                    state = OwnerHomeUiState.Content(
+                        storeName = "강남점",
+                        isStoreOpen = true,
+                        dateLabel = "6월 19일 (금)",
+                        stats = OwnerHomeStatsUiModel(
+                            totalSales = 0,
+                            orderCount = 0,
+                            newWaitingCount = 0,
+                        ),
+                        pendingOrders = emptyList(),
+                        isStoreOpenUpdating = false,
+                        stores = listOf(
+                            OwnerStore(id = "7", name = "강남점"),
+                            OwnerStore(id = "8", name = "판교점"),
+                        ),
+                        selectedStoreId = "7",
+                    ),
+                    onToggleStoreOpen = {},
+                    onAdvanceStatus = {},
+                    onViewAllOrders = {},
+                    onRetry = {},
+                    onSelectStore = { selectedStoreId = it },
+                )
+            }
+        }
+
+        // 헤더 매장명을 눌러 드롭다운을 열고 다른 매장을 선택하면 onSelectStore 가 호출된다.
+        composeRule.onNodeWithText("강남점 ▾").performClick()
+        composeRule.onNodeWithText("판교점").performClick()
+
+        assertEquals("8", selectedStoreId)
     }
 }

@@ -32,6 +32,8 @@ class RealOwnerMenuRepository @Inject constructor(
     private val ownerOrderApi: OwnerOrderApi,
     // 목록 조회(GET stores/{id}/menus)는 public 이라 기존 고객용 MenuApi 를 재사용한다.
     @Unauthenticated private val menuApi: MenuApi,
+    // 대시보드에서 선택한 매장을 메뉴 관리에도 반영한다(없으면 첫 매장 — 기존 동작 보존).
+    private val selectedOwnerStoreHolder: SelectedOwnerStoreHolder,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : OwnerMenuRepository {
     // 토글/생성 결과를 마지막 관측 목록에 반영하기 위한 인메모리 스냅샷(서버가 단일 진실, 영속화하지 않음).
@@ -102,10 +104,18 @@ class RealOwnerMenuRepository @Inject constructor(
             }
         }
 
-    // 점주 매장은 stores/my 첫 매장으로 해석한다(step 0 RealOwnerOrderRepository 와 동일).
+    // 선택 매장이 있으면 그 매장으로, 없으면 stores/my 첫 매장으로 해석한다(RealOwnerOrderRepository 와 동일).
     private suspend fun resolveStoreId(): AppResult<Long?> =
         when (val response = runCatchingToAppResult { ownerOrderApi.getMyStores() }) {
-            is AppResult.Success -> AppResult.Success(response.data.firstOrNull()?.id)
+            is AppResult.Success -> {
+                val stores = response.data
+                val selectedStoreId = selectedOwnerStoreHolder.current()
+                val chosen = selectedStoreId
+                    ?.let { id -> stores.firstOrNull { it.id?.toString() == id } }
+                    ?: stores.firstOrNull()
+                AppResult.Success(chosen?.id)
+            }
+
             is AppResult.Failure -> response
         }
 

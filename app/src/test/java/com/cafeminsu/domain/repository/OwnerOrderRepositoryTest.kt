@@ -5,6 +5,7 @@ import com.cafeminsu.core.AppResult
 import com.cafeminsu.domain.model.CartItem
 import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.OrderStatus
+import com.cafeminsu.domain.model.OwnerStore
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.map
@@ -76,6 +77,9 @@ private class FakeOwnerOrderRepository(
         }
         return AppResult.Success(updatedOrder)
     }
+
+    override suspend fun getStores(): AppResult<List<OwnerStore>> =
+        AppResult.Success(emptyList())
 }
 
 private fun sampleOrder(

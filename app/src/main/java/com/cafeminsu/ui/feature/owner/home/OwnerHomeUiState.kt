@@ -1,6 +1,7 @@
 package com.cafeminsu.ui.feature.owner.home
 
 import com.cafeminsu.domain.model.OrderStatus
+import com.cafeminsu.domain.model.OwnerStore
 
 sealed interface OwnerHomeUiState {
     data object Loading : OwnerHomeUiState
@@ -12,6 +13,9 @@ sealed interface OwnerHomeUiState {
         val stats: OwnerHomeStatsUiModel,
         val pendingOrders: List<OwnerHomeOrderUiModel>,
         val isStoreOpenUpdating: Boolean,
+        // 매장 ≥2개일 때 헤더 드롭다운으로 노출한다(1개 이하면 이름만).
+        val stores: List<OwnerStore> = emptyList(),
+        val selectedStoreId: String? = null,
     ) : OwnerHomeUiState
 
     data class Empty(
@@ -21,6 +25,8 @@ sealed interface OwnerHomeUiState {
         val stats: OwnerHomeStatsUiModel,
         val message: String,
         val isStoreOpenUpdating: Boolean,
+        val stores: List<OwnerStore> = emptyList(),
+        val selectedStoreId: String? = null,
     ) : OwnerHomeUiState
 
     data class Error(
