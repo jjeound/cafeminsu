@@ -118,6 +118,11 @@ object NetworkModule {
 
     @Provides
     @Singleton
+    fun provideNfcApi(retrofit: Retrofit): NfcApi =
+        retrofit.create(NfcApi::class.java)
+
+    @Provides
+    @Singleton
     fun provideNotificationApi(retrofit: Retrofit): NotificationApi =
         retrofit.create(NotificationApi::class.java)
 

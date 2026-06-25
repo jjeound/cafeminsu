@@ -13,6 +13,7 @@ import com.cafeminsu.data.repository.MockCouponRepository
 import com.cafeminsu.data.repository.MockFcmTokenRepository
 import com.cafeminsu.data.repository.MockGiftRepository
 import com.cafeminsu.data.repository.MockMenuRepository
+import com.cafeminsu.data.repository.MockNfcCouponRepository
 import com.cafeminsu.data.repository.MockNotificationRepository
 import com.cafeminsu.data.repository.MockOrderRepository
 import com.cafeminsu.data.repository.MockOwnerMenuRepository
@@ -26,6 +27,7 @@ import com.cafeminsu.data.repository.MockStoreRepository
 import com.cafeminsu.data.repository.RealFcmTokenRepository
 import com.cafeminsu.data.repository.RealGiftRepository
 import com.cafeminsu.data.repository.RealMenuRepository
+import com.cafeminsu.data.repository.RealNfcCouponRepository
 import com.cafeminsu.data.repository.RealNotificationRepository
 import com.cafeminsu.data.repository.RealOrderRepository
 import com.cafeminsu.data.repository.RealOwnerMenuRepository
@@ -40,6 +42,7 @@ import com.cafeminsu.domain.repository.CouponRepository
 import com.cafeminsu.domain.repository.FcmTokenRepository
 import com.cafeminsu.domain.repository.GiftRepository
 import com.cafeminsu.domain.repository.MenuRepository
+import com.cafeminsu.domain.repository.NfcCouponRepository
 import com.cafeminsu.domain.repository.NotificationRepository
 import com.cafeminsu.domain.repository.OrderRepository
 import com.cafeminsu.domain.repository.OwnerMenuRepository
@@ -110,6 +113,18 @@ abstract class RepositoryModule {
             mockRepository: Provider<MockNotificationRepository>,
         ): NotificationRepository =
             selectNotificationRepository(
+                baseUrl = com.cafeminsu.BuildConfig.BASE_URL,
+                realFactory = { realRepository.get() },
+                mockFactory = { mockRepository.get() },
+            )
+
+        @Provides
+        @Singleton
+        fun provideNfcCouponRepository(
+            realRepository: Provider<RealNfcCouponRepository>,
+            mockRepository: Provider<MockNfcCouponRepository>,
+        ): NfcCouponRepository =
+            selectNfcCouponRepository(
                 baseUrl = com.cafeminsu.BuildConfig.BASE_URL,
                 realFactory = { realRepository.get() },
                 mockFactory = { mockRepository.get() },
@@ -342,6 +357,17 @@ internal fun selectRecommendationRepository(
     realFactory: () -> RecommendationRepository,
     mockFactory: () -> RecommendationRepository,
 ): RecommendationRepository =
+    if (baseUrl.isNotBlank()) {
+        realFactory()
+    } else {
+        mockFactory()
+    }
+
+internal fun selectNfcCouponRepository(
+    baseUrl: String,
+    realFactory: () -> NfcCouponRepository,
+    mockFactory: () -> NfcCouponRepository,
+): NfcCouponRepository =
     if (baseUrl.isNotBlank()) {
         realFactory()
     } else {

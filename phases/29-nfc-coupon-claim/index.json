@@ -13,7 +13,10 @@
     {
       "step": 1,
       "name": "nfc-claim-data-layer",
-      "status": "pending"
+      "status": "completed",
+      "started_at": "2026-06-25T14:52:32+0900",
+      "summary": "NfcTagCode 순수 파서(코드/URL?code 추출·검증) + NfcApi(POST api/nfc/claim)+DTO + NfcCouponRepository(Real/Mock) claim(tagCode)->NfcCoupon, body code→DomainError 매핑(cooldown/notfound/inactive/validation/unauthorized), AppResult·미로깅·BASE_URL 키게이트.",
+      "completed_at": "2026-06-25T15:05:00+0900"
     },
     {
       "step": 2,
