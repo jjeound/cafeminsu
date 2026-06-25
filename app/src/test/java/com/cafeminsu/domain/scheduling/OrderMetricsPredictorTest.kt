@@ -4,7 +4,6 @@ import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.OrderStatus
-import com.cafeminsu.domain.proximity.ProximitySignal
 import kotlinx.coroutines.test.runTest
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue

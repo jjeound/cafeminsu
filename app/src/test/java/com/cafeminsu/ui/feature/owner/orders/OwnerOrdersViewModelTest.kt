@@ -8,8 +8,6 @@ import com.cafeminsu.domain.model.CartItem
 import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.OrderStatus
 import com.cafeminsu.domain.model.SelectedOption
-import com.cafeminsu.domain.proximity.ProximitySignal
-import com.cafeminsu.domain.proximity.ProximitySignalRepository
 import com.cafeminsu.domain.repository.OwnerOrderRepository
 import com.cafeminsu.domain.scheduling.CongestionCalculator
 import com.cafeminsu.domain.scheduling.OrderScheduler
@@ -228,62 +226,8 @@ class OwnerOrdersViewModelTest {
         }
     }
 
-    @Test
-    fun arrivingProximitySignalLiftsOrderToTopAndMarksArrivingSoon() = runTest {
-        // 신규 주문 2건: #2001 이 1분 더 오래 기다려 근접 신호 전에는 우선순위가 높다.
-        val proximityRepository = ProximitySignalRepository()
-        val viewModel = ownerOrdersViewModel(
-            FakeOwnerOrdersRepository(
-                initialResult = AppResult.Success(
-                    listOf(
-                        sampleOrder(
-                            id = "order-2000",
-                            orderNumber = "2000",
-                            status = OrderStatus.Accepted,
-                            createdAtMillis = FixedNow,
-                        ),
-                        sampleOrder(
-                            id = "order-2001",
-                            orderNumber = "2001",
-                            status = OrderStatus.Accepted,
-                            createdAtMillis = FixedNow - MinuteMillis,
-                        ),
-                    ),
-                ),
-            ),
-            proximitySignalRepository = proximityRepository,
-        )
-
-        viewModel.uiState.test {
-            val before = awaitContent()
-            assertEquals(listOf("#2001", "#2000"), before.orders.map { it.orderNumberLabel })
-            assertEquals(SchedulingBadge.Normal, before.orders.first().priorityBadge)
-
-            // 고객이 매장에 가까워졌다는 비콘 신호가 들어온다.
-            proximityRepository.publish(
-                ProximitySignal(
-                    orderId = "order-2000",
-                    rssi = -60,
-                    estimatedArrivalSeconds = 30,
-                    atMillis = FixedNow,
-                ),
-            )
-            val after = awaitContent()
-
-            // 근접 임박 주문 #2000 이 더 오래 기다린 #2001 보다 위로 올라오고 ArrivingSoon 뱃지가 붙는다.
-            assertEquals(listOf("#2000", "#2001"), after.orders.map { it.orderNumberLabel })
-            val arriving = after.orders.first()
-            assertEquals(SchedulingBadge.ArrivingSoon, arriving.priorityBadge)
-            assertTrue(arriving.etaLabel != null)
-            assertEquals(SchedulingBadge.Normal, after.orders.last().priorityBadge)
-
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
     private fun ownerOrdersViewModel(
         repository: OwnerOrderRepository,
-        proximitySignalRepository: ProximitySignalRepository = ProximitySignalRepository(),
         clock: Clock = FakeClock(FixedNow),
     ): OwnerOrdersViewModel =
         OwnerOrdersViewModel(
@@ -291,7 +235,6 @@ class OwnerOrdersViewModelTest {
             orderScheduler = OrderScheduler(),
             congestionCalculator = CongestionCalculator(),
             prepTimeEstimator = RulePrepTimeEstimator(),
-            proximitySignalRepository = proximitySignalRepository,
             clock = clock,
         )
 

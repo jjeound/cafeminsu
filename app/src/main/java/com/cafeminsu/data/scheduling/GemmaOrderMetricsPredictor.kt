@@ -4,10 +4,10 @@ import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.di.IoDispatcher
 import com.cafeminsu.domain.model.Order
-import com.cafeminsu.domain.proximity.ProximitySignal
 import com.cafeminsu.domain.scheduling.CongestionCalculator
 import com.cafeminsu.domain.scheduling.CongestionLevel
 import com.cafeminsu.domain.scheduling.OrderMetricsPredictor
+import com.cafeminsu.domain.scheduling.ProximitySignal
 import com.cafeminsu.domain.scheduling.RulePrepTimeEstimator
 import com.cafeminsu.domain.scheduling.SchedulingWeights
 import com.cafeminsu.domain.voice.VoiceLlmEngine

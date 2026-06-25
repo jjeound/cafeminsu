@@ -45,13 +45,13 @@ import com.cafeminsu.ui.feature.coupon.CouponRoute
 import com.cafeminsu.ui.feature.gift.GiftRoute
 import com.cafeminsu.ui.feature.gift.claim.GiftClaimDeepLink
 import com.cafeminsu.ui.feature.gift.claim.GiftClaimRoute
-import com.cafeminsu.ui.feature.gifticon.GifticonDetailRoute
 import com.cafeminsu.ui.feature.history.HistoryRoute
 import com.cafeminsu.ui.feature.home.HomeRoute
 import com.cafeminsu.ui.feature.login.LoginRoute
 import com.cafeminsu.ui.feature.menu.MenuDetailRoute
 import com.cafeminsu.ui.feature.menu.MenuRoute
 import com.cafeminsu.ui.feature.my.MyRoute
+import com.cafeminsu.ui.feature.nfc.NfcClaimRoute
 import com.cafeminsu.ui.feature.notification.NotiRoute
 import com.cafeminsu.ui.feature.notification.settings.NotificationSettingsRoute
 import com.cafeminsu.ui.feature.order.OrderFailureDialog
@@ -350,6 +350,7 @@ fun AppNavHost(
                 CouponRoute(
                     onBackClick = { navController.popBackStack() },
                     onLoginClick = { navController.navigate(Routes.LOGIN) },
+                    onNfcClaimClick = { navController.navigate(Routes.NFC_CLAIM) },
                 )
             }
             composable(Routes.GIFT) {
@@ -389,16 +390,17 @@ fun AppNavHost(
                     },
                 )
             }
-            composable(
-                route = Routes.GIFTICON_DETAIL,
-                arguments = listOf(
-                    navArgument(Routes.GIFTICON_ID) {
-                        type = NavType.StringType
+            composable(Routes.NFC_CLAIM) {
+                NfcClaimRoute(
+                    onBackClick = { navController.popBackStack() },
+                    onNavigateToGifticons = {
+                        // 발급 후 쿠폰함(보유 기프티콘 목록)으로 이동. observeGifticons() 재구독→재조회=새로고침.
+                        // 발급 화면은 백스택에서 제거한다.
+                        navController.navigate(Routes.COUPON) {
+                            popUpTo(Routes.NFC_CLAIM) { inclusive = true }
+                            launchSingleTop = true
+                        }
                     },
-                ),
-            ) {
-                GifticonDetailRoute(
-                    onLoginClick = { navController.navigate(Routes.LOGIN) },
                 )
             }
             composable(Routes.HISTORY) {
