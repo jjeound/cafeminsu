@@ -10,6 +10,7 @@ import com.cafeminsu.data.remote.OwnerOrderApi
 import com.cafeminsu.data.remote.createMoshi
 import com.cafeminsu.data.remote.createOkHttpClient
 import com.cafeminsu.data.remote.createRetrofit
+import com.cafeminsu.data.repository.OwnerSelectedStoreHolder
 import com.cafeminsu.domain.model.OwnerProfile
 import com.cafeminsu.domain.model.OwnerStore
 import java.io.File
@@ -218,6 +219,7 @@ class RealOwnerAuthProviderTest {
             ownerOrderApi = retrofit.create(OwnerOrderApi::class.java),
             tokenStore = tokenStore,
             preferences = preferences,
+            ownerSelectedStoreHolder = OwnerSelectedStoreHolder(),
         )
     }
 

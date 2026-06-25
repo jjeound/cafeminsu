@@ -48,7 +48,7 @@ internal fun Order.toOrderSuccessSummary(stampCard: StampCard?): OrderSuccessSum
     return OrderSuccessSummary(
         orderId = id,
         orderNumber = orderNumber,
-        pickupStoreName = DefaultPickupStoreName,
+        pickupStoreName = storeName.ifBlank { DefaultPickupStoreName },
         estimatedReadyLabel = DefaultEstimatedReadyLabel,
         paidAmountLabel = formatWon(totalAmount),
         stampMessage = stampMessage,
@@ -58,6 +58,7 @@ internal fun Order.toOrderSuccessSummary(stampCard: StampCard?): OrderSuccessSum
 private fun formatWon(amount: Int): String =
     "${NumberFormat.getNumberInstance(Locale.KOREA).format(amount)}원"
 
-private const val DefaultPickupStoreName = "카페민수 강남점"
+// 주문 상세에 매장명이 비어 있을 때만 쓰는 폴백. 실제 매장명은 Order.storeName(서버 주문 상세)에서 온다.
+private const val DefaultPickupStoreName = "카페민수"
 private const val DefaultEstimatedReadyLabel = "약 8분 후"
 private const val DefaultGrantedStampCount = 1

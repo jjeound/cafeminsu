@@ -5,7 +5,6 @@ import com.cafeminsu.core.DomainError
 import com.cafeminsu.core.map
 import com.cafeminsu.data.mapper.toOwnerOrderStatus
 import com.cafeminsu.data.mapper.toOwnerOrders
-import com.cafeminsu.data.mapper.toServerOrderStatus
 import com.cafeminsu.data.remote.OrderCancelReq
 import com.cafeminsu.data.remote.OrderStatusRes
 import com.cafeminsu.data.remote.OwnerOrderApi
@@ -16,42 +15,49 @@ import com.cafeminsu.domain.model.OrderStatus
 import com.cafeminsu.domain.repository.OwnerOrderRepository
 import javax.inject.Inject
 import javax.inject.Singleton
+import kotlin.coroutines.coroutineContext
 import kotlinx.coroutines.CoroutineDispatcher
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.Flow
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.emitAll
+import kotlinx.coroutines.flow.channelFlow
+import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.filterNotNull
-import kotlinx.coroutines.flow.flow
 import kotlinx.coroutines.flow.flowOn
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
+import kotlinx.coroutines.isActive
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
 @Singleton
 class RealOwnerOrderRepository @Inject constructor(
     private val ownerOrderApi: OwnerOrderApi,
+    private val ownerSelectedStoreHolder: OwnerSelectedStoreHolder,
     @IoDispatcher private val ioDispatcher: CoroutineDispatcher,
 ) : OwnerOrderRepository {
     // 점주 화면이 상태 전이(접수/준비완료/픽업완료)를 즉시 반영하도록 주문 목록을 메모리에
     // 캐시한다. advanceStatus 가 이 캐시를 갱신하면 옵저버가 재방출한다(Mock 과 동일 계약).
     private val cachedOrders = MutableStateFlow<AppResult<List<Order>>?>(null)
-    private val loadMutex = Mutex()
 
     override fun observeIncomingOrders(filter: OrderStatus?): Flow<AppResult<List<Order>>> =
-        flow {
-            // 최초 구독 시 1회만 서버에서 로드해 캐시를 채운다(두 점주 화면이 함께 구독해도 1회).
-            loadMutex.withLock {
-                if (cachedOrders.value == null) {
-                    cachedOrders.value = loadIncomingOrders(filter)
+        channelFlow {
+            // 선택 매장(holder)이 바뀌면 이전 새로고침 루프를 취소하고(collectLatest) 새 매장 기준으로
+            // 다시 로드한다. 매장이 정해진 동안에는 RefreshIntervalMillis 간격으로 주문을 계속 새로
+            // 불러와 캐시에 반영해 "지금 처리할 주문"이 자동으로 갱신되도록 한다.
+            launch {
+                ownerSelectedStoreHolder.selectedStoreId.collectLatest { selectedStoreId ->
+                    while (coroutineContext.isActive) {
+                        cachedOrders.value = loadIncomingOrders(selectedStoreId)
+                        delay(RefreshIntervalMillis)
+                    }
                 }
             }
-            emitAll(
-                cachedOrders
-                    .filterNotNull()
-                    .map { result -> result.applyFilter(filter) },
-            )
+            // advanceStatus 의 즉시 반영을 위해 캐시를 단일 방출원으로 유지한다.
+            cachedOrders
+                .filterNotNull()
+                .map { result -> result.applyFilter(filter) }
+                .collect { send(it) }
         }.flowOn(ioDispatcher)
 
     private fun AppResult<List<Order>>.applyFilter(filter: OrderStatus?): AppResult<List<Order>> =
@@ -62,8 +68,10 @@ class RealOwnerOrderRepository @Inject constructor(
             is AppResult.Failure -> this
         }
 
-    private suspend fun loadIncomingOrders(filter: OrderStatus?): AppResult<List<Order>> {
-        val storeId = when (val result = resolveStoreId()) {
+    // 점주 화면은 필터 없이 전체를 불러와 클라이언트에서 탭별로 거른다(applyFilter). 공유 캐시이므로
+    // 서버 조회는 항상 전체(status=null)로 한다.
+    private suspend fun loadIncomingOrders(selectedStoreId: String?): AppResult<List<Order>> {
+        val storeId = when (val result = resolveStoreId(selectedStoreId)) {
             // stores/my 가 비어 있으면(테스트 계정 등) 주문 호출 없이 안전하게 빈 목록을 낸다.
             is AppResult.Success -> result.data ?: return AppResult.Success(emptyList())
             is AppResult.Failure -> return result
@@ -73,7 +81,7 @@ class RealOwnerOrderRepository @Inject constructor(
             val response = runCatchingToAppResult {
                 ownerOrderApi.getStoreOrders(
                     storeId = storeId,
-                    status = filter?.toServerOrderStatus(),
+                    status = null,
                 )
             }
         ) {
@@ -82,12 +90,15 @@ class RealOwnerOrderRepository @Inject constructor(
         }
     }
 
-    // 점주 매장은 stores/my 첫 매장으로 해석한다. owner-login 응답엔 storeId 가 없어 신뢰하지 않는다.
-    private suspend fun resolveStoreId(): AppResult<Long?> =
-        when (val response = runCatchingToAppResult { ownerOrderApi.getMyStores() }) {
+    // 점주가 명시적으로 고른 매장이 있으면 그 매장을 쓰고, 아직 없으면(초기) stores/my 첫 매장으로
+    // 폴백한다. owner-login 응답엔 storeId 가 없어 신뢰하지 않는다.
+    private suspend fun resolveStoreId(selectedStoreId: String?): AppResult<Long?> {
+        selectedStoreId?.toLongOrNull()?.let { return AppResult.Success(it) }
+        return when (val response = runCatchingToAppResult { ownerOrderApi.getMyStores() }) {
             is AppResult.Success -> AppResult.Success(response.data.firstOrNull()?.id)
             is AppResult.Failure -> response
         }
+    }
 
     override suspend fun advanceStatus(orderId: String, to: OrderStatus): AppResult<Order> =
         withContext(ioDispatcher) {
@@ -158,5 +169,8 @@ class RealOwnerOrderRepository @Inject constructor(
         const val EmptyOrderNumber = ""
         const val NoAmount = 0
         const val NoTimestamp = 0L
+
+        // 처리할 주문 자동 새로고침 간격. 점주 화면 구독 중에만 주기적으로 다시 불러온다.
+        const val RefreshIntervalMillis = 10_000L
     }
 }

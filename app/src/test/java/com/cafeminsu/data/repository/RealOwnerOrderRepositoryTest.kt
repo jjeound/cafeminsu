@@ -67,6 +67,32 @@ class RealOwnerOrderRepositoryTest {
     }
 
     @Test
+    fun selectingStoreReloadsOrdersForThatStore() = runTest(testDispatcher) {
+        server.enqueue(myStoresResponse()) // 초기 holder=null → stores/my 로 첫 매장(7) 해석
+        server.enqueue(storeOrdersResponse()) // store 7 주문
+        server.enqueue(store9OrdersResponse()) // 매장 전환 후 store 9 주문
+        val holder = OwnerSelectedStoreHolder()
+        val repository = realOwnerOrderRepository(selectedStoreHolder = holder)
+
+        repository.observeIncomingOrders().test {
+            val initial = (awaitItem() as AppResult.Success).data
+            assertEquals(listOf("1042", "1041"), initial.map { it.id })
+
+            // 점주가 다른 매장을 선택하면 그 매장 기준으로 즉시 다시 로드해야 한다.
+            holder.select("9")
+            val switched = (awaitItem() as AppResult.Success).data
+            assertEquals(listOf("2001"), switched.map { it.id })
+
+            cancelAndIgnoreRemainingEvents()
+        }
+
+        assertEquals("/api/stores/my", server.takeRequest().requestUrl?.encodedPath)
+        assertEquals("/api/stores/7/orders", server.takeRequest().requestUrl?.encodedPath)
+        // 선택 매장이 있으면 stores/my 를 다시 거치지 않고 곧장 그 매장 주문을 조회한다.
+        assertEquals("/api/stores/9/orders", server.takeRequest().requestUrl?.encodedPath)
+    }
+
+    @Test
     fun emptyMyStoresReturnsEmptyListWithoutOrdersCall() = runTest(testDispatcher) {
         server.enqueue(MockResponse().setResponseCode(200).setBody("[]"))
         val repository = realOwnerOrderRepository()
@@ -201,9 +227,12 @@ class RealOwnerOrderRepositoryTest {
         assertEquals("/api/orders/1042/accept", acceptRequest.requestUrl?.encodedPath)
     }
 
-    private fun realOwnerOrderRepository(): RealOwnerOrderRepository =
+    private fun realOwnerOrderRepository(
+        selectedStoreHolder: OwnerSelectedStoreHolder = OwnerSelectedStoreHolder(),
+    ): RealOwnerOrderRepository =
         RealOwnerOrderRepository(
             ownerOrderApi = ownerOrderApi(),
+            ownerSelectedStoreHolder = selectedStoreHolder,
             ioDispatcher = testDispatcher,
         )
 
@@ -251,6 +280,26 @@ class RealOwnerOrderRepositoryTest {
                       { "menuId": 103, "menuName": "카페라떼", "quantity": 1 }
                     ],
                     "createdAt": "2026-06-20T01:10:00Z"
+                  }
+                ]
+                """.trimIndent(),
+            )
+
+    private fun store9OrdersResponse(): MockResponse =
+        MockResponse()
+            .setResponseCode(200)
+            .setBody(
+                """
+                [
+                  {
+                    "orderId": 2001,
+                    "orderNumber": "2001",
+                    "status": "PENDING",
+                    "totalAmount": 4500,
+                    "items": [
+                      { "menuId": 201, "menuName": "콜드브루", "quantity": 1 }
+                    ],
+                    "createdAt": "2026-06-20T02:00:00Z"
                   }
                 ]
                 """.trimIndent(),
