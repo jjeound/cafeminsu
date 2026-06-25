@@ -37,7 +37,6 @@ class PaymentScreenTest {
         }
 
         composeRule.onNodeWithText("결제").assertIsDisplayed()
-        composeRule.onNodeWithText("ⓘ PG 미연동 — Mock 성공/실패 분기로 대체").assertIsDisplayed()
         composeRule.onNodeWithText("결제 수단").assertIsDisplayed()
         // 결제는 카카오페이로 통합 — 사용자가 보는 결제수단이 실제 PG 와 일치한다.
         composeRule.onNodeWithText("카카오페이").assertIsDisplayed()
@@ -45,15 +44,13 @@ class PaymentScreenTest {
         composeRule.onNodeWithText("민수 라떼 (ICE/Reg) ✕ 2").assertIsDisplayed()
         composeRule.onNodeWithText("총 결제 금액").assertIsDisplayed()
         composeRule.onAllNodesWithText("12,000원").assertCountEquals(2)
-        composeRule.onNodeWithText("결제 실패").assertIsDisplayed()
-        composeRule.onNodeWithText("결제 성공").assertIsDisplayed()
+        composeRule.onNodeWithText("결제하기").assertIsDisplayed()
         composeRule.onAllNodesWithText("tok_kakaopay_mock").assertCountEquals(0)
     }
 
     @Test
-    fun bottomMockButtonsInvokeSeparatePaymentBranches() {
+    fun payButtonInvokesPaymentSuccess() {
         var successClicks = 0
-        var failureClicks = 0
 
         composeRule.setContent {
             CafeTheme {
@@ -63,7 +60,7 @@ class PaymentScreenTest {
                     onSelectMethod = {},
                     onToggleCoupon = {},
                     onPaymentSuccess = { successClicks += 1 },
-                    onPaymentFailure = { failureClicks += 1 },
+                    onPaymentFailure = {},
                     onRetryFailure = {},
                     onDismissFailure = {},
                     onRetry = {},
@@ -71,10 +68,8 @@ class PaymentScreenTest {
             }
         }
 
-        composeRule.onNodeWithText("결제 실패").performClick()
-        composeRule.onNodeWithText("결제 성공").performClick()
+        composeRule.onNodeWithText("결제하기").performClick()
 
-        assertEquals(1, failureClicks)
         assertEquals(1, successClicks)
     }
 
@@ -98,8 +93,7 @@ class PaymentScreenTest {
 
         composeRule.onNodeWithText("결제 처리 중").assertIsDisplayed()
         composeRule.onNodeWithText("승인 결과를 확인하고 있어요.").assertIsDisplayed()
-        composeRule.onNodeWithText("결제 실패").assertIsNotEnabled()
-        composeRule.onNodeWithText("결제 성공").assertIsNotEnabled()
+        composeRule.onNodeWithText("결제하기").assertIsNotEnabled()
     }
 
     @Test

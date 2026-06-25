@@ -164,9 +164,6 @@ private fun PaymentContent(
         contentPadding = contentPadding(),
         verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space4),
     ) {
-        item {
-            PaymentInfoBanner()
-        }
 
         item {
             Column(verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space3)) {
@@ -205,28 +202,6 @@ private fun PaymentContent(
     }
 }
 
-@Composable
-private fun PaymentInfoBanner() {
-    val colors = CafeTheme.colors
-    val spacing = CafeTheme.spacing
-
-    Surface(
-        modifier = Modifier.fillMaxWidth(),
-        shape = CafeTheme.shapes.radiusMd,
-        color = colors.accentSoft,
-        contentColor = colors.muted,
-    ) {
-        Text(
-            modifier = Modifier.padding(
-                horizontal = spacing.space3,
-                vertical = spacing.space2,
-            ),
-            text = "ⓘ PG 미연동 — Mock 성공/실패 분기로 대체",
-            style = CafeTheme.typography.caption,
-            color = colors.muted,
-        )
-    }
-}
 
 @Composable
 private fun SectionLabel(text: String) {
@@ -573,14 +548,7 @@ private fun PaymentActionBar(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             CafeButton(
-                text = "결제 실패",
-                onClick = onPaymentFailure,
-                modifier = Modifier.weight(ActionButtonWeight),
-                variant = CafeButtonVariant.Secondary,
-                enabled = state.isPayEnabled,
-            )
-            CafeButton(
-                text = "결제 성공",
+                text = "결제하기",
                 onClick = onPaymentSuccess,
                 modifier = Modifier.weight(ActionButtonWeight),
                 variant = CafeButtonVariant.Primary,
