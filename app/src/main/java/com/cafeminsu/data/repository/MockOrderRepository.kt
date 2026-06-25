@@ -53,4 +53,7 @@ class MockOrderRepository(
 
     override fun observeOrderHistory(): Flow<AppResult<List<Order>>> =
         orders.map { AppResult.Success(it) }
+
+    override fun observeRecentOrders(): Flow<AppResult<List<Order>>> =
+        orders.map { AppResult.Success(it) }
 }

@@ -31,7 +31,7 @@ class HistoryViewModelTest {
     val mainDispatcherRule = HistoryMainDispatcherRule()
 
     @Test
-    fun observesHistoryAndSeparatesActiveAndPastOrders() = runTest {
+    fun observesHistoryHighlightsActiveOrderAndShowsOnlyDonePast() = runTest {
         val repository = FakeHistoryOrderRepository(
             AppResult.Success(
                 listOf(
@@ -44,9 +44,10 @@ class HistoryViewModelTest {
 
         viewModel.uiState.test {
             val content = awaitContent()
+            // 진행중(Preparing) 주문은 가장 최근 1건만 강조, 지난 주문 목록은 완료(DONE)만 노출.
             assertEquals("active-1", content.activeOrder?.id)
-            assertEquals(listOf("past-1"), content.pastOrders.map { it.id })
             assertEquals(HistoryStepState.Current, content.activeOrder?.steps?.first { it.label == "준비중" }?.state)
+            assertEquals(listOf("past-1"), content.pastOrders.map { it.id })
 
             cancelAndIgnoreRemainingEvents()
         }
@@ -150,6 +151,8 @@ private class FakeHistoryOrderRepository(
         MutableStateFlow(AppResult.Failure(DomainError.NotFound))
 
     override fun observeOrderHistory(): Flow<AppResult<List<Order>>> = orders
+
+    override fun observeRecentOrders(): Flow<AppResult<List<Order>>> = orders
 }
 
 private fun sampleOrder(

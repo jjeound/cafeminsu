@@ -3,19 +3,10 @@ package com.cafeminsu.data.mapper
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.data.remote.MenuSummary
-import com.cafeminsu.data.remote.MyStoreRes
 import com.cafeminsu.data.remote.StoreOrderItemRes
 import com.cafeminsu.domain.model.CartItem
 import com.cafeminsu.domain.model.Order
 import com.cafeminsu.domain.model.OrderStatus
-import com.cafeminsu.domain.model.OwnerStore
-
-// 점주 매장 목록(stores/my) → 도메인 OwnerStore. id 가 없는 항목은 식별 불가라 건너뛴다.
-fun List<MyStoreRes>.toOwnerStores(): List<OwnerStore> =
-    mapNotNull { store ->
-        val id = store.id ?: return@mapNotNull null
-        OwnerStore(id = id.toString(), name = store.name.orEmpty())
-    }
 
 fun List<StoreOrderItemRes>.toOwnerOrders(): AppResult<List<Order>> {
     val mapped = map { item ->

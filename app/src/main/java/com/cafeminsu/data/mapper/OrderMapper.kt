@@ -8,7 +8,6 @@ import com.cafeminsu.data.remote.OptionRes
 import com.cafeminsu.data.remote.OrderCreateReq
 import com.cafeminsu.data.remote.OrderCreateRes
 import com.cafeminsu.data.remote.OrderDetailRes
-import com.cafeminsu.data.remote.OrderListItemRes
 import com.cafeminsu.domain.model.Cart
 import com.cafeminsu.domain.model.CartItem
 import com.cafeminsu.domain.model.Order
@@ -77,35 +76,20 @@ fun OrderDetailRes.toOrder(): AppResult<Order> {
             totalAmount = totalAmount ?: DefaultAmount,
             status = mappedStatus,
             createdAtMillis = createdAt.toEpochMillis(),
+            storeName = storeName.orEmpty(),
         ),
     )
 }
 
-fun List<OrderListItemRes>.toOrders(): AppResult<List<Order>> {
-    val mapped = map { item ->
-        when (val result = item.toOrder()) {
+// 목록 API(orders/my · orders/my/recent)도 이제 상세(OrderDetailRes, items 포함)를 반환한다.
+fun List<OrderDetailRes>.toOrders(): AppResult<List<Order>> {
+    val mapped = map { detail ->
+        when (val result = detail.toOrder()) {
             is AppResult.Success -> result.data
             is AppResult.Failure -> return result
         }
     }
     return AppResult.Success(mapped)
-}
-
-private fun OrderListItemRes.toOrder(): AppResult<Order> {
-    val id = orderId ?: return AppResult.Failure(DomainError.Unknown)
-    val mappedStatus = status.toOrderStatus()
-        ?: return AppResult.Failure(DomainError.Unknown)
-
-    return AppResult.Success(
-        Order(
-            id = id.toString(),
-            orderNumber = orderNumber.orEmpty(),
-            items = emptyList(),
-            totalAmount = totalAmount ?: DefaultAmount,
-            status = mappedStatus,
-            createdAtMillis = createdAt.toEpochMillis(),
-        ),
-    )
 }
 
 private fun List<ItemRes>.toCartItems(orderId: Long): List<CartItem> =

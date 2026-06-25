@@ -7,7 +7,6 @@ import com.cafeminsu.core.DomainError
 import com.cafeminsu.domain.auth.OwnerAuthProvider
 import com.cafeminsu.domain.model.CartItem
 import com.cafeminsu.domain.model.Order
-import com.cafeminsu.data.repository.SelectedOwnerStoreHolder
 import com.cafeminsu.domain.model.OrderStatus
 import com.cafeminsu.domain.model.OwnerProfile
 import com.cafeminsu.domain.model.OwnerStore
@@ -67,7 +66,6 @@ class OwnerHomeViewModelTest {
                 ),
             ),
             ownerAuthProvider = FakeOwnerAuthProvider(),
-            selectedOwnerStoreHolder = SelectedOwnerStoreHolder(),
         )
 
         viewModel.uiState.test {
@@ -107,7 +105,6 @@ class OwnerHomeViewModelTest {
         val viewModel = OwnerHomeViewModel(
             ownerOrderRepository = repository,
             ownerAuthProvider = FakeOwnerAuthProvider(),
-            selectedOwnerStoreHolder = SelectedOwnerStoreHolder(),
         )
 
         viewModel.uiState.test {
@@ -133,7 +130,6 @@ class OwnerHomeViewModelTest {
                 initialResult = AppResult.Success(listOf(sampleOrder(status = OrderStatus.Accepted))),
             ),
             ownerAuthProvider = ownerAuthProvider,
-            selectedOwnerStoreHolder = SelectedOwnerStoreHolder(),
         )
 
         viewModel.uiState.test {
@@ -188,7 +184,6 @@ class OwnerHomeViewModelTest {
                 initialResult = AppResult.Failure(DomainError.Network),
             ),
             ownerAuthProvider = FakeOwnerAuthProvider(),
-            selectedOwnerStoreHolder = SelectedOwnerStoreHolder(),
         )
 
         viewModel.uiState.test {
@@ -210,7 +205,6 @@ class OwnerHomeViewModelTest {
                 initialResult = AppResult.Success(emptyList()),
             ),
             ownerAuthProvider = FakeOwnerAuthProvider(),
-            selectedOwnerStoreHolder = SelectedOwnerStoreHolder(),
         )
 
         viewModel.uiState.test {
@@ -223,38 +217,6 @@ class OwnerHomeViewModelTest {
             assertEquals(0, empty.stats.orderCount)
             assertEquals(0, empty.stats.newWaitingCount)
             assertEquals("처리할 주문이 없어요", empty.message)
-
-            cancelAndIgnoreRemainingEvents()
-        }
-    }
-
-    @Test
-    fun selectingStoreUpdatesDisplayedStoreNameAndSelection() = runTest {
-        val holder = SelectedOwnerStoreHolder()
-        val viewModel = OwnerHomeViewModel(
-            ownerOrderRepository = FakeOwnerOrderRepository(
-                initialResult = AppResult.Success(listOf(sampleOrder(status = OrderStatus.Accepted))),
-                stores = listOf(
-                    OwnerStore(id = "7", name = "강남점"),
-                    OwnerStore(id = "8", name = "판교점"),
-                ),
-            ),
-            ownerAuthProvider = FakeOwnerAuthProvider(),
-            selectedOwnerStoreHolder = holder,
-        )
-
-        viewModel.uiState.test {
-            val initial = awaitContent()
-            // 선택 전: 첫 매장(강남점)이 표시되고 매장 목록·선택 id 가 노출된다.
-            assertEquals("강남점", initial.storeName)
-            assertEquals(listOf("강남점", "판교점"), initial.stores.map { it.name })
-            assertEquals("7", initial.selectedStoreId)
-
-            viewModel.onSelectStore("8")
-
-            val selected = awaitContent()
-            assertEquals("판교점", selected.storeName)
-            assertEquals("8", selected.selectedStoreId)
 
             cancelAndIgnoreRemainingEvents()
         }
@@ -283,10 +245,6 @@ class OwnerHomeViewModelTest {
 
 private class FakeOwnerOrderRepository(
     initialResult: AppResult<List<Order>>,
-    private val stores: List<OwnerStore> = listOf(
-        OwnerStore(id = "7", name = "강남점"),
-        OwnerStore(id = "8", name = "판교점"),
-    ),
 ) : OwnerOrderRepository {
     private val orders = MutableStateFlow(initialResult)
     var lastAdvanceTo: OrderStatus? = null
@@ -321,9 +279,6 @@ private class FakeOwnerOrderRepository(
         )
         return AppResult.Success(updatedOrder)
     }
-
-    override suspend fun getStores(): AppResult<List<OwnerStore>> =
-        AppResult.Success(stores)
 }
 
 private class FakeOwnerAuthProvider(

@@ -5,7 +5,6 @@ import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithText
 import androidx.compose.ui.test.performClick
 import com.cafeminsu.domain.model.OrderStatus
-import com.cafeminsu.domain.model.OwnerStore
 import com.cafeminsu.ui.theme.CafeTheme
 import org.junit.Assert.assertEquals
 import org.junit.Rule
@@ -20,7 +19,6 @@ class OwnerHomeScreenTest {
         var viewAllClicked = false
         var toggledOpen: Boolean? = null
         var advancedOrderId: String? = null
-        var selectedStoreId: String? = null
 
         composeRule.setContent {
             CafeTheme {
@@ -48,22 +46,15 @@ class OwnerHomeScreenTest {
                             ),
                         ),
                         isStoreOpenUpdating = false,
-                        stores = listOf(
-                            OwnerStore(id = "7", name = "강남점"),
-                            OwnerStore(id = "8", name = "판교점"),
-                        ),
-                        selectedStoreId = "7",
                     ),
                     onToggleStoreOpen = { toggledOpen = it },
                     onAdvanceStatus = { advancedOrderId = it },
                     onViewAllOrders = { viewAllClicked = true },
                     onRetry = {},
-                    onSelectStore = { selectedStoreId = it },
                 )
             }
         }
 
-        // 매장이 2개 이상이라 헤더는 매장 선택 드롭다운(이름 + ▾)으로 표시된다.
         composeRule.onNodeWithText("강남점 ▾").assertIsDisplayed()
         composeRule.onNodeWithText("영업중").assertIsDisplayed()
         composeRule.onNodeWithText("오늘의 매장 현황").assertIsDisplayed()

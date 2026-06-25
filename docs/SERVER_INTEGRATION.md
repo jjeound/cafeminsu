@@ -59,7 +59,8 @@
 5. **메뉴 옵션**: 라이브 서버 `GET api/menus/{id}`의 `options`는 평면 `[{id,group,name,additionalPrice,isDefault}]`
    (OpenAPI 스펙의 `OptionRes{optionId,...}`와 필드명이 다름 → 메뉴 전용 `MenuOptionRes` DTO 사용).
    도메인 `MenuOptionGroup`(중첩)으로 **`group` 기준 그룹핑**. required/min/max 정보 없음 → 기본값.
-   주문 응답(`ItemRes.options`)은 여전히 `OptionRes{optionId,optionGroup,optionName,optionPrice}`.
+   주문 응답(`ItemRes.options`)의 스펙명은 `OrderOptionRes`이나 **필드는 동일**
+   `{optionId,optionGroup,optionName,optionPrice}` → 기존 `OptionRes` DTO 재사용(아래 8번 참고).
 6. **장바구니**: **서버 카트 없음.** `CartRepository`는 로컬/Mock 유지(메뉴 정보는 활성 `MenuRepository`에서 해석 —
    서버 메뉴 id와 일치). 주문 생성 시 카트 → 주문 아이템 변환:
    `OrderCreateReq{ storeId, orderType:MOBILE|KIOSK, orderMethod:VOICE|MANUAL, items:[{menuId, quantity, optionIds:[]}] }`.
@@ -70,6 +71,21 @@
    PENDING→PendingPayment(결제 전)/Paid(결제 후 맥락), ACCEPTED→Accepted, READY→Ready, DONE→Completed,
    CANCELLED→Cancelled. (도메인 Preparing/Failed는 서버 미구분 → 가장 가까운 상태로.)
    생성 응답 `OrderCreateRes{orderId,orderNumber,totalAmount,status}`. `totalAmount`는 **서버 값**으로 확정.
+8. **주문 목록 = 상세 형태(items 포함)**  ⚠ 2026-06-25 변경: 목록 응답에서 라인아이템 보강 제거.
+   `GET api/orders/my`(내 주문내역, My 화면)·`GET api/orders/my/recent`(홈 "다시 주문하기")는 이제
+   **`List<OrderDetailRes>`** 를 반환한다 — 각 원소가 단건 상세(`GET api/orders/{orderId}`)와 동일한 구조로
+   `items[]`(메뉴명·옵션·소계)를 직접 포함한다. (목록 전용 `OrderListItemRes` DTO 폐기.)
+   - **이전**: 목록은 라인아이템이 없어, `RealOrderRepository`가 각 주문을 `GET api/orders/{orderId}`로
+     **병렬 보강(`withItems()`)** 해야 메뉴명·재주문이 동작했다. **현재**: 목록이 items를 직접 주므로
+     **상세 보강 호출은 제거**한다 — 목록 화면(홈/My)에서 `api/orders/{orderId}`를 호출하지 않는다.
+   - `ItemRes.options`의 스펙명은 `OrderOptionRes`로 바뀌었으나 **JSON 필드명은 동일**
+     (`optionId/optionGroup/optionName/optionPrice`) → 기존 `OptionRes` DTO 그대로 역직렬화된다.
+   - **단건 `GET api/orders/{orderId}`는 유지**: 결제(`PaymentViewModel`)·주문완료(`OrderResultViewModel`)
+     화면의 단건 상태 조회(`observeOrder`)에서만 사용한다(목록 보강 용도로는 더 이상 쓰지 않음).
+   - 도메인 `OrderRepository`: 전체 내역은 `observeOrderHistory()`(`orders/my`, 캐시 write-through),
+     홈 최근 주문은 `observeRecentOrders()`(`orders/my/recent`, 전체 내역 캐시 미오염을 위해 읽기 폴백만)로 분리.
+   - 재주문 단축: `POST api/orders/reorder/{previousOrderId}` → `OrderCreateRes`(이전 주문 → 새 주문 생성)도
+     스펙에 존재. 현재 홈 재주문은 메뉴 기반 단발 주문 생성을 사용하므로 미연동(후속).
 
 ## 결제 (PG 흐름 — prepare → PG SDK → verify)  ⚠ 결정/키 필요
 서버 결제는 PG(아임포트/PortOne형) 2단계다. 단순 `pay()` 호출이 아니다.

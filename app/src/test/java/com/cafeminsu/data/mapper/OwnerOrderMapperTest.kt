@@ -3,7 +3,6 @@ package com.cafeminsu.data.mapper
 import com.cafeminsu.core.AppResult
 import com.cafeminsu.core.DomainError
 import com.cafeminsu.data.remote.MenuSummary
-import com.cafeminsu.data.remote.MyStoreRes
 import com.cafeminsu.data.remote.StoreOrderItemRes
 import com.cafeminsu.domain.model.OrderStatus
 import com.cafeminsu.domain.model.SelectedOption
@@ -46,18 +45,6 @@ class OwnerOrderMapperTest {
         assertEquals(0, first.unitPrice)
         assertEquals(2, first.quantity)
         assertEquals(emptyList<SelectedOption>(), first.selectedOptions)
-    }
-
-    @Test
-    fun myStoresMapToOwnerStoresWithStringIdsSkippingMissingIds() {
-        val stores = listOf(
-            MyStoreRes(id = 7, name = "강남점", imageUrl = null),
-            MyStoreRes(id = 8, name = "판교점", imageUrl = "https://img/p.png"),
-            MyStoreRes(id = null, name = "식별불가", imageUrl = null),
-        ).toOwnerStores()
-
-        assertEquals(listOf("7", "8"), stores.map { it.id })
-        assertEquals(listOf("강남점", "판교점"), stores.map { it.name })
     }
 
     @Test

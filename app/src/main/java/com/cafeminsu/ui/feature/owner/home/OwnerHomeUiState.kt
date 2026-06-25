@@ -1,7 +1,6 @@
 package com.cafeminsu.ui.feature.owner.home
 
 import com.cafeminsu.domain.model.OrderStatus
-import com.cafeminsu.domain.model.OwnerStore
 
 sealed interface OwnerHomeUiState {
     data object Loading : OwnerHomeUiState

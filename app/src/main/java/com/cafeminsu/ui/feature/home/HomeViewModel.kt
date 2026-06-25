@@ -49,7 +49,7 @@ class HomeViewModel @Inject constructor(
     val uiState: StateFlow<HomeUiState> = combine(
         combine(
             menuRepository.observeMenus(),
-            orderRepository.observeOrderHistory(),
+            orderRepository.observeRecentOrders(),
             rewardRepository.observeStampCard(),
             rewardRepository.observeGifticons(),
             sessionRepository.observeAuthState(),

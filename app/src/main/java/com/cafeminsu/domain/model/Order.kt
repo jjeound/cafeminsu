@@ -7,6 +7,8 @@ data class Order(
     val totalAmount: Int,
     val status: OrderStatus,
     val createdAtMillis: Long,
+    // 서버 주문 응답의 매장명. 목록/상세 모두 제공하며, 미제공(생성 응답 등) 시 빈 문자열.
+    val storeName: String = "",
 )
 
 enum class OrderStatus {

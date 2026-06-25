@@ -57,19 +57,14 @@ enum class HistoryStepState {
 }
 
 fun List<Order>.toHistoryUiState(nowMillis: Long): HistoryUiState {
-    if (isEmpty()) {
-        return HistoryUiState.Empty(
-            title = EmptyHistoryTitle,
-            message = EmptyHistoryMessage,
-        )
-    }
-
     val sortedOrders = sortedByDescending { order -> order.createdAtMillis }
+    // 진행중(PENDING/ACCEPTED/READY) 주문 중 가장 최근 1건만 상단 강조 카드로 노출한다.
     val activeOrder = sortedOrders
         .firstOrNull { order -> order.status.isActiveHistoryStatus() }
         ?.toActiveOrderUiModel()
+    // 지난 주문 목록은 완료(DONE) 주문만 노출한다(진행중은 위 강조 카드로만).
     val pastOrders = sortedOrders
-        .filterNot { order -> order.status.isActiveHistoryStatus() }
+        .filter { order -> order.status == OrderStatus.Completed }
         .map { order -> order.toPastOrderUiModel(nowMillis) }
 
     return if (activeOrder == null && pastOrders.isEmpty()) {
@@ -112,7 +107,7 @@ private fun Order.toActiveOrderUiModel(): HistoryActiveOrderUiModel =
 private fun Order.toPastOrderUiModel(nowMillis: Long): HistoryPastOrderUiModel =
     HistoryPastOrderUiModel(
         id = id,
-        storeName = DefaultStoreName,
+        storeName = storeName.ifBlank { DefaultStoreName },
         dateLabel = formatHistoryDate(
             createdAtMillis = createdAtMillis,
             nowMillis = nowMillis,

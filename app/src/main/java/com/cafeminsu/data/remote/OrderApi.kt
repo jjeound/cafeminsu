@@ -18,12 +18,17 @@ interface OrderApi {
         @Path("orderId") orderId: Long,
     ): OrderDetailRes
 
+    // 목록 응답은 이제 상세(OrderDetailRes, items 포함)와 동일한 형태다 → 단건 보강(getOrder) 불필요.
     @GET("api/orders/my")
     suspend fun getMyOrders(
         @Query("status") status: String? = null,
         @Query("page") page: Int = DefaultOrderPage,
         @Query("size") size: Int = DefaultOrderPageSize,
-    ): List<OrderListItemRes>
+    ): List<OrderDetailRes>
+
+    // 홈 "다시 주문하기"용 최근 주문 — 역시 OrderDetailRes(items 포함) 배열.
+    @GET("api/orders/my/recent")
+    suspend fun getRecentOrders(): List<OrderDetailRes>
 }
 
 @JsonClass(generateAdapter = true)
@@ -73,16 +78,6 @@ data class ItemRes(
     val unitPrice: Int?,
     val options: List<OptionRes>?,
     val subtotal: Int?,
-)
-
-@JsonClass(generateAdapter = true)
-data class OrderListItemRes(
-    val orderId: Long?,
-    val orderNumber: String?,
-    val storeName: String?,
-    val totalAmount: Int?,
-    val status: String?,
-    val createdAt: String?,
 )
 
 const val DefaultOrderPage = 0

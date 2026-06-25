@@ -9,7 +9,7 @@ import org.junit.Test
 
 class HistoryUiStateTest {
     @Test
-    fun ordersAreSeparatedIntoCurrentOrderAndPastOrders() {
+    fun mostRecentInProgressOrderIsHighlightedAndPastShowsOnlyDone() {
         val state = listOf(
             sampleOrder(
                 id = "past-1",
@@ -27,12 +27,65 @@ class HistoryUiStateTest {
 
         assertTrue(state is HistoryUiState.Content)
         val content = state as HistoryUiState.Content
+        // 진행중 주문은 가장 최근 1건만 상단 강조, 지난 주문 목록은 완료(DONE)만 노출.
         assertEquals("active-1", content.activeOrder?.id)
         assertEquals("#A-2419", content.activeOrder?.orderNumber)
-        assertEquals("바닐라라떼 외 1개", content.activeOrder?.itemSummary)
-        assertEquals("10,000원", content.activeOrder?.amountLabel)
         assertEquals(listOf("past-1"), content.pastOrders.map { it.id })
         assertEquals("어제 09:00", content.pastOrders.single().dateLabel)
+    }
+
+    @Test
+    fun onlyMostRecentInProgressOrderIsHighlightedAmongManyActive() {
+        val state = listOf(
+            sampleOrder("o-71", "EQQD", OrderStatus.Ready, JuneFifthMillis + 3),
+            sampleOrder("o-70", "3XHM", OrderStatus.PendingPayment, JuneFifthMillis + 2),
+            sampleOrder("o-64", "JLJD", OrderStatus.Completed, JuneFifthMillis + 1),
+            sampleOrder("o-51", "2MAQ", OrderStatus.Completed, JuneFourthMillis),
+        ).toHistoryUiState(nowMillis = JuneFifthNoonMillis)
+
+        val content = state as HistoryUiState.Content
+        // 진행중(READY/PENDING) 중 가장 최근 1건만 강조, 나머지 진행중은 노출 안 함.
+        assertEquals("o-71", content.activeOrder?.id)
+        // 지난 주문은 DONE 만 최신순.
+        assertEquals(listOf("o-64", "o-51"), content.pastOrders.map { it.id })
+    }
+
+    @Test
+    fun onlyInProgressOrdersStillShowHighlightWithEmptyPastList() {
+        val state = listOf(
+            sampleOrder("o-71", "EQQD", OrderStatus.Ready, JuneFifthMillis + 1),
+            sampleOrder("o-70", "3XHM", OrderStatus.PendingPayment, JuneFifthMillis),
+        ).toHistoryUiState(nowMillis = JuneFifthNoonMillis)
+
+        val content = state as HistoryUiState.Content
+        // 완료 주문이 없어도 진행중 강조 카드는 노출되고, 지난 주문 목록만 비어 있다.
+        assertEquals("o-71", content.activeOrder?.id)
+        assertTrue(content.pastOrders.isEmpty())
+    }
+
+    @Test
+    fun pastOrderUsesServerStoreNameAndFallsBackWhenBlank() {
+        val state = listOf(
+            sampleOrder(
+                id = "past-1",
+                orderNumber = "A-1001",
+                status = OrderStatus.Completed,
+                createdAtMillis = JuneFourthMillis,
+                storeName = "민수카페 부산서면점",
+            ),
+            sampleOrder(
+                id = "past-2",
+                orderNumber = "A-1002",
+                status = OrderStatus.Completed,
+                createdAtMillis = JuneFourthMillis,
+                storeName = "",
+            ),
+        ).toHistoryUiState(nowMillis = JuneFifthNoonMillis)
+
+        val content = state as HistoryUiState.Content
+        // 서버가 준 실매장명을 그대로 노출하고, 비어 있을 때만 기본값으로 폴백한다(하드코딩 금지).
+        assertEquals("민수카페 부산서면점", content.pastOrders.first { it.id == "past-1" }.storeName)
+        assertEquals("강남역", content.pastOrders.first { it.id == "past-2" }.storeName)
     }
 
     @Test
@@ -73,10 +126,12 @@ private fun sampleOrder(
     orderNumber: String,
     status: OrderStatus,
     createdAtMillis: Long,
+    storeName: String = "",
 ): Order =
     Order(
         id = id,
         orderNumber = orderNumber,
+        storeName = storeName,
         items = listOf(
             CartItem(
                 id = "$id-item-1",
