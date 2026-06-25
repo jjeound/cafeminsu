@@ -40,7 +40,7 @@ class RealPaymentRepositoryTest {
 
     @Test
     fun payPreparesAuthorizesAndVerifiesPaidAsApproved() = runTest(testDispatcher) {
-        server.enqueue(prepareResponse(merchantUid = "merchant-1", amount = 10_000))
+        server.enqueue(prepareResponse(merchantUid = "merchant-1", cardAmount = 10_000))
         server.enqueue(verifyResponse(paymentId = 31, status = "PAID"))
         val pgClient = FakePgClient(impUid = "imp-success")
         val repository = realPaymentRepository(pgClient = pgClient)
@@ -59,7 +59,10 @@ class RealPaymentRepositoryTest {
         assertEquals("/api/payments/prepare", prepare.requestUrl?.encodedPath)
         val prepareBody = prepare.body.readUtf8()
         assertTrue(prepareBody.contains("\"orderId\":77"))
-        assertTrue(prepareBody.contains("\"cardAmount\":10000"))
+        // 기프티콘 미선택 시 useGifticonId 는 직렬화에서 생략된다.
+        assertFalse(prepareBody.contains("useGifticonId"))
+        // 카드/기프티콘 분할은 서버가 계산하므로 클라가 cardAmount 를 보내지 않는다.
+        assertFalse(prepareBody.contains("cardAmount"))
         assertFalse(prepareBody.contains("paymentMethodToken"))
 
         val verify = server.takeRequest()
@@ -70,8 +73,62 @@ class RealPaymentRepositoryTest {
     }
 
     @Test
+    fun fullGifticonPrepareReturnsPaidWithoutAuthorizeOrVerify() = runTest(testDispatcher) {
+        server.enqueue(
+            prepareResponse(
+                merchantUid = "merchant-1",
+                cardAmount = 0,
+                status = "PAID",
+                gifticonAmount = 10_000,
+                paymentId = 9,
+            ),
+        )
+        val pgClient = FakePgClient()
+        val repository = realPaymentRepository(pgClient = pgClient)
+
+        val result = repository.pay(paymentRequest(amount = 0, useGifticonId = 45))
+
+        assertTrue(result is AppResult.Success)
+        val payment = (result as AppResult.Success).data
+        assertEquals("77", payment.orderId)
+        assertEquals("9", payment.paymentId)
+        assertEquals(PaymentStatus.Approved, payment.status)
+        // 전액 기프티콘은 카카오페이 authorize / verify 를 호출하지 않는다.
+        assertTrue(pgClient.authorizeRequests.isEmpty())
+        assertEquals(1, server.requestCount)
+
+        val prepare = server.takeRequest()
+        assertEquals("/api/payments/prepare", prepare.requestUrl?.encodedPath)
+        val prepareBody = prepare.body.readUtf8()
+        assertTrue(prepareBody.contains("\"orderId\":77"))
+        assertTrue(prepareBody.contains("\"useGifticonId\":45"))
+    }
+
+    @Test
+    fun splitPaymentAuthorizesServerComputedCardAmount() = runTest(testDispatcher) {
+        server.enqueue(
+            prepareResponse(
+                merchantUid = "merchant-1",
+                cardAmount = 7_000,
+                status = "READY",
+                gifticonAmount = 3_000,
+            ),
+        )
+        server.enqueue(verifyResponse(paymentId = 31, status = "PAID"))
+        val pgClient = FakePgClient(impUid = "imp-success")
+        val repository = realPaymentRepository(pgClient = pgClient)
+
+        val result = repository.pay(paymentRequest(amount = 7_000, useGifticonId = 45))
+
+        assertTrue(result is AppResult.Success)
+        assertEquals(PaymentStatus.Approved, (result as AppResult.Success).data.status)
+        // 카드 결제액은 서버가 계산한 cardAmount(7,000)를 사용한다(클라 추정치가 아님).
+        assertEquals(listOf(PgAuthorizeRequest("merchant-1", 7_000)), pgClient.authorizeRequests)
+    }
+
+    @Test
     fun payMapsFailedVerifyToFailedPayment() = runTest(testDispatcher) {
-        server.enqueue(prepareResponse(merchantUid = "merchant-1", amount = 10_000))
+        server.enqueue(prepareResponse(merchantUid = "merchant-1", cardAmount = 10_000))
         server.enqueue(verifyResponse(paymentId = 31, status = "FAILED"))
         val repository = realPaymentRepository()
 
@@ -83,7 +140,7 @@ class RealPaymentRepositoryTest {
 
     @Test
     fun repeatedPayWithSameIdempotencyKeyReusesMerchantUid() = runTest(testDispatcher) {
-        server.enqueue(prepareResponse(merchantUid = "merchant-original", amount = 10_000))
+        server.enqueue(prepareResponse(merchantUid = "merchant-original", cardAmount = 10_000))
         server.enqueue(verifyResponse(paymentId = 31, status = "FAILED"))
         server.enqueue(verifyResponse(paymentId = 31, status = "FAILED"))
         val pgClient = FakePgClient(impUid = "imp-retry")
@@ -110,7 +167,7 @@ class RealPaymentRepositoryTest {
 
     @Test
     fun readyVerifyReturnsPendingAndDoesNotApproveOptimistically() = runTest(testDispatcher) {
-        server.enqueue(prepareResponse(merchantUid = "merchant-1", amount = 10_000))
+        server.enqueue(prepareResponse(merchantUid = "merchant-1", cardAmount = 10_000))
         server.enqueue(verifyResponse(paymentId = 31, status = "READY"))
         val repository = realPaymentRepository()
 
@@ -124,7 +181,7 @@ class RealPaymentRepositoryTest {
 
     @Test
     fun getPaymentStatusUsesPaymentDetailForConfirmation() = runTest(testDispatcher) {
-        server.enqueue(prepareResponse(merchantUid = "merchant-1", amount = 10_000))
+        server.enqueue(prepareResponse(merchantUid = "merchant-1", cardAmount = 10_000))
         server.enqueue(verifyResponse(paymentId = 31, status = "READY"))
         server.enqueue(paymentDetailResponse(paymentId = 31, status = "PAID"))
         val repository = realPaymentRepository()
@@ -177,27 +234,39 @@ class RealPaymentRepositoryTest {
 
     private fun paymentRequest(
         idempotencyKey: String = "idem-1",
+        amount: Int = 10_000,
+        useGifticonId: Long? = null,
     ): PaymentRequest =
         PaymentRequest(
             orderId = "77",
-            amount = 10_000,
+            amount = amount,
             paymentMethodToken = "tok_kakaopay_mock",
             idempotencyKey = idempotencyKey,
+            useGifticonId = useGifticonId,
         )
 
     private fun prepareResponse(
         merchantUid: String,
-        amount: Int,
+        cardAmount: Int,
+        status: String = "READY",
+        gifticonAmount: Int = 0,
+        paymentId: Long? = null,
     ): MockResponse =
         MockResponse()
             .setResponseCode(200)
             .setBody(
-                """
-                {
-                  "merchantUid": "$merchantUid",
-                  "amount": $amount
-                }
-                """.trimIndent(),
+                buildString {
+                    append("{")
+                    append("\"merchantUid\": \"$merchantUid\",")
+                    append("\"amount\": $cardAmount,")
+                    append("\"cardAmount\": $cardAmount,")
+                    append("\"gifticonAmount\": $gifticonAmount,")
+                    if (paymentId != null) {
+                        append("\"paymentId\": $paymentId,")
+                    }
+                    append("\"status\": \"$status\"")
+                    append("}")
+                },
             )
 
     private fun verifyResponse(

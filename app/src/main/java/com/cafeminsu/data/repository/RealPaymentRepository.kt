@@ -15,6 +15,7 @@ import com.cafeminsu.di.IoDispatcher
 import com.cafeminsu.domain.model.AuthState
 import com.cafeminsu.domain.model.PaymentRequest
 import com.cafeminsu.domain.model.PaymentResult
+import com.cafeminsu.domain.model.PaymentStatus
 import com.cafeminsu.domain.repository.PaymentRepository
 import javax.inject.Inject
 import javax.inject.Singleton
@@ -45,10 +46,28 @@ class RealPaymentRepository @Inject constructor(
                 is AppResult.Success -> result.data
                 is AppResult.Failure -> return@withContext result
             }
+
+            // 전액 기프티콘: 서버가 prepare 시점에 차감하고 PAID로 확정한다. 카카오페이/verify 생략.
+            if (preparedPayment.status == PaymentStatus.Approved) {
+                val paymentId = preparedPayment.paymentId
+                    ?: return@withContext AppResult.Failure(DomainError.Unknown)
+                paymentId.toLongOrNull()?.let { id ->
+                    paymentIdsByKey[request.idempotencyKey] = id
+                }
+                return@withContext AppResult.Success(
+                    PaymentResult(
+                        orderId = request.orderId,
+                        paymentId = paymentId,
+                        status = PaymentStatus.Approved,
+                        approvedAtMillis = null,
+                    ),
+                )
+            }
+
             val impUid = when (
                 val result = pgClient.authorize(
                     merchantUid = preparedPayment.merchantUid,
-                    amount = preparedPayment.amount,
+                    amount = preparedPayment.cardAmount,
                 )
             ) {
                 is AppResult.Success -> result.data
@@ -138,7 +157,7 @@ class RealPaymentRepository @Inject constructor(
                 paymentApi.prepare(
                     request = PaymentPrepareReq(
                         orderId = orderId,
-                        cardAmount = request.amount,
+                        useGifticonId = request.useGifticonId,
                     ),
                 )
             }
@@ -158,7 +177,9 @@ class RealPaymentRepository @Inject constructor(
     private fun validate(request: PaymentRequest): DomainError? =
         when {
             request.orderId.isBlank() -> DomainError.Validation("orderId")
-            request.amount <= 0 -> DomainError.Validation("amount")
+            request.amount < 0 -> DomainError.Validation("amount")
+            // 전액 기프티콘이면 카드 결제액이 0이어도 유효하다. 기프티콘이 없는데 0이면 무효.
+            request.amount == 0 && request.useGifticonId == null -> DomainError.Validation("amount")
             request.paymentMethodToken.isBlank() -> DomainError.Payment("invalid-payment-token")
             request.idempotencyKey.isBlank() -> DomainError.Validation("idempotencyKey")
             else -> null

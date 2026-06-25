@@ -12,7 +12,7 @@ import org.junit.Test
 
 class PaymentMapperTest {
     @Test
-    fun prepareResponseRequiresMerchantUidAndAmount() {
+    fun prepareResponseFallsBackToAmountAsCardAmountForCardFlow() {
         val result = PaymentPrepareRes(
             merchantUid = "merchant-123",
             amount = 10_000,
@@ -22,7 +22,58 @@ class PaymentMapperTest {
         val payment = (result as AppResult.Success).data
         assertEquals("77", payment.orderId)
         assertEquals("merchant-123", payment.merchantUid)
-        assertEquals(10_000, payment.amount)
+        assertEquals(10_000, payment.cardAmount)
+        // status 미지정/READY 는 카드 흐름(Pending)으로 진행한다.
+        assertEquals(PaymentStatus.Pending, payment.status)
+        assertEquals(null, payment.paymentId)
+    }
+
+    @Test
+    fun prepareResponsePaidMapsToApprovedWithPaymentId() {
+        val result = PaymentPrepareRes(
+            merchantUid = "merchant-123",
+            amount = 0,
+            cardAmount = 0,
+            gifticonAmount = 10_000,
+            status = "PAID",
+            paymentId = 9,
+        ).toPreparedPayment(orderId = "77")
+
+        assertTrue(result is AppResult.Success)
+        val payment = (result as AppResult.Success).data
+        assertEquals(0, payment.cardAmount)
+        assertEquals(PaymentStatus.Approved, payment.status)
+        assertEquals("9", payment.paymentId)
+    }
+
+    @Test
+    fun prepareResponseUsesServerCardAmountForSplit() {
+        val result = PaymentPrepareRes(
+            merchantUid = "merchant-123",
+            amount = 10_000,
+            cardAmount = 7_000,
+            gifticonAmount = 3_000,
+            status = "READY",
+        ).toPreparedPayment(orderId = "77")
+
+        assertTrue(result is AppResult.Success)
+        val payment = (result as AppResult.Success).data
+        assertEquals(7_000, payment.cardAmount)
+        assertEquals(PaymentStatus.Pending, payment.status)
+        assertEquals(null, payment.paymentId)
+    }
+
+    @Test
+    fun prepareResponsePaidWithoutPaymentIdMapsToUnknownError() {
+        val result = PaymentPrepareRes(
+            merchantUid = "merchant-123",
+            amount = 0,
+            cardAmount = 0,
+            status = "PAID",
+            paymentId = null,
+        ).toPreparedPayment(orderId = "77")
+
+        assertEquals(AppResult.Failure(DomainError.Unknown), result)
     }
 
     @Test

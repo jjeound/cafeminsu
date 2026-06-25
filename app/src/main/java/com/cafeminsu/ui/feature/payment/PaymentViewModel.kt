@@ -132,6 +132,8 @@ class PaymentViewModel @Inject constructor(
                     MockPaymentOutcome.Failure -> MockFailureToken
                 },
                 idempotencyKey = key,
+                // 선택한 기프티콘은 서버 prepare가 차감한다. 기프티콘 ID는 숫자 문자열이다.
+                useGifticonId = selectedCouponId?.toLongOrNull(),
             )
 
             when (val result = paySafely(request)) {
@@ -281,7 +283,7 @@ class PaymentViewModel @Inject constructor(
     private suspend fun approvePayment(approvedOrderId: String) {
         finishPayment(PaymentProgress.Approved)
         grantStampForApprovedOrder(approvedOrderId)
-        redeemSelectedCoupon()
+        // 기프티콘 차감은 서버 prepare(useGifticonId)가 담당한다 — 클라가 별도로 사용 처리하면 이중 차감된다.
         clearCartAfterApproval()
         _events.emit(PaymentEvent.PaymentApproved(approvedOrderId))
     }
@@ -290,17 +292,6 @@ class PaymentViewModel @Inject constructor(
         // 결제 승인이 확정된 이후에만 장바구니를 비운다(낙관적 처리 금지).
         // clear()는 AppResult를 반환하므로 실패는 무시한다 — 성공 흐름을 막지 않는다.
         cartRepository.clear()
-    }
-
-    private suspend fun redeemSelectedCoupon() {
-        val gifticonId = selectedCouponId ?: return
-        try {
-            rewardRepository.markGifticonUsed(gifticonId)
-        } catch (error: CancellationException) {
-            throw error
-        } catch (_: Throwable) {
-            // 비치명적: 결제 승인이 우선이며 기프티콘 사용 처리는 추후 재시도로 정합화할 수 있다.
-        }
     }
 
     private suspend fun failPayment(

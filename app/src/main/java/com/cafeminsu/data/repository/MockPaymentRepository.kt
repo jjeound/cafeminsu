@@ -58,7 +58,9 @@ class MockPaymentRepository(
     private fun validate(request: PaymentRequest): DomainError? =
         when {
             request.orderId.isBlank() -> DomainError.Validation("orderId")
-            request.amount <= 0 -> DomainError.Validation("amount")
+            request.amount < 0 -> DomainError.Validation("amount")
+            // 전액 기프티콘이면 카드 결제액이 0이어도 유효하다(Real 흐름과 동일).
+            request.amount == 0 && request.useGifticonId == null -> DomainError.Validation("amount")
             request.paymentMethodToken.isBlank() -> DomainError.Payment("invalid-payment-token")
             request.idempotencyKey.isBlank() -> DomainError.Validation("idempotencyKey")
             else -> null

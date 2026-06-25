@@ -26,15 +26,19 @@ interface PaymentApi {
 @JsonClass(generateAdapter = true)
 data class PaymentPrepareReq(
     val orderId: Long,
+    // 사용할 기프티콘 ID만 전달한다. 카드/기프티콘 금액 분할은 서버가 권위 있게 계산한다.
     val useGifticonId: Long? = null,
-    val gifticonAmount: Int? = null,
-    val cardAmount: Int? = null,
 )
 
 @JsonClass(generateAdapter = true)
 data class PaymentPrepareRes(
     val merchantUid: String?,
     val amount: Int?,
+    // 서버가 계산한 분할 금액과 확정 상태. 전액 기프티콘이면 status=PAID, cardAmount=0, paymentId 포함.
+    val cardAmount: Int? = null,
+    val gifticonAmount: Int? = null,
+    val status: String? = null,
+    val paymentId: Long? = null,
 )
 
 @JsonClass(generateAdapter = true)
