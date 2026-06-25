@@ -6,7 +6,6 @@ import com.cafeminsu.core.model.cart.CartInvalidReason
 import com.cafeminsu.core.model.cart.CartItem
 import com.cafeminsu.core.model.cart.CartValidation
 import com.cafeminsu.core.model.cart.SelectedOption
-import com.cafeminsu.core.model.media.ImageSource
 import org.json.JSONArray
 import org.json.JSONObject
 
@@ -15,25 +14,20 @@ fun CartItemEntity.asExternalModel(): CartItem =
         id = id,
         menuId = menuId,
         name = name,
-        image = imageUrl?.let(ImageSource::Remote) ?: ImageSource.None,
+        image = imageUrl.orEmpty(),
         price = price,
         selectedOptions = selectedOptionsJson.toSelectedOptions(),
         quantity = quantity,
     )
 
 fun Cart.toEntities(storeId: Long): List<CartItemEntity> =
-    items.mapNotNull { item ->
+    items.map { item ->
         CartItemEntity(
             id = item.id,
             storeId = storeId,
             menuId = item.menuId,
             name = item.name,
-            imageUrl = when (val image = item.image) {
-                is ImageSource.Remote -> image.url
-                ImageSource.None,
-                is ImageSource.Local,
-                -> null
-            },
+            imageUrl = item.image,
             price = item.price,
             selectedOptionsJson = item.selectedOptions.toJsonString(),
             quantity = item.quantity,

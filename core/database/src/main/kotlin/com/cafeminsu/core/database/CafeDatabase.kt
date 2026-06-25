@@ -9,7 +9,6 @@ import com.cafeminsu.core.database.dao.OrderDao
 import com.cafeminsu.core.database.dao.StampDao
 import com.cafeminsu.core.database.dao.StoreDao
 import com.cafeminsu.core.database.model.entity.cart.CartItemEntity
-import com.cafeminsu.core.database.model.entity.menu.MenuDetailEntity
 import com.cafeminsu.core.database.model.entity.menu.MenuEntity
 import com.cafeminsu.core.database.model.entity.menu.MenuOptionEntity
 import com.cafeminsu.core.database.model.entity.notification.NotificationEntity
@@ -27,7 +26,6 @@ import com.cafeminsu.core.database.model.entity.store.StoreSearchEntity
         StoreDetailEntity::class,
         StoreSearchEntity::class,
         MenuEntity::class,
-        MenuDetailEntity::class,
         MenuOptionEntity::class,
         NotificationEntity::class,
         OrderEntity::class,

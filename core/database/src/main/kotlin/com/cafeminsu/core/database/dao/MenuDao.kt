@@ -1,49 +1,83 @@
 package com.cafeminsu.core.database.dao
 
 import androidx.room.Dao
-import androidx.room.Insert
 import androidx.room.Query
-import androidx.room.Update
-import com.cafeminsu.core.database.model.entity.menu.MenuDetailEntity
+import androidx.room.Transaction
+import androidx.room.Upsert
 import com.cafeminsu.core.database.model.entity.menu.MenuEntity
 import com.cafeminsu.core.database.model.entity.menu.MenuOptionEntity
+import com.cafeminsu.core.database.model.relation.menu.MenuWithOptions
 import kotlinx.coroutines.flow.Flow
 
 @Dao
 interface MenuDao {
-    @Query("SELECT * FROM menus WHERE storeId = :storeId AND (:category IS NULL OR category = :category)")
-    fun getMenuEntities(storeId: Long, category: String?): Flow<List<MenuEntity>>
+
+    @Query(
+        """
+        SELECT *
+        FROM menus
+        WHERE storeId = :storeId
+        AND (:category IS NULL OR category = :category)
+        ORDER BY id ASC
+        """
+    )
+    fun getMenuEntities(
+        storeId: Long,
+        category: String?,
+    ): Flow<List<MenuEntity>>
+
+    @Transaction
+    @Query("SELECT * FROM menus WHERE id = :menuId")
+    fun getMenuWithOptions(
+        menuId: Long,
+    ): Flow<MenuWithOptions?>
 
     @Query("SELECT * FROM menus WHERE id = :menuId")
-    fun getMenuEntity(menuId: Long): Flow<MenuEntity>
+    suspend fun getMenuEntity(
+        menuId: Long,
+    ): MenuEntity?
 
-    @Query("SELECT * FROM menu_details WHERE menuId = :menuId")
-    fun getMenuDetailEntity(menuId: Long): Flow<MenuDetailEntity>
+    @Upsert
+    suspend fun upsertMenuEntities(
+        menuEntities: List<MenuEntity>,
+    )
 
-    @Query("SELECT * FROM menu_options WHERE menuId = :menuId")
-    fun getMenuOptionEntities(menuId: Long): Flow<List<MenuOptionEntity>>
+    @Upsert
+    suspend fun upsertMenuEntity(
+        menuEntity: MenuEntity,
+    )
 
-    @Insert
-    suspend fun insertMenuEntities(menuEntities: List<MenuEntity>)
+    @Upsert
+    suspend fun upsertMenuOptionEntities(
+        optionEntities: List<MenuOptionEntity>,
+    )
 
-    @Update
-    suspend fun updateMenuEntities(menuEntities: List<MenuEntity>)
-
-    @Insert
-    suspend fun insertMenuDetailEntities(menuDetailEntities: List<MenuDetailEntity>)
-
-    @Update
-    suspend fun updateMenuDetailEntities(menuDetailEntities: List<MenuDetailEntity>)
-
-    @Insert
-    suspend fun insertMenuOptionEntities(menuOptionEntities: List<MenuOptionEntity>)
-
-    @Update
-    suspend fun updateMenuOptionEntities(menuOptionEntities: List<MenuOptionEntity>)
-
-    @Query("DELETE FROM menus WHERE id IN (:menuIds)")
-    suspend fun deleteMenuEntities(menuIds: List<Long>)
+    @Query("DELETE FROM menus WHERE storeId = :storeId")
+    suspend fun deleteMenusByStoreId(
+        storeId: Long,
+    )
 
     @Query("DELETE FROM menu_options WHERE menuId = :menuId")
-    suspend fun deleteMenuOptionEntities(menuId: Long)
+    suspend fun deleteMenuOptionsByMenuId(
+        menuId: Long,
+    )
+
+    @Transaction
+    suspend fun replaceMenus(
+        storeId: Long,
+        menuEntities: List<MenuEntity>,
+    ) {
+        deleteMenusByStoreId(storeId)
+        upsertMenuEntities(menuEntities)
+    }
+
+    @Transaction
+    suspend fun replaceMenuWithOptions(
+        menuEntity: MenuEntity,
+        optionEntities: List<MenuOptionEntity>,
+    ) {
+        upsertMenuEntity(menuEntity)
+        deleteMenuOptionsByMenuId(menuEntity.id)
+        upsertMenuOptionEntities(optionEntities)
+    }
 }

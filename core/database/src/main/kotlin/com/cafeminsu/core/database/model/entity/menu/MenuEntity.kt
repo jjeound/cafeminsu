@@ -4,16 +4,15 @@ import androidx.room.Entity
 import androidx.room.Index
 import androidx.room.PrimaryKey
 
-@Entity(
-    tableName = "menus",
-    indices = [Index("storeId"), Index("category")],
-)
+@Entity(tableName = "menus")
 data class MenuEntity(
-    @PrimaryKey val id: Long,
+    @PrimaryKey
+    val id: Long,
     val storeId: Long,
     val name: String,
+    val description: String,
     val price: Int,
     val category: String,
-    val imageUrl: String?,
+    val imageUrl: String,
     val isAvailable: Boolean,
 )

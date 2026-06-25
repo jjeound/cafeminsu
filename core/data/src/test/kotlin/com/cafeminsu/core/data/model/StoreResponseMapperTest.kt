@@ -1,6 +1,5 @@
 package com.cafeminsu.core.data.model
 
-import com.cafeminsu.core.model.media.ImageSource
 import com.cafeminsu.core.network.model.response.store.NearbyStoreResponse
 import com.cafeminsu.core.network.model.response.store.OwnerStoreResponse
 import org.junit.Assert.assertEquals
@@ -21,7 +20,7 @@ class StoreResponseMapperTest {
         assertEquals(1L, store.id)
         assertEquals("민수 카페", store.name)
         assertEquals(230.5, store.distanceMeters, 0.0)
-        assertEquals(ImageSource.Remote("https://example.com/store.jpg"), store.image)
+        assertEquals("https://example.com/store.jpg", store.image)
     }
 
     @Test
@@ -36,6 +35,6 @@ class StoreResponseMapperTest {
 
         assertEquals(2L, store.id)
         assertEquals("민수 카페 2호점", store.name)
-        assertEquals(ImageSource.None, store.image)
+        assertEquals("", store.image)
     }
 }

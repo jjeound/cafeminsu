@@ -4,7 +4,7 @@ import com.cafeminsu.core.data.repository.auth.AuthRepository
 import com.cafeminsu.core.data.repository.auth.DefaultAuthRepository
 import com.cafeminsu.core.data.repository.cart.CartRepository
 import com.cafeminsu.core.data.repository.cart.DefaultCartRepository
-import com.cafeminsu.core.data.repository.menu.DefaultMenuRepository
+import com.cafeminsu.core.data.repository.menu.OfflineFirstMenuRepository
 import com.cafeminsu.core.data.repository.menu.DefaultOwnerMenuRepository
 import com.cafeminsu.core.data.repository.menu.MenuRepository
 import com.cafeminsu.core.data.repository.menu.OwnerMenuRepository
@@ -46,7 +46,7 @@ abstract class DataModule {
 
     @Binds
     internal abstract fun bindMenuRepository(
-        menuRepository: DefaultMenuRepository,
+        menuRepository: OfflineFirstMenuRepository,
     ): MenuRepository
 
     @Binds

@@ -3,23 +3,26 @@ package com.cafeminsu.core.database.model.entity.menu
 import androidx.room.Entity
 import androidx.room.ForeignKey
 import androidx.room.Index
+import androidx.room.PrimaryKey
 
 @Entity(
     tableName = "menu_options",
-    primaryKeys = ["menuId", "id"],
     foreignKeys = [
         ForeignKey(
-            entity = MenuDetailEntity::class,
-            parentColumns = ["menuId"],
+            entity = MenuEntity::class,
+            parentColumns = ["id"],
             childColumns = ["menuId"],
             onDelete = ForeignKey.CASCADE,
         ),
     ],
-    indices = [Index("menuId")],
+    indices = [
+        Index("menuId"),
+    ],
 )
 data class MenuOptionEntity(
-    val menuId: Long,
+    @PrimaryKey
     val id: Long,
+    val menuId: Long,
     val groupName: String,
     val name: String,
     val additionalPrice: Int,

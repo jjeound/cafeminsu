@@ -1,12 +1,10 @@
 package com.cafeminsu.core.model.menu
 
-import com.cafeminsu.core.model.media.ImageSource
-
-data class NewMenuDraft(
+data class MenuInput(
     val name: String,
     val categoryId: String,
     val basePrice: Int,
     val description: String,
-    val image: ImageSource,
+    val image: String,
     val isSoldOut: Boolean,
 )
