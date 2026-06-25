@@ -351,6 +351,7 @@ fun AppNavHost(
                 CouponRoute(
                     onBackClick = { navController.popBackStack() },
                     onLoginClick = { navController.navigate(Routes.LOGIN) },
+                    onNfcClaimClick = { navController.navigate(Routes.NFC_CLAIM) },
                 )
             }
             composable(Routes.GIFT) {
@@ -394,8 +395,9 @@ fun AppNavHost(
                 NfcClaimRoute(
                     onBackClick = { navController.popBackStack() },
                     onNavigateToGifticons = {
-                        // 발급 후 내 기프티콘 목록으로 이동(재구독→재조회=새로고침). 발급 화면은 백스택에서 제거.
-                        navController.navigate(Routes.GIFTICON) {
+                        // 발급 후 쿠폰함(보유 기프티콘 목록)으로 이동. observeGifticons() 재구독→재조회=새로고침.
+                        // 발급 화면은 백스택에서 제거한다.
+                        navController.navigate(Routes.COUPON) {
                             popUpTo(Routes.NFC_CLAIM) { inclusive = true }
                             launchSingleTop = true
                         }

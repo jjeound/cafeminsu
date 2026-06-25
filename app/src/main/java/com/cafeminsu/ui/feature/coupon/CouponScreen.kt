@@ -24,6 +24,8 @@ import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cafeminsu.R
+import com.cafeminsu.ui.components.CafeButton
+import com.cafeminsu.ui.components.CafeButtonVariant
 import com.cafeminsu.ui.components.CafeCard
 import com.cafeminsu.ui.components.CafeCardType
 import com.cafeminsu.ui.components.CafeTopBar
@@ -36,6 +38,7 @@ import com.cafeminsu.ui.theme.CafeTheme
 fun CouponRoute(
     onBackClick: () -> Unit,
     onLoginClick: () -> Unit,
+    onNfcClaimClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: CouponViewModel = hiltViewModel(),
 ) {
@@ -46,6 +49,7 @@ fun CouponRoute(
         onBackClick = onBackClick,
         onLoginClick = onLoginClick,
         onRetry = viewModel::retry,
+        onNfcClaimClick = onNfcClaimClick,
         modifier = modifier,
     )
 }
@@ -57,6 +61,7 @@ fun CouponScreen(
     onLoginClick: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
+    onNfcClaimClick: () -> Unit = {},
 ) {
     Surface(
         modifier = modifier.fillMaxSize(),
@@ -88,6 +93,13 @@ fun CouponScreen(
                     ),
                 verticalArrangement = Arrangement.spacedBy(CafeTheme.spacing.space5),
             ) {
+                CafeButton(
+                    text = "NFC 쿠폰 받기",
+                    onClick = onNfcClaimClick,
+                    modifier = Modifier.fillMaxWidth(),
+                    variant = CafeButtonVariant.Secondary,
+                )
+
                 when (state) {
                     CouponUiState.Loading -> LoadingView()
                     is CouponUiState.Content -> CouponContent(state = state)
