@@ -27,6 +27,8 @@ data class PaymentRequest(
     val amount: Int,
     val paymentMethodToken: String,
     val idempotencyKey: String,
+    // 사용할 기프티콘 ID. 서버가 prepare 시점에 이 기프티콘으로 금액을 차감한다(전액 차감 시 즉시 PAID).
+    val useGifticonId: Long? = null,
 )
 
 data class PaymentResult(

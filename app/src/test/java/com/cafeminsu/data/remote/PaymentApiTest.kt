@@ -5,18 +5,22 @@ import org.junit.Test
 
 class PaymentApiTest {
     @Test
-    fun prepareRequestKeepsOpenApiFields() {
+    fun prepareRequestCarriesOrderIdAndUseGifticonId() {
         val request = PaymentPrepareReq(
             orderId = 77,
-            useGifticonId = null,
-            gifticonAmount = null,
-            cardAmount = 10_000,
+            useGifticonId = 45,
         )
 
         assertEquals(77L, request.orderId)
+        assertEquals(45L, request.useGifticonId)
+    }
+
+    @Test
+    fun prepareRequestDefaultsUseGifticonIdToNull() {
+        val request = PaymentPrepareReq(orderId = 77)
+
+        assertEquals(77L, request.orderId)
         assertEquals(null, request.useGifticonId)
-        assertEquals(null, request.gifticonAmount)
-        assertEquals(10_000, request.cardAmount)
     }
 
     @Test
@@ -34,7 +38,11 @@ class PaymentApiTest {
     fun paymentResponseDtosKeepOpenApiFields() {
         val prepare = PaymentPrepareRes(
             merchantUid = "merchant-123",
-            amount = 10_000,
+            amount = 0,
+            cardAmount = 0,
+            gifticonAmount = 10_000,
+            status = "PAID",
+            paymentId = 9,
         )
         val verify = PaymentVerifyRes(
             paymentId = 31,
@@ -50,6 +58,10 @@ class PaymentApiTest {
         )
 
         assertEquals("merchant-123", prepare.merchantUid)
+        assertEquals(0, prepare.cardAmount)
+        assertEquals(10_000, prepare.gifticonAmount)
+        assertEquals("PAID", prepare.status)
+        assertEquals(9L, prepare.paymentId)
         assertEquals(31L, verify.paymentId)
         assertEquals("PAID", detail.status)
         assertEquals("2026-06-20T01:15:30Z", detail.paidAt)

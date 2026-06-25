@@ -455,11 +455,11 @@ class PaymentViewModelTest {
     }
 
     @Test
-    fun applyingGifticonReducesPaidAmountAndMarksUsed() = runTest {
+    fun applyingGifticonReducesPaidAmountAndPassesUseGifticonId() = runTest {
         val rewardRepository = FakePaymentRewardRepository(
             gifticons = listOf(
                 Gifticon(
-                    id = "gifticon-1",
+                    id = "45",
                     title = "무료 음료 1잔",
                     barcodeValue = "",
                     qrValue = "",
@@ -483,7 +483,7 @@ class PaymentViewModelTest {
             assertEquals(12_000, content.payableAmount)
 
             // 기프티콘(무료 음료)은 가장 비싼 한 잔(라떼 6,000원)만큼 할인한다.
-            viewModel.onToggleCoupon("gifticon-1")
+            viewModel.onToggleCoupon("45")
             val discounted = awaitContent()
             assertEquals(6_000, discounted.discountAmount)
             assertEquals(6_000, discounted.payableAmount)
@@ -492,8 +492,12 @@ class PaymentViewModelTest {
                 viewModel.onPay()
 
                 assertEquals(PaymentEvent.PaymentApproved("order-1"), awaitItem())
-                assertEquals(6_000, paymentRepository.payRequests.single().amount)
-                assertEquals(listOf("gifticon-1"), rewardRepository.usedGifticonIds)
+                val request = paymentRepository.payRequests.single()
+                assertEquals(6_000, request.amount)
+                // 선택한 기프티콘 ID는 서버 prepare 차감용으로 전달된다.
+                assertEquals(45L, request.useGifticonId)
+                // 기프티콘 차감은 서버가 처리하므로 클라는 별도 사용 처리를 하지 않는다(이중 차감 방지).
+                assertTrue(rewardRepository.usedGifticonIds.isEmpty())
 
                 cancelAndIgnoreRemainingEvents()
             }
