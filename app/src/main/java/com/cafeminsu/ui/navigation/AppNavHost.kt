@@ -52,6 +52,7 @@ import com.cafeminsu.ui.feature.login.LoginRoute
 import com.cafeminsu.ui.feature.menu.MenuDetailRoute
 import com.cafeminsu.ui.feature.menu.MenuRoute
 import com.cafeminsu.ui.feature.my.MyRoute
+import com.cafeminsu.ui.feature.nfc.NfcClaimRoute
 import com.cafeminsu.ui.feature.notification.NotiRoute
 import com.cafeminsu.ui.feature.notification.settings.NotificationSettingsRoute
 import com.cafeminsu.ui.feature.order.OrderFailureDialog
@@ -384,6 +385,18 @@ fun AppNavHost(
                         // 등록 완료 후 쿠폰함으로 이동(딥링크 자동 등록 포함).
                         navController.navigate(Routes.COUPON) {
                             popUpTo(Routes.GIFT_CLAIM) { inclusive = true }
+                            launchSingleTop = true
+                        }
+                    },
+                )
+            }
+            composable(Routes.NFC_CLAIM) {
+                NfcClaimRoute(
+                    onBackClick = { navController.popBackStack() },
+                    onNavigateToGifticons = {
+                        // 발급 후 내 기프티콘 목록으로 이동(재구독→재조회=새로고침). 발급 화면은 백스택에서 제거.
+                        navController.navigate(Routes.GIFTICON) {
+                            popUpTo(Routes.NFC_CLAIM) { inclusive = true }
                             launchSingleTop = true
                         }
                     },

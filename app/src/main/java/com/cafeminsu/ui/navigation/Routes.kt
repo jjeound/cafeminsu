@@ -29,6 +29,7 @@ object Routes {
     const val GIFT_CLAIM_CODE = "code"
     private const val GIFT_CLAIM_BASE = "gift_claim"
     const val GIFT_CLAIM = "$GIFT_CLAIM_BASE?$GIFT_CLAIM_CODE={$GIFT_CLAIM_CODE}"
+    const val NFC_CLAIM = "nfc_claim"
     const val HISTORY = "history"
     const val HISTORY_ORDER_ID = "orderId"
     const val HISTORY_DETAIL = "$HISTORY/{$HISTORY_ORDER_ID}"

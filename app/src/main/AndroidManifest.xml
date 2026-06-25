@@ -6,6 +6,11 @@
     <uses-permission android:name="android.permission.RECORD_AUDIO" />
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION" />
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION" />
+    <!-- 매장 NFC 태그 쿠폰 발급(reader mode). 미지원 기기 설치 허용을 위해 feature 는 required=false. -->
+    <uses-permission android:name="android.permission.NFC" />
+    <uses-feature
+        android:name="android.hardware.nfc"
+        android:required="false" />
 
     <!-- 선물 링크를 ACTION_SEND 인텐트로 카카오톡에 직접 공유하기 위한 패키지 가시성(Android 11+). -->
     <queries>

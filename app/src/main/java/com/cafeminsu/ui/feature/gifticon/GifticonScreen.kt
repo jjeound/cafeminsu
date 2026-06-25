@@ -19,6 +19,8 @@ import androidx.compose.ui.Modifier
 import androidx.hilt.navigation.compose.hiltViewModel
 import com.cafeminsu.domain.model.Gifticon
 import com.cafeminsu.domain.model.GifticonStatus
+import com.cafeminsu.ui.components.CafeButton
+import com.cafeminsu.ui.components.CafeButtonVariant
 import com.cafeminsu.ui.components.CafeCard
 import com.cafeminsu.ui.components.CafeCardType
 import com.cafeminsu.ui.components.EmptyView
@@ -35,6 +37,7 @@ fun GifticonRoute(
     onGifticonClick: (String) -> Unit,
     onStampClick: () -> Unit,
     onLoginClick: () -> Unit,
+    onNfcClaimClick: () -> Unit,
     modifier: Modifier = Modifier,
     viewModel: GifticonViewModel = hiltViewModel(),
 ) {
@@ -46,6 +49,7 @@ fun GifticonRoute(
         onStampClick = onStampClick,
         onLoginClick = onLoginClick,
         onRetry = viewModel::retry,
+        onNfcClaimClick = onNfcClaimClick,
         modifier = modifier,
     )
 }
@@ -58,6 +62,7 @@ fun GifticonScreen(
     onLoginClick: () -> Unit,
     onRetry: () -> Unit,
     modifier: Modifier = Modifier,
+    onNfcClaimClick: () -> Unit = {},
     nowMillis: Long = System.currentTimeMillis(),
 ) {
     Surface(
@@ -81,6 +86,13 @@ fun GifticonScreen(
                 text = "기프티콘",
                 style = CafeTheme.typography.h1,
                 color = CafeTheme.colors.ink,
+            )
+
+            CafeButton(
+                text = "NFC 쿠폰 받기",
+                onClick = onNfcClaimClick,
+                modifier = Modifier.fillMaxWidth(),
+                variant = CafeButtonVariant.Secondary,
             )
 
             when (state) {
