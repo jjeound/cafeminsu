@@ -92,7 +92,6 @@ fun MenuDetailScreen(
     modifier: Modifier = Modifier,
     snackbarHostState: SnackbarHostState = remember { SnackbarHostState() },
 ) {
-    var favorite by rememberSaveable { mutableStateOf(false) }
     val colors = CafeTheme.colors
 
     Scaffold(
@@ -109,16 +108,6 @@ fun MenuDetailScreen(
                     )
                 },
                 onNavigationClick = onBackClick,
-                actionIcon = {
-                    Icon(
-                        painter = painterResource(
-                            if (favorite) R.drawable.ic_heart_filled else R.drawable.ic_heart,
-                        ),
-                        contentDescription = if (favorite) "찜 해제" else "찜하기",
-                        tint = if (favorite) colors.primary else colors.ink,
-                    )
-                },
-                onActionClick = { favorite = !favorite },
             )
         },
         snackbarHost = { CafeSnackbarHost(snackbarHostState) },
